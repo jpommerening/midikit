@@ -11,33 +11,33 @@
  * Note Off event.
  * This message is sent when a note is released (ended).
  */
-#define MIDI_STATUS_NOTE_OFF 0x8
+#define MIDI_STATUS_NOTE_OFF 0x80
 
 /**
  * Note On event. 
  * This message is sent when a note is depressed (start). 
  */
-#define MIDI_STATUS_NOTE_ON 0x9
+#define MIDI_STATUS_NOTE_ON 0x90
 
 /**
  * Polyphonic Key Pressure (Aftertouch). 
  * This message is most often sent by pressing down on the
  * key after it "bottoms out".
  */
-#define MIDI_STATUS_POLYPHONIC_KEY_PRESSURE 0xa
+#define MIDI_STATUS_POLYPHONIC_KEY_PRESSURE 0xa0
 
 /**
  * Control Change. 
  * This message is sent when a controller value changes.
  * Controllers include devices such as pedals and levers. 
  */
-#define MIDI_STATUS_CONTROL_CHANGE 0xb
+#define MIDI_STATUS_CONTROL_CHANGE 0xb0
 
 /**
  * Program Change.
  * This message sent when the patch number changes.
  */
-#define MIDI_STATUS_PROGRAM_CHANGE 0xc
+#define MIDI_STATUS_PROGRAM_CHANGE 0xc0
 
 /**
  * Channel Pressure (After-touch).
@@ -46,12 +46,12 @@
  * after-touch. Use this message to send the single greatest pressure
  * value (of all the current depressed keys).
  */
-#define MIDI_STATUS_CHANNEL_PRESSURE 0xd
+#define MIDI_STATUS_CHANNEL_PRESSURE 0xd0
 
 /**
  * Pitch Wheel Change.
  */
-#define MIDI_STATUS_PITCH_WHEEL_CHANGE 0xe
+#define MIDI_STATUS_PITCH_WHEEL_CHANGE 0xe0
 
 //@}
 
@@ -172,7 +172,6 @@
 //@}
 
 /**
-/**
  * MIDI channel enumeration
  */
 //@{
@@ -212,8 +211,9 @@
 #define MIDI_NOTHING         0xff
 //@}
 
-typedef unsigned char MIDIKey;
-typedef unsigned int  MIDIValue;
-typedef MIDIValue     MIDIMessageStatus;
+typedef unsigned char  MIDIByte;
+typedef unsigned short MIDIKey;
+typedef unsigned int   MIDIValue;
+typedef MIDIValue      MIDIMessageStatus;
 
 #endif

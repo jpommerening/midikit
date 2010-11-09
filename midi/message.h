@@ -13,4 +13,8 @@ int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIMessageStatus * stat
 int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIMessageStatus status );
 int MIDIMessageGet( struct MIDIMessage * message, MIDIKey key, MIDIValue * value );
 int MIDIMessageSet( struct MIDIMessage * message, MIDIKey key, MIDIValue value );
+
+int MIDIMessageRead( struct MIDIMessage * message, size_t bytes, unsigned char * buffer );
+int MIDIMessageWrite( struct MIDIMessage * message, size_t bytes, unsigned char * buffer );
+
 #endif
