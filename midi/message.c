@@ -134,9 +134,16 @@ struct MIDIMessage {
 struct MIDIMessage * MIDIMessageCreate( MIDIMessageStatus status ) {
   struct MIDIMessage * message = malloc( sizeof( struct MIDIMessage ) );
   int i;
+  if( message == NULL ) {
+    return NULL;
+  }
   message->refs    = 1;
   message->byte[0] = status;
   message->format  = _format_for_status( status );
+  if( message->format == NULL ) {
+    free( message );
+    return NULL;
+  }
   for( i=1; i<MIDI_MESSAGE_MAX_BYTES; i++ ) {
     message->byte[i] = 0;
   }
