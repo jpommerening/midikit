@@ -4,7 +4,7 @@
 #define MIDI_MESSAGE_MAX_BYTES 8
 
 struct MIDIMessageFormat {
-  MIDIKey key;
+  MIDIProperty property;
   unsigned char byte;
   unsigned char mask;
 };
@@ -165,50 +165,55 @@ void MIDIMessageRelease( struct MIDIMessage * message ) {
 }
 
 int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIMessageStatus * status ) {
-  return MIDIMessageGet( message, MIDI_STATUS, status );
+  return MIDIMessageGet( message, MIDI_STATUS, sizeof( MIDIMessageStatus ), status );
 }
 
 int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIMessageStatus status ) {
-  return MIDIMessageSet( message, MIDI_STATUS, status );
+  return MIDIMessageSet( message, MIDI_STATUS, sizeof( MIDIMessageStatus ), &status );
 }
 
-int MIDIMessageGet( struct MIDIMessage * message, MIDIKey key, MIDIValue * value ) {
+static int _get_message_byte( struct MIDIMessage * message, struct MIDIMessageFormat * format, MIDIValue * value ) {
+  *value = message->byte[ format->byte ] & format->mask;
+  return 0;
+}
+
+int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value ) {
   struct MIDIMessageFormat * format;
-  int byte, mask;
   if( value == NULL ) {
     return 1;
   }
   format = message->format;
   while( format->mask != 0 ) {
-    if( format->key == key ) {
-      byte = format->byte;
-      mask = format->mask;
-      *value = message->byte[ byte ] & mask;
-      return 0;
+    if( format->property == property ) {
+      return _get_message_byte( message, format, (MIDIValue *) value );
     }
     format++;
   }
   return 1;
 }
 
-int MIDIMessageSet( struct MIDIMessage * message, MIDIKey key, MIDIValue value ) {
+static int _set_message_byte( struct MIDIMessage * message, struct MIDIMessageFormat * format, MIDIValue value ) {
+  if( (value & format->mask) != value ) {
+    // value is too big!
+    return 1;
+  }
+  message->byte[ format->byte ] &= ~format->mask;
+  message->byte[ format->byte ] |= ~value;
+  return 0;
+}
+
+int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value ) {
   struct MIDIMessageFormat * format;
-  int byte, mask;
-  if( key == MIDI_STATUS ) {
-    message->format = _format_for_status( value );
+  if( property == MIDI_STATUS ) {
+    if( size != sizeof( MIDIMessageStatus ) ) {
+      return 1;
+    }
+    message->format = _format_for_status( *((MIDIMessageStatus*) value) );
   }
   format = message->format;
   while( format->mask != 0 ) {
-    if( format->key == key ) {
-      if( (value & format->mask) != value ) {
-        return 1;
-      } else {
-        byte = format->byte;
-        mask = format->mask;
-        message->byte[ byte ] &= ( 0xff ^ mask );
-        message->byte[ byte ] |= value;
-        return 0;
-      }
+    if( format->property == property ) {
+      return _set_message_byte( message, format, *((MIDIValue *) value) );
     }
     format++;
   }

@@ -104,42 +104,42 @@ int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message 
   MIDIMessageGetStatus( message, &status );
   switch( status ) {
     case MIDI_STATUS_NOTE_OFF:
-      MIDIMessageGet( message, MIDI_CHANNEL, &v[0] );
-      MIDIMessageGet( message, MIDI_KEY, &v[1] );
-      MIDIMessageGet( message, MIDI_VELOCITY, &v[2] );
+      MIDIMessageGet( message, MIDI_CHANNEL,  sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_KEY,      sizeof(MIDIValue), &v[1] );
+      MIDIMessageGet( message, MIDI_VELOCITY, sizeof(MIDIValue), &v[2] );
       return MIDIDeviceReceiveNoteOff( device, v[0], v[1], v[2] );
       break;
     case MIDI_STATUS_NOTE_ON:
-      MIDIMessageGet( message, MIDI_CHANNEL, &v[0] );
-      MIDIMessageGet( message, MIDI_KEY, &v[1] );
-      MIDIMessageGet( message, MIDI_VELOCITY, &v[2] );
+      MIDIMessageGet( message, MIDI_CHANNEL,  sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_KEY,      sizeof(MIDIValue), &v[1] );
+      MIDIMessageGet( message, MIDI_VELOCITY, sizeof(MIDIValue), &v[2] );
       return MIDIDeviceReceiveNoteOn( device, v[0], v[1], v[2] );
       break;
     case MIDI_STATUS_POLYPHONIC_KEY_PRESSURE:
-      MIDIMessageGet( message, MIDI_CHANNEL, &v[0] );
-      MIDIMessageGet( message, MIDI_KEY, &v[1] );
-      MIDIMessageGet( message, MIDI_VELOCITY, &v[2] );
+      MIDIMessageGet( message, MIDI_CHANNEL,  sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_KEY,      sizeof(MIDIValue), &v[1] );
+      MIDIMessageGet( message, MIDI_VELOCITY, sizeof(MIDIValue), &v[2] );
       return MIDIDeviceReceivePolyphonicKeyPressure( device, v[0], v[1], v[2] );
       break;
     case MIDI_STATUS_CONTROL_CHANGE:
-      MIDIMessageGet( message, MIDI_CHANNEL, &v[0] );
-      MIDIMessageGet( message, MIDI_CONTROL, &v[1] );
-      MIDIMessageGet( message, MIDI_VALUE, &v[2] );
+      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_CONTROL, sizeof(MIDIValue), &v[1] );
+      MIDIMessageGet( message, MIDI_VALUE,   sizeof(MIDIValue), &v[2] );
       return MIDIDeviceReceiveControlChange( device, v[0], v[1], v[2] );
       break;
     case MIDI_STATUS_PROGRAM_CHANGE:
-      MIDIMessageGet( message, MIDI_CHANNEL, &v[0] );
-      MIDIMessageGet( message, MIDI_PROGRAM, &v[1] );
+      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_PROGRAM, sizeof(MIDIValue), &v[1] );
       return MIDIDeviceReceiveProgramChange( device, v[0], v[1] );
       break;
     case MIDI_STATUS_CHANNEL_PRESSURE:
-      MIDIMessageGet( message, MIDI_CHANNEL, &v[0] );
-      MIDIMessageGet( message, MIDI_VALUE, &v[1] );
+      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_VALUE,   sizeof(MIDIValue), &v[1] );
       return MIDIDeviceReceiveChannelPressure( device, v[0], v[1] );
       break;
     case MIDI_STATUS_PITCH_WHEEL_CHANGE:
-      MIDIMessageGet( message, MIDI_CHANNEL, &v[0] );
-      MIDIMessageGet( message, MIDI_VALUE, &v[1] );
+      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_VALUE,   sizeof(MIDIValue), &v[1] );
       return MIDIDeviceReceiveChannelPressure( device, v[0], v[1] );
       break;
     default:

@@ -211,9 +211,20 @@
 #define MIDI_NOTHING         0xff
 //@}
 
+/**
+ * Access the lowest 7 bits of a MIDIValue
+ */
+#define MIDI_LSB( v )  (v)     & 0x7f
+
+/**
+ * Access the higher 7 bits of a MIDIValue
+ */
+#define MIDI_MSB( v ) ((v)>>7) & 0x7f
+
 typedef unsigned char  MIDIByte;
-typedef unsigned short MIDIKey;
-typedef unsigned int   MIDIValue;
-typedef MIDIValue      MIDIMessageStatus;
+typedef unsigned short MIDIProperty;
+typedef char           MIDIValue;
+typedef short          MIDILongValue;
+typedef unsigned char  MIDIMessageStatus;
 
 #endif
