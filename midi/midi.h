@@ -202,12 +202,13 @@
 #define MIDI_SYSTEM          0x02
 #define MIDI_KEY             0x03
 #define MIDI_VELOCITY        0x04
-#define MIDI_CONTROL         0x05
-#define MIDI_VALUE           0x06
-#define MIDI_PROGRAM         0x07
-#define MIDI_VALUE_LSB       0x08
-#define MIDI_VALUE_MSB       0x09
-#define MIDI_MANUFACTURER_ID 0x0a
+#define MIDI_PRESSURE        0x05
+#define MIDI_CONTROL         0x06
+#define MIDI_VALUE           0x07
+#define MIDI_PROGRAM         0x08
+#define MIDI_VALUE_LSB       0x09
+#define MIDI_VALUE_MSB       0x0a
+#define MIDI_MANUFACTURER_ID 0x0b
 #define MIDI_NOTHING         0xff
 //@}
 

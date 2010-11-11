@@ -14,7 +14,7 @@ struct MIDIDeviceContext {
   int (*recv_cc)( struct MIDIDevice * device, MIDIValue channel, MIDIValue control, MIDIValue value ); ///< Control change callback
   int (*recv_pc)( struct MIDIDevice * device, MIDIValue channel, MIDIValue program );                  ///< Program change callback
   int (*recv_cp)( struct MIDIDevice * device, MIDIValue channel, MIDIValue value );                    ///< Channel pressure callback
-  int (*recv_pwc)( struct MIDIDevice * device, MIDIValue channel, MIDIValue value );                   ///< Pitch wheel change callback
+  int (*recv_pwc)( struct MIDIDevice * device, MIDIValue channel, MIDILongValue value );               ///< Pitch wheel change callback
 };
 
 struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceContext * context );
@@ -52,6 +52,6 @@ int MIDIDeviceSendProgramChange( struct MIDIDevice * device, MIDIValue channel, 
 int MIDIDeviceReceiveChannelPressure( struct MIDIDevice * device, MIDIValue channel, MIDIValue value );
 int MIDIDeviceSendChannelPressure( struct MIDIDevice * device, MIDIValue channel, MIDIValue value );
 
-int MIDIDeviceReceivePitchWheelChange( struct MIDIDevice * device, MIDIValue channel, MIDIValue value );
-int MIDIDeviceSendPitchWheelChange( struct MIDIDevice * device, MIDIValue channel, MIDIValue value );
+int MIDIDeviceReceivePitchWheelChange( struct MIDIDevice * device, MIDIValue channel, MIDILongValue value );
+int MIDIDeviceSendPitchWheelChange( struct MIDIDevice * device, MIDIValue channel, MIDILongValue value );
 #endif

@@ -5,7 +5,7 @@ CFLAGS_OBJ = $(CFLAGS) -c
 LDFLAGS =
 LDFLAGS_LIB = $(LDFLAGS) -shared
 
-OBJS=midi.o message.o input.o output.o driver.o device.o
+OBJS=midi.o message.o clock.o input.o output.o driver.o device.o
 LIB=libmidikit.so
 
 .PHONY: all clean $(LIB)
@@ -24,6 +24,7 @@ $(LIB): $(OBJS)
 
 midi.o: midi.c midi.h
 message.o: message.c message.h
+clock.o: clock.c clock.h
 input.o: input.c input.h device.h driver.h
 output.o: output.c output.h device.h driver.h
 driver.o: driver.c driver.h message.h input.h output.h

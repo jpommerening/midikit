@@ -17,6 +17,14 @@ static struct MIDIMessageFormat _key_velocity[5] = {
   { MIDI_NOTHING,  0, 0x00 }
 };
 
+static struct MIDIMessageFormat _key_pressure[5] = {
+  { MIDI_STATUS,   0, 0xf0 },
+  { MIDI_CHANNEL,  0, 0x0f },
+  { MIDI_KEY,      1, 0x7f },
+  { MIDI_PRESSURE, 2, 0x7f },
+  { MIDI_NOTHING,  0, 0x00 }
+};
+
 static struct MIDIMessageFormat _control[5] = {
   { MIDI_STATUS,  0, 0xf0 },
   { MIDI_CHANNEL, 0, 0x0f },
@@ -30,6 +38,13 @@ static struct MIDIMessageFormat _program[4] = {
   { MIDI_CHANNEL, 0, 0x0f },
   { MIDI_PROGRAM, 1, 0x7f },
   { MIDI_NOTHING, 0, 0x00 }
+};
+
+static struct MIDIMessageFormat _channel_pressure[4] = {
+  { MIDI_STATUS,   0, 0xf0 },
+  { MIDI_CHANNEL,  0, 0x0f },
+  { MIDI_PRESSURE, 1, 0x7f },
+  { MIDI_NOTHING,  0, 0x00 }
 };
 
 static struct MIDIMessageFormat _value_1b[4] = {
@@ -76,8 +91,10 @@ static struct MIDIMessageFormat * _format_for_status( MIDIMessageStatus status )
   switch( status ) {
     case MIDI_STATUS_NOTE_OFF:
     case MIDI_STATUS_NOTE_ON:
-    case MIDI_STATUS_POLYPHONIC_KEY_PRESSURE:
       format = &_key_velocity[0];
+      break;
+    case MIDI_STATUS_POLYPHONIC_KEY_PRESSURE:
+      format = &_key_pressure[0];
       break;
     case MIDI_STATUS_CONTROL_CHANGE:
       format = &_control[0];
@@ -86,7 +103,7 @@ static struct MIDIMessageFormat * _format_for_status( MIDIMessageStatus status )
       format = &_program[0];
       break;
     case MIDI_STATUS_CHANNEL_PRESSURE:
-      format = &_value_1b[0];
+      format = &_channel_pressure[0];
       break;
     case MIDI_STATUS_PITCH_WHEEL_CHANGE:
       format = &_value_2b[0];
