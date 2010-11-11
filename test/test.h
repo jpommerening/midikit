@@ -10,7 +10,7 @@ extern int test_error;
 
 #define ASSERT_EQUAL( x, y, message ) \
   if( (x) != (y) ) { \
-    printf( "%s:%i: error: assert failed ( " #x " is not equal to " #y "): %s\n", __FILE__, __LINE__, message ); \
+    printf( "%s:%i: error: assert failed ( " #x " is not equal to " #y " ): %s\n", __FILE__, __LINE__, message ); \
     return 1; \
   }
 

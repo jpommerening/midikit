@@ -69,11 +69,12 @@ int test004_message( void ) {
  */
 int test005_message( void ) {
    struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_SYSTEM_EXCLUSIVE );
-   unsigned char buffer[8] = { 0 };
+   unsigned char buffer[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
    MIDIValue values[2] = { 123, 128 };
 
    ASSERT( message != NULL, "Could not create system exclusive message." );
    ASSERT( MIDIMessageSet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIValue), &values[0] ) == 0, "Could not set manufacturer id." );
    ASSERT( MIDIMessageSet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIValue), &values[1] ) != 0, "Can set invalid manufacturer id." );
+   ASSERT( MIDIMessageSet( message, MIDI_SYSEX_DATA, sizeof(buffer), &buffer ) == 0, "Could not set system exclusive data." );
    return 0;
 }

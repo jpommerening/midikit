@@ -62,9 +62,10 @@ static struct MIDIMessageFormat _value_2b[5] = {
   { MIDI_NOTHING,   0, 0x00 }
 };
 
-static struct MIDIMessageFormat _sys_excl[3] = {
+static struct MIDIMessageFormat _sys_excl[4] = {
   { MIDI_STATUS,          0, 0xff },
-  { MIDI_MANUFACTURER_ID, 0, 0x7f },
+  { MIDI_MANUFACTURER_ID, 1, 0x7f },
+  { MIDI_SYSEX_DATA,      2, 0x7f },
   { MIDI_NOTHING,         0, 0x00 }
 };
 
@@ -215,7 +216,7 @@ static int _set_message_byte( struct MIDIMessage * message, struct MIDIMessageFo
     return 1;
   }
   message->byte[ format->byte ] &= ~format->mask;
-  message->byte[ format->byte ] |= ~value;
+  message->byte[ format->byte ] |= value;
   return 0;
 }
 
@@ -230,7 +231,11 @@ int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t 
   format = message->format;
   while( format->mask != 0 ) {
     if( format->property == property ) {
-      return _set_message_byte( message, format, *((MIDIValue *) value) );
+      if( property == MIDI_SYSEX_DATA ) {
+        return 0;
+      } else {
+        return _set_message_byte( message, format, *((MIDIValue *) value) );
+      }
     }
     format++;
   }

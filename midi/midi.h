@@ -209,6 +209,7 @@
 #define MIDI_VALUE_LSB       0x09
 #define MIDI_VALUE_MSB       0x0a
 #define MIDI_MANUFACTURER_ID 0x0b
+#define MIDI_SYSEX_DATA      0x0c
 #define MIDI_NOTHING         0xff
 //@}
 

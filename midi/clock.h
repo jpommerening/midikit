@@ -11,17 +11,23 @@
 #define MIDI_SAMPLING_RATE_192KHZ  192000.0
 #define MIDI_SAMPLING_RATE_DEFAULT MIDI_SAMPLING_RATE_44K1HZ
 
-typedef double MIDISamplingRate;
+typedef double    MIDISamplingRate;
+typedef long long MIDITimestamp;
 
-typedef unsigned int MIDIClock;
+struct MIDIClock;
 
-int MIDIClockSetNow( MIDIClock now );
-int MIDIClockGetNow( MIDIClock * now );
+struct MIDIClock * MIDIClockCreate( MIDISamplingRate rate );
+void MIDIClockDestroy( struct MIDIClock * clock );
+void MIDIClockRetain( struct MIDIClock * clock );
+void MIDIClockRelease( struct MIDIClock * clock );
 
-int MIDIClockSetSamplingRate( MIDISamplingRate rate );
-int MIDIClockGetSamplingRate( MIDISamplingRate * rate );
+int MIDIClockSetNow( struct MIDIClock * clock, MIDITimestamp now );
+int MIDIClockGetNow( struct MIDIClock * clock, MIDITimestamp * now );
 
-int MIDIClockToSeconds( MIDIClock clock, double * seconds );
-int MIDIClockFromSeconds( MIDIClock * clock, double seconds );
+int MIDIClockSetSamplingRate( struct MIDIClock * clock, MIDISamplingRate rate );
+int MIDIClockGetSamplingRate( struct MIDIClock * clock, MIDISamplingRate * rate );
+
+int MIDIClockTimestampToSeconds( struct MIDIClock * clock, MIDITimestamp timestamp, double * seconds );
+int MIDIClockTimestampFromSeconds( struct MIDIClock * clock, MIDITimestamp * timestamp, double seconds );
 
 #endif

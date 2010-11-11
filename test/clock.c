@@ -1,4 +1,4 @@
-#include <time.h>
+#include <unistd.h>
 #include "test.h"
 #include "midi/clock.h"
 
@@ -6,17 +6,17 @@
  * Test that the clock ticks.
  */
 int test001_clock( void ) {
-  int i;
-  MIDIClock start;
-  MIDIClock clock;
-  ASSERT( MIDIClockGetNow( &start ) == 0, "Could not get current clock time." );
-  clock = start;
-  for( i=0; i<CLOCKS_PER_SEC; i++ ) {
-    ASSERT( MIDIClockGetNow( &clock ) == 0, "Could not get current clock time." );
-    ASSERT( clock >= start, "MIDIClock ticks backwards!" );
-    if( clock > start ) {
-      return 0;
-    }
+  struct MIDIClock * clock = MIDIClockCreate( MIDI_SAMPLING_RATE_DEFAULT );
+  MIDITimestamp start, ticks;
+
+  ASSERT( clock != NULL, "Could not create MIDI clock." );
+  ASSERT( MIDIClockGetNow( clock, &start ) == 0, "Could not get current clock time." );
+  usleep( 1000000 / MIDI_SAMPLING_RATE_DEFAULT + 100 );
+  ASSERT( MIDIClockGetNow( clock, &ticks ) == 0, "Could not get current clock time." );
+  ASSERT( ticks >= start, "MIDIClock ticks backwards!" );
+  if( ticks > start ) {
+    MIDIClockRelease( clock );
+    return 0;
   }
   ASSERT( 0, "MIDIClock does not tick." );
   return 1;
@@ -26,20 +26,16 @@ int test001_clock( void ) {
  * Test that the clock ticks approximately right.
  */
 int test002_clock( void ) {
-  MIDIClock start_mclock;
-  MIDIClock mclock;
-  clock_t start_cclock;
-  clock_t cclock;
+  struct MIDIClock * clock = MIDIClockCreate( MIDI_SAMPLING_RATE_44K1HZ );
+  MIDITimestamp start, ticks;
 
-  ASSERT( MIDIClockSetSamplingRate( MIDI_SAMPLING_RATE_44K1HZ ) == 0, "Failed to set 44.1KHz sampling rate!" );
-  ASSERT( MIDIClockGetNow( &start_mclock ) == 0, "Could not get current clock time." );
-  start_cclock = clock();
-  do {
-    cclock = clock();
-  } while( cclock < start_cclock + CLOCKS_PER_SEC );
-  ASSERT( MIDIClockGetNow( &mclock ) == 0, "Could not get current clock time." );
-  ASSERT( mclock >= ( start_mclock + 44099 ), "MIDIClock ticks too slow!" );
-  ASSERT( mclock <= ( start_mclock + 44101 ), "MIDIClock ticks too fast!" );
+  ASSERT( clock != NULL, "Could not create MIDI clock." );
+  ASSERT( MIDIClockGetNow( clock, &start ) == 0, "Could not get current clock time." );
+  sleep( 1 );
+  ASSERT( MIDIClockGetNow( clock, &ticks ) == 0, "Could not get current clock time." );
+  ASSERT( ticks >= ( start + 44010 ), "MIDIClock ticks too slow!" );
+  ASSERT( ticks <= ( start + 44110 ), "MIDIClock ticks too fast!" );
+  MIDIClockRelease( clock );
   return 0;
 }
 
@@ -47,12 +43,61 @@ int test002_clock( void ) {
  * Test that clock-second conversion works properly.
  */
 int test003_clock( void ) {
-  MIDIClock clock = 96000;
+  struct MIDIClock * clock = MIDIClockCreate( MIDI_SAMPLING_RATE_44K1HZ );
+  MIDITimestamp timestamp = 96000;
   double seconds;
-  ASSERT( MIDIClockSetSamplingRate( MIDI_SAMPLING_RATE_96KHZ ) == 0, "Failed to set 96KHz sampling rate!" );
-  ASSERT( MIDIClockToSeconds( clock, &seconds ) == 0, "Failed to convert to seconds!" );
+
+  ASSERT( clock != NULL, "Could not create MIDI clock." );
+  ASSERT( MIDIClockSetSamplingRate( clock, MIDI_SAMPLING_RATE_96KHZ ) == 0, "Failed to set 96KHz sampling rate!" );
+  ASSERT( MIDIClockTimestampToSeconds( clock, timestamp, &seconds ) == 0, "Failed to convert to seconds!" );
   ASSERT_EQUAL( seconds, 1.0, "MIDIClockToSeconds conversion incorrect." );
-  ASSERT( MIDIClockFromSeconds( &clock, 2.5 ) == 0, "Failed to convert from seconds!" );
-  ASSERT_EQUAL( clock, 240000, "MIDIClockFromSeconds conversion incorrect." );
+  ASSERT( MIDIClockTimestampFromSeconds( clock, &timestamp, 2.5 ) == 0, "Failed to convert from seconds!" );
+  ASSERT_EQUAL( timestamp, 240000, "MIDIClockFromSeconds conversion incorrect." );
+  MIDIClockRelease( clock );
+  return 0;
+}
+
+/**
+ * Test that set method works properly.
+ */
+int test004_clock( void ) {
+  struct MIDIClock * clock = MIDIClockCreate( MIDI_SAMPLING_RATE_96KHZ );
+  MIDITimestamp timestamp;
+  int i;
+
+  ASSERT( clock != NULL, "Could not create MIDI clock." );
+  ASSERT( MIDIClockGetNow( clock, &timestamp ) == 0, "Could not get current clock time." );
+  ASSERT( timestamp <= 1, "Clock is not initialized with zero." );
+  timestamp = -200;
+  ASSERT( MIDIClockSetNow( clock, timestamp ) == 0, "Could not set current clock time." );
+  MIDIClockGetNow( clock, &timestamp );
+  ASSERT_EQUAL( timestamp, -200, "Setting clock did not work." );
+  for( i=0; i<20000; i++ ) {
+    // Wait for the 0 to arrive
+    MIDIClockGetNow( clock, &timestamp );
+    if( timestamp == 0 ) break;
+  }
+  ASSERT_EQUAL( timestamp, 0, "Clock stopped ticking after resetting." );
+  MIDIClockRelease( clock );
+  return 0;
+}
+
+/**
+ * Test that the clocks precision is sufficient, even on 192KHz.
+ */
+int test005_clock( void ) {
+  struct MIDIClock * clock = MIDIClockCreate( MIDI_SAMPLING_RATE_192KHZ );
+  MIDITimestamp start, ticks;
+  int i;
+
+  ASSERT( clock != NULL, "Could not create MIDI clock." );
+  ASSERT( MIDIClockGetNow( clock, &start ) == 0, "Could not get current clock time." );
+  for( i=0; i<10000; i++ ) {
+    MIDIClockGetNow( clock, &ticks );
+    if( ticks != start ) break;
+  }
+  ASSERT( ticks > start, "Clock did not tick in 1000 loop cycles." );
+  ASSERT_EQUAL( ticks, start+1, "Clock ticked more than 1 step. Insufficient precision." );
+  MIDIClockRelease( clock );
   return 0;
 }
