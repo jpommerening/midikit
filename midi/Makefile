@@ -1,12 +1,12 @@
 
-CC = gcc
-CFLAGS = -O3 -Wall
-CFLAGS_OBJ = $(CFLAGS) -c
-LDFLAGS =
-LDFLAGS_LIB = $(LDFLAGS) -shared
+PROJECTDIR=..
 
-OBJS=midi.o message.o clock.o input.o output.o driver.o device.o
-LIB=libmidikit.so
+include ../config.mk
+
+OBJS=$(OBJDIR)/midi.o $(OBJDIR)/message.o $(OBJDIR)/clock.o \
+     $(OBJDIR)/input.o $(OBJDIR)/output.o $(OBJDIR)/driver.o \
+     $(OBJDIR)/device.o
+LIB=$(LIBDIR)/libmidikit$(LIB_SUFFIX)
 
 .PHONY: all clean $(LIB)
 
@@ -16,17 +16,18 @@ clean:
 	rm -f $(LIB)
 	rm -f $(OBJS)
 
-%.o:
+$(OBJDIR)/%.o:
+	@$(MKDIR_P) $(OBJDIR)
 	$(CC) $(CFLAGS_OBJ) -o $@ $<
 
 $(LIB): $(OBJS)
 	$(CC) $(LDFLAGS_LIB) -o $@ $^
 
-midi.o: midi.c midi.h
-message.o: message.c message.h
-clock.o: clock.c clock.h
-input.o: input.c input.h device.h driver.h
-output.o: output.c output.h device.h driver.h
-driver.o: driver.c driver.h message.h input.h output.h
-device.o: device.c device.h message.h input.h output.h
+$(OBJDIR)/midi.o: midi.c midi.h
+$(OBJDIR)/message.o: message.c message.h
+$(OBJDIR)/clock.o: clock.c clock.h
+$(OBJDIR)/input.o: input.c input.h device.h driver.h
+$(OBJDIR)/output.o: output.c output.h device.h driver.h
+$(OBJDIR)/driver.o: driver.c driver.h message.h input.h output.h
+$(OBJDIR)/device.o: device.c device.h message.h input.h output.h
 

@@ -63,21 +63,17 @@ int test003_clock( void ) {
 int test004_clock( void ) {
   struct MIDIClock * clock = MIDIClockCreate( MIDI_SAMPLING_RATE_96KHZ );
   MIDITimestamp timestamp;
-  int i;
 
   ASSERT( clock != NULL, "Could not create MIDI clock." );
   ASSERT( MIDIClockGetNow( clock, &timestamp ) == 0, "Could not get current clock time." );
   ASSERT( timestamp <= 1, "Clock is not initialized with zero." );
-  timestamp = -200;
+  timestamp = -1000;
   ASSERT( MIDIClockSetNow( clock, timestamp ) == 0, "Could not set current clock time." );
   MIDIClockGetNow( clock, &timestamp );
-  ASSERT_EQUAL( timestamp, -200, "Setting clock did not work." );
-  for( i=0; i<20000; i++ ) {
-    // Wait for the 0 to arrive
-    MIDIClockGetNow( clock, &timestamp );
-    if( timestamp == 0 ) break;
-  }
-  ASSERT_EQUAL( timestamp, 0, "Clock stopped ticking after resetting." );
+  ASSERT( timestamp < -975, "Setting clock did not work." );
+  usleep( 1000 );
+  MIDIClockGetNow( clock, &timestamp );
+  ASSERT( timestamp > -975, "Clock stopped ticking after resetting." );
   MIDIClockRelease( clock );
   return 0;
 }

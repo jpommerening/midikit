@@ -1,13 +1,15 @@
 
-CC = gcc
-CFLAGS = -O3 -Wall -I..
-CFLAGS_OBJ = $(CFLAGS) -c
-LIBDIR=../midi
-LDFLAGS = -L$(LIBDIR) -lmidikit
-LDFLAGS_BIN = $(LDFLAGS)
+PROJECTDIR=..
 
-OBJS=midi.o message.o clock.o
-BIN=main
+include $(PROJECTDIR)/config.mk
+
+OBJDIR=.
+
+CFLAGS := $(CFLAGS) -I..
+LDFLAGS := $(LDFLAGS) -L$(LIBDIR) -lmidikit
+
+OBJS=$(OBJDIR)/midi.o $(OBJDIR)/message.o $(OBJDIR)/clock.o
+BIN=test_main
 
 .PHONY: all clean $(LIB)
 
@@ -18,18 +20,19 @@ clean:
 	rm -f $(BIN)
 	rm -f tests.passed $(BIN).c
 
-%.o:
+$(OBJDIR)/%.o:
+	@$(MKDIR_P) $(OBJDIR)
 	$(CC) $(CFLAGS_OBJ) -o $@ $<
 
-$(BIN): $(BIN).c $(OBJS)
+$(BINDIR)/$(BIN): main.c $(OBJS)
 	$(CC) $(LDFLAGS_BIN) -o $@ $^
 
-midi.o: midi.c test.h
-message.o: message.c test.h
-clock.o: clock.c test.h
+$(OBJDIR)/midi.o: midi.c test.h
+$(OBJDIR)/message.o: message.c test.h
+$(OBJDIR)/clock.o: clock.c test.h
 
-tests.passed: $(BIN)
-	LD_LIBRARY_PATH=$(LIBDIR) ./$(BIN) && touch $@
+tests.passed: $(BINDIR)/$(BIN)
+	LD_LIBRARY_PATH=$(LIBDIR) $(BINDIR)/$(BIN) && touch $@
 
-$(BIN).c: midi.c message.c clock.c
+main.c: midi.c message.c clock.c
 	./generate_main.sh $^

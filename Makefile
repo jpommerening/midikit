@@ -1,23 +1,20 @@
 
-CC = gcc
-CFLAGS = -O3 -Wall
-CFLAGS_OBJ = $(CFLAGS) -c
-LDFLAGS =
-LDFLAGS_BIN = $(LDFLAGS)
-LDFLAGS_LIB = $(LDFLAGS) -shared
+PROJECTDIR=.
 
-DRIVERS=rtp-midi osc
+include config.mk
 
 default: all
 
-all: midi test
+all: midi driver test
 
-midi:
-	cd midi && $(MAKE)
+midi: midi/.make
+driver: driver/.make
+test: test/.make
 
-test:
-	cd test && $(MAKE)
+driver/.make: midi
+test/.make: midi
 
-$(DRIVERS): 
-	cd driver/$@ && $(MAKE)
+%/.make:
+	@cd $$(dirname $@) && $(MAKE)
+
 
