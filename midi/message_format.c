@@ -475,6 +475,35 @@ static int _get_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
   return 1;
 }
 
+/**
+ * Set properties of time code quarter frame messages.
+ */
+static int _set_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
+  uint8_t * m = &(data->bytes[0]);
+  if( size == 0 || value == NULL ) return 1;
+  switch( property ) {
+  //PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET(MIDI_VALUE,MIDIValue,m[1]);
+    PROPERTY_DEFAULT;
+  }
+  return 1;
+}
+
+/**
+ * Get properties of time code quarter frame messages.
+ */
+static int _get_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
+  uint8_t * m = &(data->bytes[0]);
+  if( size == 0 || value == NULL ) return 1;
+  switch( property ) {
+    PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_GET(MIDI_VALUE,MIDIChannel,m[1]);
+    PROPERTY_DEFAULT;
+  }
+  return 1;
+}
+
+
 #undef PROPERTY_CASE_BASE
 #undef PROPERTY_CASE_SET
 #undef PROPERTY_CASE_SET_H
@@ -550,8 +579,8 @@ static struct MIDIMessageFormat _system_exclusive = {
 
 static struct MIDIMessageFormat _time_code_quarter_frame = {
   &_test_time_code_quarter_frame,
-  NULL,
-  NULL,
+  &_set_time_code_quarter_frame,
+  &_get_time_code_quarter_frame,
   &_encode_two_bytes,
   &_decode_two_bytes
 };
