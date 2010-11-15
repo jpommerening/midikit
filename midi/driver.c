@@ -1,41 +1,32 @@
 #include <stdlib.h>
 #include "driver.h"
 #include "message.h"
-#include "input.h"
-#include "output.h"
+#include "connector.h"
 
-struct MIDISender;
 struct MIDIReceiver;
   
 struct MIDIDriver {
   size_t refs;
-  struct MIDIDriverContext * context;
-  struct MIDISender   * senders;
+  struct MIDIDriverDelegate * delegate;
   struct MIDIReceiver * receivers;
-  struct MIDIClock    * clock;
-};
-
-struct MIDISender {
-  struct MIDIOutput * output;
-  struct MIDISender * next;
+  struct MIDIClock * clock;
 };
 
 struct MIDIReceiver {
-  struct MIDIInput    * input;
+  struct MIDIConnector * target;
   struct MIDIReceiver * next;
 };
 
-static struct MIDIDriverContext _loopback = {
+static struct MIDIDriverDelegate _loopback = {
   &MIDIDriverReceive
 };
 
-struct MIDIDriverContext * midiDriverLoopback = &_loopback;
+struct MIDIDriverDelegate * midiDriverLoopback = &_loopback;
 
 struct MIDIDriver * MIDIDriverCreate() {
   struct MIDIDriver * driver = malloc( sizeof( struct MIDIDriver ) );
   driver->refs = 1;
-  driver->context = NULL;
-  driver->senders = NULL;
+  driver->delegate = NULL;
   driver->receivers = NULL;
   driver->clock = NULL;
   return driver;
@@ -44,22 +35,14 @@ struct MIDIDriver * MIDIDriverCreate() {
 void MIDIDriverDestroy( struct MIDIDriver * driver ) {
   struct MIDIReceiver * receiver = driver->receivers;
   struct MIDIReceiver * next_receiver;
-  struct MIDISender * sender = driver->senders;
-  struct MIDISender * next_sender;
   if( driver->clock != NULL ) {
     MIDIClockRelease( driver->clock );
   }
   while( receiver != NULL ) {
-    MIDIInputRelease( receiver->input );
+    MIDIConnectorRelease( receiver->target );
     next_receiver = receiver->next;
     free( receiver );
     receiver = next_receiver;
-  }
-  while( sender != NULL ) {
-    MIDIOutputRelease( sender->output );
-    next_sender = sender->next;
-    free( sender );
-    sender = next_sender;
   }
   free( driver );
 }
@@ -74,71 +57,41 @@ void MIDIDriverRelease( struct MIDIDriver * driver ) {
   }
 }
 
-int MIDIDriverAddSender( struct MIDIDriver * driver, struct MIDIOutput * sender ) {
-  if( sender == NULL ) {
-    return 1;
-  }
-  struct MIDISender * entry = malloc( sizeof( struct MIDISender ) );
-  entry->output = sender;
-  entry->next   = driver->senders;
-  driver->senders = entry;
-  MIDIOutputRetain( sender );
+int MIDIDriverProvideOutput( struct MIDIDriver * driver, struct MIDIConnector ** output ) {
+  struct MIDIConnector * connector;
+  if( output == NULL ) return 1;
+  connector = MIDIConnectorCreate();
+  if( connector == NULL ) return 1;
+  MIDIConnectorAttachDriver( connector, driver );
+  *output = connector;
   return 0;
 }
 
-int MIDIDriverRemoveSender( struct MIDIDriver * driver, struct MIDIOutput * sender ) {
-  if( sender == NULL ) {
-    return 1;
-  }
-  struct MIDISender * entry = driver->senders;
-  while( entry != NULL ) {
-    if( entry->next != NULL && entry->next->output == sender ) {
-      entry->next = entry->next->next;
-      MIDIOutputRelease( sender );
-      return 0;
-    }
-  }
-  return 1;
-}
-
-int MIDIDriverAddReceiver( struct MIDIDriver * driver, struct MIDIInput * receiver ) {
-  if( receiver == NULL ) {
-    return 1;
-  }
-  struct MIDIReceiver * entry = malloc( sizeof( struct MIDIReceiver ) );
-  entry->input = receiver;
+int MIDIDriverProvideInput( struct MIDIDriver * driver, struct MIDIConnector ** input ) {
+  struct MIDIConnector * connector;
+  struct MIDIReceiver * entry;
+  if( input == NULL ) return 1;
+  connector = MIDIConnectorCreate();
+  if( connector == NULL ) return 1;
+  entry = malloc( sizeof( struct MIDIReceiver ) );
+  entry->target = connector;
   entry->next = driver->receivers;
   driver->receivers = entry;
-  MIDIInputRetain( receiver );
+  *input = connector;
   return 0;
-}
-
-int MIDIDriverRemoveReceiver( struct MIDIDriver * driver, struct MIDIInput * receiver ) {
-  if( receiver == NULL ) {
-    return 1;
-  }
-  struct MIDIReceiver * entry = driver->receivers;
-  while( entry != NULL ) {
-    if( entry->next != NULL && entry->next->input == receiver ) {
-      entry->next = entry->next->next;
-      MIDIInputRelease( receiver );
-      return 0;
-    }
-  }
-  return 1;
 }
 
 int MIDIDriverSend( struct MIDIDriver * driver, struct MIDIMessage * message ) {
-  if( driver->context == NULL || driver->context->send == NULL ) {
+  if( driver->delegate == NULL || driver->delegate->send == NULL ) {
     return 0;
   }
-  return (*driver->context->send)( driver, message );
+  return (*driver->delegate->send)( driver, message );
 }
 
 int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message ) {
   struct MIDIReceiver * entry = driver->receivers;
   while( entry != NULL ) {
-    MIDIInputReceive( entry->input, message );
+    MIDIConnectorRelay( entry->target, message );
   }
   return 0;
 }

@@ -9,7 +9,7 @@ CFLAGS := $(CFLAGS) -I..
 LDFLAGS := $(LDFLAGS) -L$(LIBDIR) -lmidikit
 
 OBJS=$(OBJDIR)/midi.o $(OBJDIR)/clock.o $(OBJDIR)/message_format.o \
-     $(OBJDIR)/message.o
+     $(OBJDIR)/message.o $(OBJDIR)/connector.o
 BIN=test_main
 
 MAIN_C=main.c
@@ -34,9 +34,10 @@ $(OBJDIR)/midi.o: midi.c test.h
 $(OBJDIR)/clock.o: clock.c test.h
 $(OBJDIR)/message_format.o: message_format.c test.h
 $(OBJDIR)/message.o: message.c test.h
+$(OBJDIR)/connector.o: connector.c test.h
 
 tests.passed: $(BINDIR)/$(BIN)
 	LD_LIBRARY_PATH=$(LIBDIR) $(BINDIR)/$(BIN) && touch $@
 
-$(MAIN_C): midi.c clock.c message_format.c message.c
+$(MAIN_C): midi.c clock.c message_format.c message.c connector.c
 	./generate_main.sh -o $(MAIN_C) $^

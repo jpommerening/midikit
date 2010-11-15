@@ -4,8 +4,8 @@ PROJECTDIR=..
 include ../config.mk
 
 OBJS=$(OBJDIR)/midi.o $(OBJDIR)/message.o $(OBJDIR)/message_format.o \
-     $(OBJDIR)/clock.o $(OBJDIR)/connector.o $(OBJDIR)/input.o \
-     $(OBJDIR)/output.o $(OBJDIR)/driver.o $(OBJDIR)/device.o
+     $(OBJDIR)/clock.o $(OBJDIR)/connector.o  $(OBJDIR)/driver.o \
+     $(OBJDIR)/device.o
 LIB=$(LIBDIR)/libmidikit$(LIB_SUFFIX)
 
 .PHONY: all clean $(LIB)
@@ -24,12 +24,9 @@ $(LIB): $(OBJS)
 	$(CC) $(LDFLAGS_LIB) -o $@ $^
 
 $(OBJDIR)/midi.o: midi.c midi.h
-$(OBJDIR)/message.o: message.c message.h
-$(OBJDIR)/message_format.o: message_format.c message_format.h
 $(OBJDIR)/clock.o: clock.c clock.h
+$(OBJDIR)/message_format.o: message_format.c message_format.h midi.h
+$(OBJDIR)/message.o: message.c message.h midi.h clock.h message_format.h
 $(OBJDIR)/connector.o: connector.c connector.h
-$(OBJDIR)/input.o: input.c input.h device.h driver.h
-$(OBJDIR)/output.o: output.c output.h device.h driver.h
-$(OBJDIR)/driver.o: driver.c driver.h message.h input.h output.h
-$(OBJDIR)/device.o: device.c device.h message.h input.h output.h
-
+$(OBJDIR)/device.o: device.c device.h midi.h message.h clock.h connector.h
+$(OBJDIR)/driver.o: driver.c driver.h midi.h message.h clock.h connector.h

@@ -2,30 +2,22 @@
 #define MIDIKIT_MIDI_DRIVER_H
 
 struct MIDIMessage;
-struct MIDIInput;
-struct MIDIOutput;
-struct MIDIDevice;
+struct MIDIConnector;
 
 struct MIDIDriver;
-struct MIDIDriverContext {
+struct MIDIDriverDelegate {
   int (*send)( struct MIDIDriver * driver, struct MIDIMessage * event );
 };
 
-extern struct MIDIDriverContext * midiDriverLoopback;
+extern struct MIDIDriverDelegate * midiDriverLoopback;
 
 struct MIDIDriver * MIDIDriverCreate();
 void MIDIDriverDestroy( struct MIDIDriver * driver );
 void MIDIDriverRetain( struct MIDIDriver * driver );
 void MIDIDriverRelease( struct MIDIDriver * driver );
 
-int MIDIDriverProvideInput( struct MIDIDriver * driver, struct MIDIInput * input );
-int MIDIDriverProvideOutput( struct MIDIDriver * driver, struct MIDIOutput * output );
-
-int MIDIDriverAddSender( struct MIDIDriver * driver, struct MIDIOutput * sender );
-int MIDIDriverRemoveSender( struct MIDIDriver * driver, struct MIDIOutput * sender );
-
-int MIDIDriverAddReceiver( struct MIDIDriver * driver, struct MIDIInput * receiver );
-int MIDIDriverRemoveReceiver( struct MIDIDriver * driver, struct MIDIInput * receiver );
+int MIDIDriverProvideInput( struct MIDIDriver * driver, struct MIDIConnector ** input );
+int MIDIDriverProvideOutput( struct MIDIDriver * driver, struct MIDIConnector ** output );
 
 int MIDIDriverSend( struct MIDIDriver * driver, struct MIDIMessage * message );
 int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message );
