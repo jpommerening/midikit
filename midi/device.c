@@ -1,35 +1,34 @@
 #include <stdlib.h>
 #include "device.h"
 #include "message.h"
-#include "input.h"
-#include "output.h"
+#include "connector.h"
 
 struct MIDIDevice {
   size_t refs;
-  struct MIDIInput  * in;
-  struct MIDIOutput * out;
-  struct MIDIOutput * thru;
-  struct MIDIDeviceContext * context;
+  struct MIDIConnector  * in;
+  struct MIDIConnector * out;
+  struct MIDIConnector * thru;
+  struct MIDIDeviceDelegate * delegate;
 };
 
-struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceContext * context ) {
+struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate ) {
   struct MIDIDevice * device = malloc( sizeof( struct MIDIDevice ) );
   device->in   = NULL;
   device->out  = NULL;
   device->thru = NULL;
-  device->context = context;
+  device->delegate = delegate;
   return device;
 }
 
 void MIDIDeviceDestroy( struct MIDIDevice * device ) {
   if( device->in != NULL ) {
-    MIDIInputRelease( device->in );
+    MIDIConnectorRelease( device->in );
   }
   if( device->out != NULL ) {
-    MIDIOutputRelease( device->out );
+    MIDIConnectorRelease( device->out );
   }
   if( device->thru != NULL ) {
-    MIDIOutputRelease( device->thru );
+    MIDIConnectorRelease( device->thru );
   }
   free( device );
 }
@@ -49,16 +48,16 @@ int MIDIDeviceDetachIn( struct MIDIDevice * device ) {
   if( device->in == NULL ) {
     return 0;
   }
-  result = MIDIInputDisconnect( device->in );
-  MIDIInputRelease( device->in );
+  result = MIDIConnectorDetach( device->in );
+  MIDIConnectorRelease( device->in );
   return result;
 }
 
-int MIDIDeviceAttachIn( struct MIDIDevice * device, struct MIDIInput * in ) {
+int MIDIDeviceAttachIn( struct MIDIDevice * device, struct MIDIConnector * in ) {
   MIDIDeviceDetachIn( device );
   device->in = in;
-  MIDIInputRetain( in );
-  return MIDIInputConnect( device->in );
+  MIDIConnectorRetain( in );
+  return MIDIConnectorAttachDevice( device->in, device );
 }
 
 int MIDIDeviceDetachOut( struct MIDIDevice * device ) {
@@ -66,16 +65,16 @@ int MIDIDeviceDetachOut( struct MIDIDevice * device ) {
   if( device->out == NULL ) {
     return 0;
   }
-  result = MIDIOutputDisconnect( device->out );
-  MIDIOutputRelease( device->out );
+  result = MIDIConnectorDetach( device->out );
+  MIDIConnectorRelease( device->out );
   return result;
 }
 
-int MIDIDeviceAttachOut( struct MIDIDevice * device, struct MIDIOutput * out ) {
+int MIDIDeviceAttachOut( struct MIDIDevice * device, struct MIDIConnector * out ) {
   MIDIDeviceDetachOut( device );
   device->out = out;
-  MIDIOutputRetain( out );
-  return MIDIOutputConnect( device->out );
+  MIDIConnectorRetain( out );
+  return MIDIConnectorAttachDevice( device->out, device );
 }
 
 int MIDIDeviceDetachThru( struct MIDIDevice * device ) {
@@ -83,16 +82,16 @@ int MIDIDeviceDetachThru( struct MIDIDevice * device ) {
   if( device->thru == NULL ) {
     return 0;
   }
-  result = MIDIOutputDisconnect( device->thru );
-  MIDIOutputRelease( device->thru );
+  result = MIDIConnectorDetach( device->thru );
+  MIDIConnectorRelease( device->thru );
   return result;
 }
 
-int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIOutput * thru ) {
+int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIConnector * thru ) {
   MIDIDeviceDetachThru( device );
   device->thru = thru;
-  MIDIOutputRetain( thru );
-  return MIDIOutputConnect( device->thru );
+  MIDIConnectorRetain( thru );
+  return MIDIConnectorAttachDevice( device->thru, device );
 }
 
 int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message ) {
@@ -100,7 +99,7 @@ int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message 
   MIDIValue      v[3];
   MIDILongValue  lv;
   if( device->thru != NULL ) {
-    MIDIOutputSend( device->thru, message );
+    MIDIConnectorRelay( device->thru, message );
   }
   MIDIMessageGetStatus( message, &status );
   switch( status ) {
@@ -155,7 +154,7 @@ int MIDIDeviceSend( struct MIDIDevice * device, struct MIDIMessage * message ) {
   if( device->out == NULL ) {
     return 0;
   }
-  return MIDIOutputSend( device->out, message );
+  return MIDIConnectorRelay( device->out, message );
 }
 
 /**
@@ -163,18 +162,18 @@ int MIDIDeviceSend( struct MIDIDevice * device, struct MIDIMessage * message ) {
  */
 //@{
 
-int MIDIDeviceReceiveNoteOff( struct MIDIDevice * device, MIDIValue channel, MIDIValue key, MIDIValue velocity ) {
-  if( device->context == NULL || device->context->recv_nof == NULL ) {
+int MIDIDeviceReceiveNoteOff( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIVelocity velocity ) {
+  if( device->delegate == NULL || device->delegate->recv_nof == NULL ) {
     return 0;
   }
-  return (*device->context->recv_nof)( device, channel, key, velocity );
+  return (*device->delegate->recv_nof)( device, channel, key, velocity );
 }
 
-int MIDIDeviceSendNoteOff( struct MIDIDevice * device, MIDIValue channel, MIDIValue key, MIDIValue velocity ) {
+int MIDIDeviceSendNoteOff( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIVelocity velocity ) {
   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_NOTE_OFF );
-  MIDIMessageSet( message, MIDI_CHANNEL,  sizeof(MIDIValue), &channel );
-  MIDIMessageSet( message, MIDI_KEY,      sizeof(MIDIValue), &key );
-  MIDIMessageSet( message, MIDI_VELOCITY, sizeof(MIDIValue), &velocity );
+  MIDIMessageSet( message, MIDI_CHANNEL,  sizeof(MIDIChannel),  &channel );
+  MIDIMessageSet( message, MIDI_KEY,      sizeof(MIDIKey),      &key );
+  MIDIMessageSet( message, MIDI_VELOCITY, sizeof(MIDIVelocity), &velocity );
   return MIDIDeviceSend( device, message );
 }
 
@@ -185,18 +184,18 @@ int MIDIDeviceSendNoteOff( struct MIDIDevice * device, MIDIValue channel, MIDIVa
  */
 //@{
 
-int MIDIDeviceReceiveNoteOn( struct MIDIDevice * device, MIDIValue channel, MIDIValue key, MIDIValue velocity ) {
-  if( device->context == NULL || device->context->recv_non == NULL ) {
+int MIDIDeviceReceiveNoteOn( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIVelocity velocity ) {
+  if( device->delegate == NULL || device->delegate->recv_non == NULL ) {
     return 0;
   }
-  return (*device->context->recv_non)( device, channel, key, velocity );
+  return (*device->delegate->recv_non)( device, channel, key, velocity );
 }
 
-int MIDIDeviceSendNoteOn( struct MIDIDevice * device, MIDIValue channel, MIDIValue key, MIDIValue velocity ) {
+int MIDIDeviceSendNoteOn( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIVelocity velocity ) {
   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
-  MIDIMessageSet( message, MIDI_CHANNEL,  sizeof(MIDIValue), &channel );
-  MIDIMessageSet( message, MIDI_KEY,      sizeof(MIDIValue), &key );
-  MIDIMessageSet( message, MIDI_VELOCITY, sizeof(MIDIValue), &velocity );
+  MIDIMessageSet( message, MIDI_CHANNEL,  sizeof(MIDIChannel),  &channel );
+  MIDIMessageSet( message, MIDI_KEY,      sizeof(MIDIKey),      &key );
+  MIDIMessageSet( message, MIDI_VELOCITY, sizeof(MIDIVelocity), &velocity );
   return MIDIDeviceSend( device, message );
 }
 
@@ -207,18 +206,18 @@ int MIDIDeviceSendNoteOn( struct MIDIDevice * device, MIDIValue channel, MIDIVal
  */
 //@{
 
-int MIDIDeviceReceivePolyphonicKeyPressure( struct MIDIDevice * device, MIDIValue channel, MIDIValue key, MIDIValue velocity ) {
-  if( device->context == NULL || device->context->recv_pkp == NULL ) {
+int MIDIDeviceReceivePolyphonicKeyPressure( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIPressure pressure ) {
+  if( device->delegate == NULL || device->delegate->recv_pkp == NULL ) {
     return 0;
   }
-  return (*device->context->recv_pkp)( device, channel, key, velocity );
+  return (*device->delegate->recv_pkp)( device, channel, key, pressure );
 }
 
-int MIDIDeviceSendPolyphonicKeyPressure( struct MIDIDevice * device, MIDIValue channel, MIDIValue key, MIDIValue velocity ) {
+int MIDIDeviceSendPolyphonicKeyPressure( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIPressure pressure ) {
   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_POLYPHONIC_KEY_PRESSURE );
-  MIDIMessageSet( message, MIDI_CHANNEL,  sizeof(MIDIValue), &channel );
-  MIDIMessageSet( message, MIDI_KEY,      sizeof(MIDIValue), &key );
-  MIDIMessageSet( message, MIDI_VELOCITY, sizeof(MIDIValue), &velocity );
+  MIDIMessageSet( message, MIDI_CHANNEL,  sizeof(MIDIChannel),  &channel );
+  MIDIMessageSet( message, MIDI_KEY,      sizeof(MIDIKey),      &key );
+  MIDIMessageSet( message, MIDI_PRESSURE, sizeof(MIDIPressure), &pressure );
   return MIDIDeviceSend( device, message );
 }
 
@@ -229,18 +228,18 @@ int MIDIDeviceSendPolyphonicKeyPressure( struct MIDIDevice * device, MIDIValue c
  */
 //@{
 
-int MIDIDeviceReceiveControlChange( struct MIDIDevice * device, MIDIValue channel, MIDIValue control, MIDIValue value ) {
-  if( device->context == NULL || device->context->recv_cc == NULL ) {
+int MIDIDeviceReceiveControlChange( struct MIDIDevice * device, MIDIChannel channel, MIDIControl control, MIDIValue value ) {
+  if( device->delegate == NULL || device->delegate->recv_cc == NULL ) {
     return 0;
   }
-  return (*device->context->recv_cc)( device, channel, control, value );
+  return (*device->delegate->recv_cc)( device, channel, control, value );
 }
 
-int MIDIDeviceSendControlChange( struct MIDIDevice * device, MIDIValue channel, MIDIValue control, MIDIValue value ) {
+int MIDIDeviceSendControlChange( struct MIDIDevice * device, MIDIChannel channel, MIDIControl control, MIDIValue value ) {
   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_CONTROL_CHANGE );
-  MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIValue), &channel );
-  MIDIMessageSet( message, MIDI_CONTROL, sizeof(MIDIValue), &control );
-  MIDIMessageSet( message, MIDI_VALUE,   sizeof(MIDIValue), &value );
+  MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIChannel), &channel );
+  MIDIMessageSet( message, MIDI_CONTROL, sizeof(MIDIControl), &control );
+  MIDIMessageSet( message, MIDI_VALUE,   sizeof(MIDIValue),   &value );
   return MIDIDeviceSend( device, message );
 }
 
@@ -251,17 +250,17 @@ int MIDIDeviceSendControlChange( struct MIDIDevice * device, MIDIValue channel, 
  */
 //@{
 
-int MIDIDeviceReceiveProgramChange( struct MIDIDevice * device, MIDIValue channel, MIDIValue program ) {
-  if( device->context == NULL || device->context->recv_pc == NULL ) {
+int MIDIDeviceReceiveProgramChange( struct MIDIDevice * device, MIDIChannel channel, MIDIProgram program ) {
+  if( device->delegate == NULL || device->delegate->recv_pc == NULL ) {
     return 0;
   }
-  return (*device->context->recv_pc)( device, channel, program );
+  return (*device->delegate->recv_pc)( device, channel, program );
 }
 
-int MIDIDeviceSendProgramChange( struct MIDIDevice * device, MIDIValue channel, MIDIValue program ) {
+int MIDIDeviceSendProgramChange( struct MIDIDevice * device, MIDIChannel channel, MIDIProgram program ) {
   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_PROGRAM_CHANGE );
-  MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIValue), &channel );
-  MIDIMessageSet( message, MIDI_PROGRAM, sizeof(MIDIValue), &program );
+  MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIChannel), &channel );
+  MIDIMessageSet( message, MIDI_PROGRAM, sizeof(MIDIProgram), &program );
   return MIDIDeviceSend( device, message );
 }
 
@@ -272,17 +271,17 @@ int MIDIDeviceSendProgramChange( struct MIDIDevice * device, MIDIValue channel, 
  */
 //@{
 
-int MIDIDeviceReceiveChannelPressure( struct MIDIDevice * device, MIDIValue channel, MIDIValue value ) {
-  if( device->context == NULL || device->context->recv_cp == NULL ) {
+int MIDIDeviceReceiveChannelPressure( struct MIDIDevice * device, MIDIChannel channel, MIDIPressure pressure ) {
+  if( device->delegate == NULL || device->delegate->recv_cp == NULL ) {
     return 0;
   }
-  return (*device->context->recv_cp)( device, channel, value );
+  return (*device->delegate->recv_cp)( device, channel, pressure );
 }
 
-int MIDIDeviceSendChannelPressure( struct MIDIDevice * device, MIDIValue channel, MIDIValue value ) {
+int MIDIDeviceSendChannelPressure( struct MIDIDevice * device, MIDIChannel channel, MIDIPressure pressure ) {
   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_CHANNEL_PRESSURE );
-  MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIValue), &channel );
-  MIDIMessageSet( message, MIDI_VALUE,   sizeof(MIDIValue), &value );
+  MIDIMessageSet( message, MIDI_CHANNEL,  sizeof(MIDIChannel),  &channel );
+  MIDIMessageSet( message, MIDI_PRESSURE, sizeof(MIDIPressure), &pressure );
   return MIDIDeviceSend( device, message );
 }
 
@@ -293,16 +292,16 @@ int MIDIDeviceSendChannelPressure( struct MIDIDevice * device, MIDIValue channel
  */
 //@{
 
-int MIDIDeviceReceivePitchWheelChange( struct MIDIDevice * device, MIDIValue channel, MIDILongValue value ) {
-  if( device->context == NULL || device->context->recv_pwc == NULL ) {
+int MIDIDeviceReceivePitchWheelChange( struct MIDIDevice * device, MIDIChannel channel, MIDILongValue value ) {
+  if( device->delegate == NULL || device->delegate->recv_pwc == NULL ) {
     return 0;
   }
-  return (*device->context->recv_pwc)( device, channel, value );
+  return (*device->delegate->recv_pwc)( device, channel, value );
 }
 
-int MIDIDeviceSendPitchWheelChange( struct MIDIDevice * device, MIDIValue channel, MIDILongValue value ) {
+int MIDIDeviceSendPitchWheelChange( struct MIDIDevice * device, MIDIChannel channel, MIDILongValue value ) {
   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_PITCH_WHEEL_CHANGE );
-  MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIValue),     &channel );
+  MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIChannel),   &channel );
   MIDIMessageSet( message, MIDI_VALUE,   sizeof(MIDILongValue), &value );
   return MIDIDeviceSend( device, message );
 }
