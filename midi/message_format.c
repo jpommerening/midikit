@@ -14,7 +14,7 @@ struct MIDIMessageFormat {
   int (*decode)( struct MIDIMessageData * data, size_t size, void * buffer );
 };
 
-#define VOID_BYTE( buffer, n ) ((unsigned char*)buffer)[n]
+#define VOID_BYTE( buffer, n ) ((uint8_t*)buffer)[n]
 
 #pragma mark Encoding & decoding
 /**
@@ -88,7 +88,7 @@ static int _decode_system_exclusive( struct MIDIMessageData * data, size_t size,
   data->bytes[1] = VOID_BYTE(buffer,1);
   data->data = malloc( size-2 );
   memcpy( data->data, (buffer+2), size );
-  data->size = size;
+  data->size = size-2;
   return 0;
 }
 
@@ -146,7 +146,7 @@ static int _test_tune_request( void * buffer ) {
 }
 
 static int _test_real_time( void * buffer ) {
-  unsigned char byte = VOID_BYTE(buffer,0);
+  uint8_t byte = VOID_BYTE(buffer,0);
   if( byte >= MIDI_STATUS_TIMING_CLOCK &&
       byte <= MIDI_STATUS_RESET ) {
     return ( byte != MIDI_STATUS_UNDEFINED2 )
@@ -402,15 +402,20 @@ static int _set_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
     PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,data->bytes[0]);
     PROPERTY_CASE_SET(MIDI_MANUFACTURER_ID,MIDIManufacturerId,data->bytes[1]);
     PROPERTY_CASE_SET(MIDI_SYSEX_SIZE,size_t,data->size);
-    case MIDI_SYSEX_DATA:
-      if( data->size == 0 || data->data == NULL ) {
-        data->data = malloc( size );
-      } else {
-        data->data = realloc( data->data, size );
-      }
-      data->size = size;
-      memcpy( data->data, value, size );
+    PROPERTY_CASE_SET(MIDI_SYSEX_FRAGMENT,uint8_t,data->bytes[2]);
+    PROPERTY_CASE_BASE(MIDI_SYSEX_DATA,void*);
+      data->data = *((void**)value);
       return 0;
+      break;
+  //case MIDI_SYSEX_DATA:
+  //  if( data->size == 0 || data->data == NULL ) {
+  //    data->data = malloc( size );
+  //  } else {
+  //    data->data = realloc( data->data, size );
+  //  }
+  //  data->size = size;
+  //  memcpy( data->data, value, size );
+  //  return 0;
     PROPERTY_DEFAULT;
   }
   return 1;
@@ -426,10 +431,14 @@ static int _get_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
     PROPERTY_CASE_GET(MIDI_MANUFACTURER_ID,MIDIManufacturerId,data->bytes[1]);
     PROPERTY_CASE_GET(MIDI_SYSEX_SIZE,size_t,data->size);
     PROPERTY_CASE_GET(MIDI_SYSEX_FRAGMENT,uint8_t,data->bytes[2]);
-    case MIDI_SYSEX_DATA:
-      if( data->size == 0 || data->data == NULL ) return 0;
-      memcpy( value, data->data, (size < data->size) ? size : data->size );
+    PROPERTY_CASE_BASE(MIDI_SYSEX_DATA,void*);
+      *((void**)value) = data->data;
       return 0;
+      break;
+  //case MIDI_SYSEX_DATA:
+  //  if( data->size == 0 || data->data == NULL ) return 0;
+  //  memcpy( value, data->data, (size < data->size) ? size : data->size );
+  //  return 0;
     PROPERTY_DEFAULT;
   }
   return 1;
@@ -712,7 +721,7 @@ struct MIDIMessageFormat * MIDIMessageFormatDetect( void * buffer ) {
 }
 
 struct MIDIMessageFormat * MIDIMessageFormatForStatus( MIDIStatus status ) {
-  unsigned char byte;
+  uint8_t byte;
   if( status >= 0x80 ) {
     byte = status;
     if( byte < 0xf0 ) return NULL; // messed up channel status?

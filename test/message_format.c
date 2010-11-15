@@ -65,14 +65,15 @@ int test002_message_format( void ) {
  * Test that system exclusive works.
  */
 int test003_message_format( void ) {
-  unsigned char buffer[16] = { MIDI_STATUS_SYSTEM_EXCLUSIVE, 123, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, MIDI_STATUS_END_OF_EXCLUSIVE };
+  unsigned char buffer[16] = { MIDI_STATUS_SYSTEM_EXCLUSIVE, 123, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 };
   struct MIDIMessageData * message = malloc( sizeof( struct MIDIMessageData ) );
   int i;
   struct MIDIMessageFormat * format;
 
   MIDIStatus         status;
   MIDIManufacturerId manufacturer_id;
-  unsigned char      sysex_data[16];
+  size_t sysex_size;
+  unsigned char * sysex_data;
   
   format = MIDIMessageFormatDetect( &buffer[0] );
   ASSERT_NOT_EQUAL( format, NULL, "Could not detect message format of system exclusive buffer." );
@@ -81,8 +82,10 @@ int test003_message_format( void ) {
   ASSERT_EQUAL( status, MIDI_STATUS_SYSTEM_EXCLUSIVE, "Stored wrong status." );
   ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &manufacturer_id ) , "Could not get message manufacturer id." );
   ASSERT_EQUAL( manufacturer_id, 123, "Stored wrong manufacturer id." );
-  ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_SYSEX_DATA, sizeof(sysex_data), &sysex_data[0] ), "Could not get mssage system exclusive data." );
-  for( i=0; i<12; i++ ) {
+  ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_SYSEX_DATA, sizeof(void*), &sysex_data ), "Could not get system exclusive data." );
+  ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_SYSEX_SIZE, sizeof(size_t), &sysex_size ), "Could not get system exclusive size." );
+  ASSERT_EQUAL( sysex_size, 14, "System exclusive message was truncated." );
+  for( i=0; i<sysex_size; i++ ) {
     ASSERT_EQUAL( sysex_data[i], buffer[i+2], "Stored wrong system exclusive data." );
   }
   return 0;

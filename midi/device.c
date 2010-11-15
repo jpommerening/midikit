@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdint.h>
 #include "device.h"
 #include "message.h"
 #include "connector.h"
@@ -94,6 +95,9 @@ int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message 
   MIDIStatus     status;
   MIDIValue      v[3];
   MIDILongValue  lv;
+  uint8_t b;
+  size_t  s;
+  void *  vp;
   if( device->thru != NULL ) {
     MIDIConnectorRelay( device->thru, message );
   }
@@ -134,11 +138,42 @@ int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message 
       return MIDIDeviceReceiveChannelPressure( device, v[0], v[1] );
       break;
     case MIDI_STATUS_PITCH_WHEEL_CHANGE:
-      MIDIMessageGet( message, MIDI_CHANNEL,   sizeof(MIDIValue), &v[0] );
-      MIDIMessageGet( message, MIDI_VALUE_LSB, sizeof(MIDIValue), &v[1] );
-      MIDIMessageGet( message, MIDI_VALUE_MSB, sizeof(MIDIValue), &v[2] );
-      lv = MIDI_LONG_VALUE( v[2], v[1] );
+      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_VALUE,   sizeof(MIDILongValue), &lv );
       return MIDIDeviceReceivePitchWheelChange( device, v[0], lv );
+      break;
+    case MIDI_STATUS_SYSTEM_EXCLUSIVE:
+      MIDIMessageGet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_SYSEX_SIZE,      sizeof(size_t), &s );
+      MIDIMessageGet( message, MIDI_SYSEX_DATA,      sizeof(void*), &vp );
+      MIDIMessageGet( message, MIDI_SYSEX_FRAGMENT,  sizeof(uint8_t), &b );
+      return MIDIDeviceReceiveSystemExclusive( device, v[0], s, vp, b );
+      break;
+    case MIDI_STATUS_TIME_CODE_QUARTER_FRAME:
+      MIDIMessageGet( message, MIDI_TIME_CODE_TYPE, sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_VALUE,          sizeof(MIDIValue), &v[1] );
+      return MIDIDeviceReceiveTimeCodeQuarterFrame( device, v[0], v[1] );
+      break;
+    case MIDI_STATUS_SONG_POSITION_POINTER:
+      MIDIMessageGet( message, MIDI_VALUE, sizeof(MIDILongValue), &lv );
+      return MIDIDeviceReceiveSongPositionPointer( device, lv );
+    case MIDI_STATUS_SONG_SELECT:
+      MIDIMessageGet( message, MIDI_VALUE, sizeof(MIDIValue), &v[0] );
+      return MIDIDeviceReceiveSongSelect( device, v[0] );
+      break;
+    case MIDI_STATUS_TUNE_REQUEST:
+      return MIDIDeviceReceiveTuneRequest( device );
+      break;
+    case MIDI_STATUS_END_OF_EXCLUSIVE:
+      return MIDIDeviceReceiveEndOfExclusive( device );
+      break;
+    case MIDI_STATUS_TIMING_CLOCK:
+    case MIDI_STATUS_START:
+    case MIDI_STATUS_CONTINUE:
+    case MIDI_STATUS_STOP:
+    case MIDI_STATUS_ACTIVE_SENSING:
+    case MIDI_STATUS_RESET:
+      return MIDIDeviceReceiveRealTime( device, status );
       break;
     default:
       break;
@@ -299,6 +334,155 @@ int MIDIDeviceSendPitchWheelChange( struct MIDIDevice * device, MIDIChannel chan
   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_PITCH_WHEEL_CHANGE );
   MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIChannel),   &channel );
   MIDIMessageSet( message, MIDI_VALUE,   sizeof(MIDILongValue), &value );
+  return MIDIDeviceSend( device, message );
+}
+
+//@}
+
+/**
+ * System exclusive
+ */
+//@{
+
+int MIDIDeviceReceiveSystemExclusive( struct MIDIDevice * device, MIDIManufacturerId manufacturer_id,
+                                      size_t size, void * data, uint8_t fragment ) {
+  if( device->delegate == NULL || device->delegate->recv_sx == NULL ) {
+    return 0;
+  }
+  return (*device->delegate->recv_sx)( device, manufacturer_id, size, data, fragment );
+}
+
+int MIDIDeviceSendSystemExclusive( struct MIDIDevice * device, MIDIManufacturerId manufacturer_id,
+                                   size_t size, void * data, uint8_t fragment ) {
+  struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_SYSTEM_EXCLUSIVE );
+  MIDIMessageSet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &manufacturer_id );
+  MIDIMessageSet( message, MIDI_SYSEX_SIZE,      sizeof(size_t), &size );
+  MIDIMessageSet( message, MIDI_SYSEX_DATA,      sizeof(void *), &data );
+  MIDIMessageSet( message, MIDI_SYSEX_FRAGMENT,  sizeof(uint8_t), &fragment );
+  return MIDIDeviceSend( device, message );
+}
+
+//@}
+
+/**
+ * Time code quarter frame
+ */
+//@{
+
+int MIDIDeviceReceiveTimeCodeQuarterFrame( struct MIDIDevice * device, MIDIValue time_code_type, MIDIValue value ) {
+  if( device->delegate == NULL || device->delegate->recv_tcqf == NULL ) {
+    return 0;
+  }
+  return (*device->delegate->recv_tcqf)( device, time_code_type, value );
+}
+
+int MIDIDeviceSendTimeCodeQuarterFrame( struct MIDIDevice * device, MIDIValue time_code_type, MIDIValue value ) {
+  struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_TIME_CODE_QUARTER_FRAME );
+  MIDIMessageSet( message, MIDI_TIME_CODE_TYPE, sizeof(MIDIValue), &time_code_type );
+  MIDIMessageSet( message, MIDI_VALUE,          sizeof(MIDIValue), &value );
+  return MIDIDeviceSend( device, message );
+}
+
+//@}
+
+/**
+ * Song position pointer
+ */
+//@{
+
+int MIDIDeviceReceiveSongPositionPointer( struct MIDIDevice * device, MIDILongValue value ) {
+  if( device->delegate == NULL || device->delegate->recv_spp == NULL ) {
+    return 0;
+  }
+  return (*device->delegate->recv_spp)( device, value );
+}
+
+int MIDIDeviceSendSongPositionPointer( struct MIDIDevice * device, MIDILongValue value ) {
+  struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_SONG_POSITION_POINTER );
+  MIDIMessageSet( message, MIDI_VALUE, sizeof(MIDILongValue), &value );
+  return MIDIDeviceSend( device, message );
+}
+
+//@}
+
+/**
+ * Song select
+ */
+//@{
+
+int MIDIDeviceReceiveSongSelect( struct MIDIDevice * device, MIDIValue value ) {
+  if( device->delegate == NULL || device->delegate->recv_ss == NULL ) {
+    return 0;
+  }
+  return (*device->delegate->recv_ss)( device, value );
+}
+
+int MIDIDeviceSendSongSelect( struct MIDIDevice * device, MIDIValue value ) {
+  struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_SONG_SELECT );
+  MIDIMessageSet( message, MIDI_VALUE, sizeof(MIDIValue), &value );
+  return MIDIDeviceSend( device, message );
+}
+
+//@}
+
+/**
+ * Tune request
+ */
+//@{
+
+int MIDIDeviceReceiveTuneRequest( struct MIDIDevice * device ) {
+  if( device->delegate == NULL || device->delegate->recv_tr == NULL ) {
+    return 0;
+  }
+  return (*device->delegate->recv_tr)( device );
+}
+
+int MIDIDeviceSendTuneRequest( struct MIDIDevice * device ) {
+  struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_TUNE_REQUEST );
+  return MIDIDeviceSend( device, message );
+}
+
+//@}
+
+/**
+ * End of exclusive
+ */
+//@{
+
+int MIDIDeviceReceiveEndOfExclusive( struct MIDIDevice * device ) {
+  if( device->delegate == NULL || device->delegate->recv_eox == NULL ) {
+    return 0;
+  }
+  return (*device->delegate->recv_eox)( device );
+}
+
+int MIDIDeviceSendEndOfExclusive( struct MIDIDevice * device ) {
+  struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_END_OF_EXCLUSIVE );
+  return MIDIDeviceSend( device, message );
+}
+
+//@}
+
+/**
+ * Real time
+ */
+//@{
+
+int MIDIDeviceReceiveRealTime( struct MIDIDevice * device, MIDIStatus status ) {
+  if( device->delegate == NULL || device->delegate->recv_rt == NULL ) {
+    return 0;
+  }
+  if( status < MIDI_STATUS_TIMING_CLOCK || status > MIDI_STATUS_RESET ) {
+    return 1;
+  }
+  return (*device->delegate->recv_rt)( device, status );
+}
+
+int MIDIDeviceSendRealTime( struct MIDIDevice * device, MIDIStatus status ) {
+  if( status < MIDI_STATUS_TIMING_CLOCK || status > MIDI_STATUS_RESET ) {
+    return 1;
+  }
+  struct MIDIMessage * message = MIDIMessageCreate( status );
   return MIDIDeviceSend( device, message );
 }
 

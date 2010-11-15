@@ -31,7 +31,7 @@ static struct MIDIConnectorDelegate _test_delegate = {
 };
 
 /**
- * Test that a MIDI connector can be created an passes messages.
+ * Test that a MIDI connector can be created and passes messages.
  */
 int test001_connector( void ) {
   struct MIDIConnector * connector;
@@ -50,6 +50,7 @@ int test001_connector( void ) {
   ASSERT_EQUAL( _target.status, MIDI_STATUS_RESET, "Connector did not pass correct message." );
   MIDIConnectorRelease( connector );
   ASSERT_EQUAL( _target.refs, 0, "Connector did not release target." );
+  MIDIMessageRelease( message );
   return 0;
 }
 

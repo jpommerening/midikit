@@ -1,5 +1,6 @@
 #ifndef MIDIKIT_MIDI_DEVICE_H
 #define MIDIKIT_MIDI_DEVICE_H
+#include <stdint.h>
 #include "midi.h"
 
 struct MIDIConnector;
@@ -14,6 +15,14 @@ struct MIDIDeviceDelegate {
   int (*recv_pc)( struct MIDIDevice * device, MIDIChannel channel, MIDIProgram program );                  ///< Program change callback
   int (*recv_cp)( struct MIDIDevice * device, MIDIChannel channel, MIDIPressure value );                   ///< Channel pressure callback
   int (*recv_pwc)( struct MIDIDevice * device, MIDIChannel channel, MIDILongValue value );                 ///< Pitch wheel change callback
+  int (*recv_sx)( struct MIDIDevice * device, MIDIManufacturerId manufacturer_id,
+                  size_t size, void * data, uint8_t fragment );                                            ///< System exclusive callback
+  int (*recv_tcqf)( struct MIDIDevice * device, MIDIValue time_code_type, MIDIValue value );               ///< Time code quarter frame callback
+  int (*recv_spp)( struct MIDIDevice * device, MIDILongValue value );                                      ///< Song position pointer callback
+  int (*recv_ss)( struct MIDIDevice * device, MIDIValue value );                                           ///< Song select callback
+  int (*recv_tr)( struct MIDIDevice * device );                                                            ///< Tune request callback
+  int (*recv_eox)( struct MIDIDevice * device );                                                           ///< End of exclusive callback
+  int (*recv_rt)( struct MIDIDevice * device, MIDIStatus status );                                         ///< Real time callback
 };
 
 struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate );
@@ -53,4 +62,28 @@ int MIDIDeviceSendChannelPressure( struct MIDIDevice * device, MIDIChannel chann
 
 int MIDIDeviceReceivePitchWheelChange( struct MIDIDevice * device, MIDIChannel channel, MIDILongValue value );
 int MIDIDeviceSendPitchWheelChange( struct MIDIDevice * device, MIDIChannel channel, MIDILongValue value );
+
+int MIDIDeviceReceiveSystemExclusive( struct MIDIDevice * device, MIDIManufacturerId manufacturer_id,
+                                      size_t size, void * data, uint8_t fragment );
+int MIDIDeviceSendSystemExclusive( struct MIDIDevice * device, MIDIManufacturerId manufacturer_id,
+                                   size_t size, void * data, uint8_t fragment );
+                                   
+int MIDIDeviceReceiveTimeCodeQuarterFrame( struct MIDIDevice * device, MIDIValue time_code_type, MIDIValue value );
+int MIDIDeviceSendTimeCodeQuarterFrame( struct MIDIDevice * device, MIDIValue time_code_type, MIDIValue value );
+
+int MIDIDeviceReceiveSongPositionPointer( struct MIDIDevice * device, MIDILongValue value );
+int MIDIDeviceSendSongPositionPointer( struct MIDIDevice * device, MIDILongValue value );
+
+int MIDIDeviceReceiveSongSelect( struct MIDIDevice * device, MIDIValue value );
+int MIDIDeviceSendSongSelect( struct MIDIDevice * device, MIDIValue value );
+
+int MIDIDeviceReceiveTuneRequest( struct MIDIDevice * device );
+int MIDIDeviceSendTuneRequest( struct MIDIDevice * device );
+
+int MIDIDeviceReceiveEndOfExclusive( struct MIDIDevice * device );
+int MIDIDeviceSendEndOfExclusive( struct MIDIDevice * device );
+
+int MIDIDeviceReceiveRealTime( struct MIDIDevice * device, MIDIStatus status );
+int MIDIDeviceSendRealTime( struct MIDIDevice * device, MIDIStatus status );
+
 #endif
