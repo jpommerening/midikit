@@ -9,12 +9,12 @@ void MIDIMessageDestroy( struct MIDIMessage * message );
 void MIDIMessageRetain( struct MIDIMessage * message );
 void MIDIMessageRelease( struct MIDIMessage * message );
 
-int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIStatus * status );
 int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIStatus status );
-int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
+int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIStatus * status );
 int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
+int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
 
-int MIDIMessageRead( struct MIDIMessage * message, size_t bytes, unsigned char * buffer );
-int MIDIMessageWrite( struct MIDIMessage * message, size_t bytes, unsigned char * buffer );
+int MIDIMessageDecode( struct MIDIMessage * message, size_t bytes, unsigned char * buffer );
+int MIDIMessageEncode( struct MIDIMessage * message, size_t bytes, unsigned char * buffer );
 
 #endif

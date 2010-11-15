@@ -1,27 +1,22 @@
 #ifndef MIDIKIT_MIDI_MESSAGE_FORMAT_H
 #define MIDIKIT_MIDI_MESSAGE_FORMAT_H
-#include <stdlib.h>
 #include <stdint.h>
 #include "midi.h"
 
+#define MIDI_MESSAGE_DATA_BYTES 4
+
 struct MIDIMessageData {
-  uint8_t bytes[4];
+  uint8_t bytes[MIDI_MESSAGE_DATA_BYTES];
   size_t  size;
   void *  data;
 };
 
-/**
- * Functions that access messages of a certain type.
- */
-struct MIDIMessageFormat {
-  int (*test)( void * buffer );
-  int (*set)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
-  int (*get)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
-  int (*encode)( struct MIDIMessageData * data, size_t size, void * buffer );
-  int (*decode)( struct MIDIMessageData * data, size_t size, void * buffer );
-};
-
 struct MIDIMessageFormat * MIDIMessageFormatDetect( void * buffer );
 struct MIDIMessageFormat * MIDIMessageFormatForStatus( MIDIStatus status );
+int MIDIMessageFormatTest( struct MIDIMessageFormat * format, void * buffer );
+int MIDIMessageFormatSet( struct MIDIMessageFormat * format, struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
+int MIDIMessageFormatGet( struct MIDIMessageFormat * format, struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
+int MIDIMessageFormatEncode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer );
+int MIDIMessageFormatDecode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer );
 
 #endif

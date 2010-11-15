@@ -1,7 +1,18 @@
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include "message_format.h"
+
+/**
+ * Message format descriptor.
+ * Contains pointers to functions that access messages of a certain type.
+ */
+struct MIDIMessageFormat {
+  int (*test)( void * buffer );
+  int (*set)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
+  int (*get)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
+  int (*encode)( struct MIDIMessageData * data, size_t size, void * buffer );
+  int (*decode)( struct MIDIMessageData * data, size_t size, void * buffer );
+};
 
 #define VOID_BYTE( buffer, n ) ((unsigned char*)buffer)[n]
 
@@ -11,46 +22,6 @@
  * These functions encode a MIDI message to or from a stream.
  */
 //@{
-
-int MIDIMessageDataInit( struct MIDIMessageData * data ) {
-  if( data == NULL ) return 1;
-  data->bytes[0] = 0;
-  data->bytes[1] = 0;
-  data->bytes[2] = 0;
-  data->bytes[3] = 0;
-  data->size = 0;
-  data->data = NULL;
-  return 0;
-}
-
-int MIDIMessageDataEncode( struct MIDIMessageData * data, size_t size, void * buffer ) {
-  if( data == NULL || buffer == NULL ) return 1;
-  if( size > data->size ) {
-    size = data->size;
-  }
-  if( data->size > sizeof( data->bytes ) ) {
-    if( data->data != NULL ) {
-      memcpy( buffer, data->data, size );
-    }
-  } else {
-    memcpy( buffer, &(data->bytes[0]), size );
-  }
-  return 0;
-}
-
-int MIDIMessageDataDecode( struct MIDIMessageData * data, size_t size, void * buffer ) {
-  if( data == NULL || buffer == NULL ) return 1;
-  if( size > sizeof( data->bytes ) ) {
-    if( data->size <= sizeof( data->bytes ) ) {
-      data->data = malloc( size ); // previously 
-    } else if( data->data == NULL ) {
-      data->data = malloc( size );
-    } else {
-      data->data = realloc( data->data, size );
-    }
-  }
-  return 0;
-}
 
 static int _encode_one_byte( struct MIDIMessageData * data, size_t size, void * buffer ) {
   if( data == NULL || buffer == NULL ) return 1;
@@ -132,52 +103,57 @@ static int _decode_system_exclusive( struct MIDIMessageData * data, size_t size,
 static int _test_note_off_on( void * buffer ) {
   return (VOID_BYTE(buffer,0) & 0xf0) == (MIDI_STATUS_NOTE_OFF<<4)
       || (VOID_BYTE(buffer,0) & 0xf0) == (MIDI_STATUS_NOTE_ON<<4);
-};
+}
 
 static int _test_polyphonic_key_pressure( void * buffer ) {
   return (VOID_BYTE(buffer,0) & 0xf0) == (MIDI_STATUS_POLYPHONIC_KEY_PRESSURE<<4);
-};
+}
 
 static int _test_control_change( void * buffer ) {
   return (VOID_BYTE(buffer,0) & 0xf0) == (MIDI_STATUS_CONTROL_CHANGE<<4);
-};
+}
 
 static int _test_program_change( void * buffer ) {
   return (VOID_BYTE(buffer,0) & 0xf0) == (MIDI_STATUS_PROGRAM_CHANGE<<4);
-};
+}
 
 static int _test_channel_pressure( void * buffer ) {
   return (VOID_BYTE(buffer,0) & 0xf0) == (MIDI_STATUS_CHANNEL_PRESSURE<<4);
-};
+}
 
 static int _test_pitch_wheel_change( void * buffer ) {
   return (VOID_BYTE(buffer,0) & 0xf0) == (MIDI_STATUS_PITCH_WHEEL_CHANGE<<4);
-};
+}
 
 static int _test_system_exclusive( void * buffer ) {
   return VOID_BYTE(buffer,0) == MIDI_STATUS_SYSTEM_EXCLUSIVE;
-};
+}
 
 static int _test_time_code_quarter_frame( void * buffer ) {
   return VOID_BYTE(buffer,0) == MIDI_STATUS_TIME_CODE_QUARTER_FRAME;
-};
+}
 
 static int _test_song_position_pointer( void * buffer ) {
   return VOID_BYTE(buffer,0) == MIDI_STATUS_SONG_POSITION_POINTER;
-};
+}
 
 static int _test_song_select( void * buffer ) {
   return VOID_BYTE(buffer,0) == MIDI_STATUS_SONG_SELECT;
-};
+}
 
 static int _test_tune_request( void * buffer ) {
   return VOID_BYTE(buffer,0) == MIDI_STATUS_TUNE_REQUEST;
-};
+}
 
 static int _test_real_time( void * buffer ) {
-  return (VOID_BYTE(buffer,0) >= MIDI_STATUS_TIMING_CLOCK)
-      && (VOID_BYTE(buffer,0) <= MIDI_STATUS_RESET);
-};
+  unsigned char byte = VOID_BYTE(buffer,0);
+  if( byte >= MIDI_STATUS_TIMING_CLOCK &&
+      byte <= MIDI_STATUS_RESET ) {
+    return ( byte != MIDI_STATUS_UNDEFINED2 )
+        && ( byte != MIDI_STATUS_UNDEFINED3 );
+  }
+  return 0;
+}
 
 //@}
 
@@ -188,24 +164,25 @@ static int _test_real_time( void * buffer ) {
  */
 //@{
 
-#include <stdio.h>
-
 #define PROPERTY_CASE_BASE(flag,type) \
     case flag: \
       if( size != sizeof(type) ) return 1
 
 #define PROPERTY_CASE_SET(flag,type,field) \
     PROPERTY_CASE_BASE(flag,type); \
+      if( ( *((type*)value) & ( (flag==MIDI_STATUS) ? 0xff : 0x7f ) ) != *((type*)value) ) return 1; \
       field = *((type*)value); \
       return 0
 
 #define PROPERTY_CASE_SET_H(flag,type,field) \
     PROPERTY_CASE_BASE(flag,type); \
+      if( ( *((type*)value) & ( (flag==MIDI_STATUS) ? 0x0f : 0x07 ) ) != *((type*)value) ) return 1; \
       field = MIDI_NIBBLE_VALUE( *((type*)value), MIDI_LOW_NIBBLE(field) ); \
       return 0
 
 #define PROPERTY_CASE_SET_L(flag,type,field) \
     PROPERTY_CASE_BASE(flag,type); \
+      if( ( *((type*)value) & 0x0f ) != *((type*)value) ) return 1; \
       field = MIDI_NIBBLE_VALUE( MIDI_HIGH_NIBBLE(field), *((type*)value) ); \
       return 0
 
@@ -228,7 +205,7 @@ static int _set_note_off_on( struct MIDIMessageData * data, MIDIProperty propert
   uint8_t * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
-  //PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_CASE_SET_L(MIDI_CHANNEL,MIDIChannel,m[0]);
     PROPERTY_CASE_SET(MIDI_KEY,MIDIKey,m[1]);
     PROPERTY_CASE_SET(MIDI_VELOCITY,MIDIVelocity,m[2]);
@@ -260,7 +237,7 @@ static int _set_polyphonic_key_pressure( struct MIDIMessageData * data, MIDIProp
   uint8_t * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
-  //PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_CASE_SET_L(MIDI_CHANNEL,MIDIChannel,m[0]);
     PROPERTY_CASE_SET(MIDI_KEY,MIDIKey,m[1]);
     PROPERTY_CASE_SET(MIDI_PRESSURE,MIDIPressure,m[2]);
@@ -292,7 +269,7 @@ static int _set_control_change( struct MIDIMessageData * data, MIDIProperty prop
   uint8_t * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
-  //PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_CASE_SET_L(MIDI_CHANNEL,MIDIChannel,m[0]);
     PROPERTY_CASE_SET(MIDI_CONTROL,MIDIControl,m[1]);
     PROPERTY_CASE_SET(MIDI_VALUE,MIDIValue,m[2]);
@@ -324,7 +301,7 @@ static int _set_program_change( struct MIDIMessageData * data, MIDIProperty prop
   uint8_t * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
-  //PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_CASE_SET_L(MIDI_CHANNEL,MIDIChannel,m[0]);
     PROPERTY_CASE_SET(MIDI_PROGRAM,MIDIProgram,m[1]);
     PROPERTY_DEFAULT;
@@ -354,7 +331,7 @@ static int _set_channel_pressure( struct MIDIMessageData * data, MIDIProperty pr
   uint8_t * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
-  //PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_CASE_SET_L(MIDI_CHANNEL,MIDIChannel,m[0]);
     PROPERTY_CASE_SET(MIDI_PRESSURE,MIDIPressure,m[1]);
     PROPERTY_DEFAULT;
@@ -384,7 +361,7 @@ static int _set_pitch_wheel_change( struct MIDIMessageData * data, MIDIProperty 
   uint8_t * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
-  //PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_CASE_SET_L(MIDI_CHANNEL,MIDIChannel,m[0]);
     PROPERTY_CASE_SET(MIDI_VALUE_LSB,MIDIValue,m[1]);
     PROPERTY_CASE_SET(MIDI_VALUE_MSB,MIDIValue,m[2]);
@@ -422,9 +399,9 @@ static int _get_pitch_wheel_change( struct MIDIMessageData * data, MIDIProperty 
 static int _set_system_exclusive( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
-  //PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,data->bytes[0]);
+    PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,data->bytes[0]);
     PROPERTY_CASE_SET(MIDI_MANUFACTURER_ID,MIDIManufacturerId,data->bytes[1]);
-  //PROPERTY_CASE_SET(MIDI_SYSEX_SIZE,size_t,data->size);
+    PROPERTY_CASE_SET(MIDI_SYSEX_SIZE,size_t,data->size);
     case MIDI_SYSEX_DATA:
       if( data->size == 0 || data->data == NULL ) {
         data->data = malloc( size );
@@ -465,7 +442,7 @@ static int _set_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProp
   uint8_t * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
-  //PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_CASE_SET_H(MIDI_TIME_CODE_TYPE,MIDIValue,m[1]);
     PROPERTY_CASE_SET_L(MIDI_VALUE,MIDIValue,m[1]);
     PROPERTY_DEFAULT;
@@ -495,7 +472,7 @@ static int _set_song_position_pointer( struct MIDIMessageData * data, MIDIProper
   uint8_t * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
-  //PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_CASE_SET(MIDI_VALUE_LSB,MIDIValue,m[1]);
     PROPERTY_CASE_SET(MIDI_VALUE_MSB,MIDIValue,m[2]);
     PROPERTY_CASE_BASE(MIDI_VALUE,MIDILongValue);
@@ -532,7 +509,7 @@ static int _set_song_select( struct MIDIMessageData * data, MIDIProperty propert
   uint8_t * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
-  //PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_CASE_SET(MIDI_VALUE,MIDIValue,m[1]);
     PROPERTY_DEFAULT;
   }
@@ -700,7 +677,15 @@ static struct MIDIMessageFormat _real_time = {
   &_decode_one_byte
 };
 
+//@}
+
 #define N_ELEM(a) (sizeof(a) / sizeof(a[0]))
+
+#pragma mark Public functions
+/**
+ * Public functions.
+ */
+//@{
 
 struct MIDIMessageFormat * MIDIMessageFormatDetect( void * buffer ) {
   static struct MIDIMessageFormat * formats[] = {
@@ -730,11 +715,37 @@ struct MIDIMessageFormat * MIDIMessageFormatForStatus( MIDIStatus status ) {
   unsigned char byte;
   if( status >= 0x80 ) {
     byte = status;
+    if( byte < 0xf0 ) return NULL; // messed up channel status?
   } else {
     byte = status << 4;
     if( byte < 0x80 ) return NULL; // no status bit?
   }
   return MIDIMessageFormatDetect( &byte );
+}
+
+int MIDIMessageFormatTest( struct MIDIMessageFormat * format, void * buffer ) {
+  if( format == NULL || format->test == NULL ) return 1;
+  return (format->test)( buffer );
+}
+
+int MIDIMessageFormatSet( struct MIDIMessageFormat * format, struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
+  if( format == NULL || format->set == NULL ) return 1;
+  return (format->set)( data, property, size, value );
+}
+
+int MIDIMessageFormatGet( struct MIDIMessageFormat * format, struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
+  if( format == NULL || format->get == NULL ) return 1;
+  return (format->get)( data, property, size, value );
+}
+
+int MIDIMessageFormatEncode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer ) {
+  if( format == NULL || format->encode == NULL ) return 1;
+  return (format->encode)( data, size, buffer );
+}
+
+int MIDIMessageFormatDecode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer ) {
+  if( format == NULL || format->decode == NULL ) return 1;
+  return (format->decode)( data, size, buffer );
 }
 
 //@}
