@@ -5,16 +5,6 @@
 
 #define VOID_BYTE( buffer, n ) ((unsigned char*)buffer)[n]
 
-/**
- * Structure of MIDI message object.
- */
-struct MIDIMessage {
-  size_t refs;
-  struct MIDIMessageFormat * format;
-  struct MIDIMessageData data;
-//MIDITimestamp timestamp;
-};
-
 #pragma mark Encoding & decoding
 /**
  * Encoding & decoding functions.
@@ -120,13 +110,6 @@ static int _encode_system_exclusive( struct MIDIMessageData * data, size_t size,
   VOID_BYTE(buffer,data->size+2) = data->bytes[2];
   return 0;  
 }
-
-// duh … rewrite the sysex:
-// - incorporate end of exclusive as a message
-// - send system exclusive messages (up to a predetermined size)
-//   as long as no other status (1st bit) is received (except real time)
-// - the function below can rely on the size it was given to parse the data
-// - it will not receive an "end of exclusive" status byte
 
 static int _decode_system_exclusive( struct MIDIMessageData * data, size_t size, void * buffer ) {
   if( data == NULL || buffer == NULL ) return 1;
@@ -483,7 +466,8 @@ static int _set_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProp
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
   //PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
-    PROPERTY_CASE_SET(MIDI_VALUE,MIDIValue,m[1]);
+    PROPERTY_CASE_SET_H(MIDI_TIME_CODE_TYPE,MIDIValue,m[1]);
+    PROPERTY_CASE_SET_L(MIDI_VALUE,MIDIValue,m[1]);
     PROPERTY_DEFAULT;
   }
   return 1;
@@ -497,12 +481,111 @@ static int _get_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProp
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_GET_H(MIDI_TIME_CODE_TYPE,MIDIChannel,m[1]);
+    PROPERTY_CASE_GET_L(MIDI_VALUE,MIDIChannel,m[1]);
+    PROPERTY_DEFAULT;
+  }
+  return 1;
+}
+
+/**
+ * Set properties of song position pointer messages.
+ */
+static int _set_song_position_pointer( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
+  uint8_t * m = &(data->bytes[0]);
+  if( size == 0 || value == NULL ) return 1;
+  switch( property ) {
+  //PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET(MIDI_VALUE_LSB,MIDIValue,m[1]);
+    PROPERTY_CASE_SET(MIDI_VALUE_MSB,MIDIValue,m[2]);
+    PROPERTY_CASE_BASE(MIDI_VALUE,MIDILongValue);
+      m[1] = MIDI_LSB(*(MIDILongValue*)value);
+      m[2] = MIDI_MSB(*(MIDILongValue*)value);
+      return 0;
+    PROPERTY_DEFAULT;
+  }
+  return 1;
+}
+
+/**
+ * Get properties of song position pointer messages.
+ */
+static int _get_song_position_pointer( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
+  uint8_t * m = &(data->bytes[0]);
+  if( size == 0 || value == NULL ) return 1;
+  switch( property ) {
+    PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_GET(MIDI_VALUE_LSB,MIDIValue,m[1]);
+    PROPERTY_CASE_GET(MIDI_VALUE_MSB,MIDIValue,m[2]);
+    PROPERTY_CASE_BASE(MIDI_VALUE,MIDILongValue);
+      *(MIDILongValue*)value = MIDI_LONG_VALUE( m[2], m[1] );
+      return 0;
+    PROPERTY_DEFAULT;
+  }
+  return 1;
+}
+
+/**
+ * Set properties of song select messages.
+ */
+static int _set_song_select( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
+  uint8_t * m = &(data->bytes[0]);
+  if( size == 0 || value == NULL ) return 1;
+  switch( property ) {
+  //PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_CASE_SET(MIDI_VALUE,MIDIValue,m[1]);
+    PROPERTY_DEFAULT;
+  }
+  return 1;
+}
+
+/**
+ * Get properties of song select messages.
+ */
+static int _get_song_select( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
+  uint8_t * m = &(data->bytes[0]);
+  if( size == 0 || value == NULL ) return 1;
+  switch( property ) {
+    PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_CASE_GET(MIDI_VALUE,MIDIChannel,m[1]);
     PROPERTY_DEFAULT;
   }
   return 1;
 }
 
+
+/**
+ * Set properties of tune request messages.
+ */
+static int _set_tune_request( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
+  return 1;
+}
+
+/**
+ * Set properties of real time messages.
+ */
+static int _set_real_time( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
+  uint8_t * m = &(data->bytes[0]);
+  if( size == 0 || value == NULL ) return 1;
+  switch( property ) {
+    PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_DEFAULT;
+  }
+  return 1;
+}
+
+/**
+ * Get properties of tune request and real time messages.
+ */
+static int _get_tune_request_real_time( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
+  uint8_t * m = &(data->bytes[0]);
+  if( size == 0 || value == NULL ) return 1;
+  switch( property ) {
+    PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,m[0]);
+    PROPERTY_DEFAULT;
+  }
+  return 1;
+}
 
 #undef PROPERTY_CASE_BASE
 #undef PROPERTY_CASE_SET
@@ -587,32 +670,32 @@ static struct MIDIMessageFormat _time_code_quarter_frame = {
 
 static struct MIDIMessageFormat _song_position_pointer = {
   &_test_song_position_pointer,
-  NULL,
-  NULL,
+  &_set_song_position_pointer,
+  &_get_song_position_pointer,
   &_encode_three_bytes,
   &_decode_three_bytes
 };
 
 static struct MIDIMessageFormat _song_select = {
   &_test_song_select,
-  NULL,
-  NULL,
+  &_set_song_select,
+  &_get_song_select,
   &_encode_two_bytes,
   &_decode_two_bytes
 };
 
 static struct MIDIMessageFormat _tune_request = {
   &_test_tune_request,
-  NULL,
-  NULL,
+  &_set_tune_request,
+  &_get_tune_request_real_time,
   &_encode_one_byte,
   &_decode_one_byte
 };
 
 static struct MIDIMessageFormat _real_time = {
   &_test_real_time,
-  NULL,
-  NULL,
+  &_set_real_time,
+  &_get_tune_request_real_time,
   &_encode_one_byte,
   &_decode_one_byte
 };

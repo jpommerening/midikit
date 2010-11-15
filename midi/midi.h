@@ -211,6 +211,7 @@
 #define MIDI_SYSEX_DATA      0x0b
 #define MIDI_SYSEX_SIZE      0x0c
 #define MIDI_SYSEX_FRAGMENT  0x0d
+#define MIDI_TIME_CODE_TYPE  0x0e
 #define MIDI_NOTHING         0xff
 //@}
 
