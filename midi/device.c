@@ -96,9 +96,9 @@ int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIOutput * thru )
 }
 
 int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message ) {
-  MIDIMessageStatus status;
-  MIDIValue         v[3];
-  MIDILongValue     lv;
+  MIDIStatus     status;
+  MIDIValue      v[3];
+  MIDILongValue  lv;
   if( device->thru != NULL ) {
     MIDIOutputSend( device->thru, message );
   }
@@ -139,8 +139,10 @@ int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message 
       return MIDIDeviceReceiveChannelPressure( device, v[0], v[1] );
       break;
     case MIDI_STATUS_PITCH_WHEEL_CHANGE:
-      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIValue), &v[0] );
-      MIDIMessageGet( message, MIDI_VALUE,   sizeof(MIDILongValue), &lv );
+      MIDIMessageGet( message, MIDI_CHANNEL,   sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_VALUE_LSB, sizeof(MIDIValue), &v[1] );
+      MIDIMessageGet( message, MIDI_VALUE_MSB, sizeof(MIDIValue), &v[2] );
+      lv = MIDI_LONG_VALUE( v[2], v[1] );
       return MIDIDeviceReceivePitchWheelChange( device, v[0], lv );
       break;
     default:

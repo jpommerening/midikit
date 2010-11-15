@@ -4,13 +4,13 @@
 
 struct MIDIMessage;
 
-struct MIDIMessage * MIDIMessageCreate( MIDIMessageStatus status );
+struct MIDIMessage * MIDIMessageCreate( MIDIStatus status );
 void MIDIMessageDestroy( struct MIDIMessage * message );
 void MIDIMessageRetain( struct MIDIMessage * message );
 void MIDIMessageRelease( struct MIDIMessage * message );
 
-int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIMessageStatus * status );
-int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIMessageStatus status );
+int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIStatus * status );
+int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIStatus status );
 int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
 int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
 

@@ -87,7 +87,7 @@ static struct MIDIMessageFormat _sys_value_2b[4] = {
   { MIDI_NOTHING,   0, 0x00 }
 };
 
-static struct MIDIMessageFormat * _format_for_status( MIDIMessageStatus status ) {
+static struct MIDIMessageFormat * _format_for_status( MIDIStatus status ) {
   struct MIDIMessageFormat * format;
   switch( status ) {
     case MIDI_STATUS_NOTE_OFF:
@@ -146,10 +146,11 @@ struct MIDIMessage {
   size_t refs;
   struct MIDIMessageFormat * format;
   unsigned char byte[MIDI_MESSAGE_MAX_BYTES];
+  size_t sysex_size;
   unsigned char * sysex_data;
 };
 
-struct MIDIMessage * MIDIMessageCreate( MIDIMessageStatus status ) {
+struct MIDIMessage * MIDIMessageCreate( MIDIStatus status ) {
   struct MIDIMessage * message = malloc( sizeof( struct MIDIMessage ) );
   int i;
   if( message == NULL ) {
@@ -158,6 +159,8 @@ struct MIDIMessage * MIDIMessageCreate( MIDIMessageStatus status ) {
   message->refs    = 1;
   message->byte[0] = status;
   message->format  = _format_for_status( status );
+  message->sysex_size = 0;
+  message->sysex_data = NULL;
   if( message->format == NULL ) {
     free( message );
     return NULL;
@@ -182,16 +185,27 @@ void MIDIMessageRelease( struct MIDIMessage * message ) {
   }
 }
 
-int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIMessageStatus * status ) {
-  return MIDIMessageGet( message, MIDI_STATUS, sizeof( MIDIMessageStatus ), status );
+int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIStatus * status ) {
+  return MIDIMessageGet( message, MIDI_STATUS, sizeof( MIDIStatus ), status );
 }
 
-int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIMessageStatus status ) {
-  return MIDIMessageSet( message, MIDI_STATUS, sizeof( MIDIMessageStatus ), &status );
+int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIStatus status ) {
+  return MIDIMessageSet( message, MIDI_STATUS, sizeof( MIDIStatus ), &status );
 }
 
 static int _get_message_byte( struct MIDIMessage * message, struct MIDIMessageFormat * format, MIDIValue * value ) {
   *value = message->byte[ format->byte ] & format->mask;
+  return 0;
+}
+
+static int _get_message_sysex_data( struct MIDIMessage * message, size_t size, unsigned char * data ) {
+  size_t i;
+  if( message->sysex_data == NULL ) {
+    return 1;
+  }
+  for( i=0; i<size && i<message->sysex_size; i++ ) {
+    data[i] = message->sysex_data[i];
+  }
   return 0;
 }
 
@@ -203,7 +217,11 @@ int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t 
   format = message->format;
   while( format->mask != 0 ) {
     if( format->property == property ) {
-      return _get_message_byte( message, format, (MIDIValue *) value );
+      if( property == MIDI_SYSEX_DATA ) {
+        return _get_message_sysex_data( message, size, value );
+      } else {
+        return _get_message_byte( message, format, (MIDIValue *) value );
+      }
     }
     format++;
   }
@@ -220,19 +238,38 @@ static int _set_message_byte( struct MIDIMessage * message, struct MIDIMessageFo
   return 0;
 }
 
+static int _set_message_sysex_data( struct MIDIMessage * message, size_t size, unsigned char * data ) {
+  size_t i;
+  if( message->sysex_data == NULL ) {
+    message->sysex_data = malloc( size );
+  } else if( message->sysex_size < size ) {
+    message->sysex_data = realloc( message->sysex_data, size );
+  }
+  if( message->sysex_data == NULL ) {
+    return 1;
+  }
+  for( i=0; i<size; i++ ) {
+    if( data[i] & 0x80 ) {
+      return 1;
+    }
+    message->sysex_data[i] = data[i] & 0x7f;
+  }
+  return 0;
+}
+
 int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value ) {
   struct MIDIMessageFormat * format;
   if( property == MIDI_STATUS ) {
-    if( size != sizeof( MIDIMessageStatus ) ) {
+    if( size != sizeof( MIDIStatus ) ) {
       return 1;
     }
-    message->format = _format_for_status( *((MIDIMessageStatus*) value) );
+    message->format = _format_for_status( *((MIDIStatus*) value) );
   }
   format = message->format;
   while( format->mask != 0 ) {
     if( format->property == property ) {
       if( property == MIDI_SYSEX_DATA ) {
-        return 0;
+        return _set_message_sysex_data( message, size, value );
       } else {
         return _set_message_byte( message, format, *((MIDIValue *) value) );
       }
@@ -242,19 +279,34 @@ int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t 
   return 1;
 }
 
-int MIDIMessageRead( struct MIDIMessage * message, size_t bytes, unsigned char * buffer ) {
+int MIDIMessageRead( struct MIDIMessage * message, size_t size, unsigned char * buffer ) {
   size_t i;
-  for( i=0; i<bytes && i<MIDI_MESSAGE_MAX_BYTES; i++ ) {
-    buffer[i] = message->byte[i];
+  if( message->byte[0] != MIDI_STATUS_SYSTEM_EXCLUSIVE ) {
+    for( i=0; i<size && i<MIDI_MESSAGE_MAX_BYTES; i++ ) {
+      buffer[i] = message->byte[i];
+    }
+  } else {
+    if( size > 0 ) {
+      buffer[0] = message->byte[0];
+      if( size > 1 ) {
+        buffer[1] = message->byte[1];
+      }
+    }
   }
   return 0;
 }
 
 
-int MIDIMessageWrite( struct MIDIMessage * message, size_t bytes, unsigned char * buffer ) {
+int MIDIMessageWrite( struct MIDIMessage * message, size_t size, unsigned char * buffer ) {
   size_t i;
-  for( i=0; i<bytes && i<MIDI_MESSAGE_MAX_BYTES; i++ ) {
-    message->byte[i] = buffer[i];
+  if( message->byte[0] != MIDI_STATUS_SYSTEM_EXCLUSIVE ) {
+    for( i=0; i<size && i<MIDI_MESSAGE_MAX_BYTES; i++ ) {
+      message->byte[i] = buffer[i];
+    }
+  } else {
+    for( i=0; i<size && i<MIDI_MESSAGE_MAX_BYTES; i++ ) {
+      message->byte[i] = buffer[i];
+    }
   }
   return 0;
 }

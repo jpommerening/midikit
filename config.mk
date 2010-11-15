@@ -2,7 +2,7 @@
 MKDIR_P = mkdir -p
 LN_S = ln -s
 
-CC = gcc
+CC = clang
 CFLAGS = -O3 -Wall
 CFLAGS_OBJ = $(CFLAGS) -c
 LDFLAGS =

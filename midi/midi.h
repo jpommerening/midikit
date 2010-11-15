@@ -11,33 +11,33 @@
  * Note Off event.
  * This message is sent when a note is released (ended).
  */
-#define MIDI_STATUS_NOTE_OFF 0x80
+#define MIDI_STATUS_NOTE_OFF 0x8
 
 /**
  * Note On event. 
  * This message is sent when a note is depressed (start). 
  */
-#define MIDI_STATUS_NOTE_ON 0x90
+#define MIDI_STATUS_NOTE_ON 0x9
 
 /**
  * Polyphonic Key Pressure (Aftertouch). 
  * This message is most often sent by pressing down on the
  * key after it "bottoms out".
  */
-#define MIDI_STATUS_POLYPHONIC_KEY_PRESSURE 0xa0
+#define MIDI_STATUS_POLYPHONIC_KEY_PRESSURE 0xa
 
 /**
  * Control Change. 
  * This message is sent when a controller value changes.
  * Controllers include devices such as pedals and levers. 
  */
-#define MIDI_STATUS_CONTROL_CHANGE 0xb0
+#define MIDI_STATUS_CONTROL_CHANGE 0xb
 
 /**
  * Program Change.
  * This message sent when the patch number changes.
  */
-#define MIDI_STATUS_PROGRAM_CHANGE 0xc0
+#define MIDI_STATUS_PROGRAM_CHANGE 0xc
 
 /**
  * Channel Pressure (After-touch).
@@ -46,12 +46,12 @@
  * after-touch. Use this message to send the single greatest pressure
  * value (of all the current depressed keys).
  */
-#define MIDI_STATUS_CHANNEL_PRESSURE 0xd0
+#define MIDI_STATUS_CHANNEL_PRESSURE 0xd
 
 /**
  * Pitch Wheel Change.
  */
-#define MIDI_STATUS_PITCH_WHEEL_CHANGE 0xe0
+#define MIDI_STATUS_PITCH_WHEEL_CHANGE 0xe
 
 //@}
 
@@ -199,34 +199,65 @@
 //@{
 #define MIDI_STATUS          0x00
 #define MIDI_CHANNEL         0x01
-#define MIDI_SYSTEM          0x02
-#define MIDI_KEY             0x03
-#define MIDI_VELOCITY        0x04
-#define MIDI_PRESSURE        0x05
-#define MIDI_CONTROL         0x06
-#define MIDI_VALUE           0x07
-#define MIDI_PROGRAM         0x08
-#define MIDI_VALUE_LSB       0x09
-#define MIDI_VALUE_MSB       0x0a
-#define MIDI_MANUFACTURER_ID 0x0b
-#define MIDI_SYSEX_DATA      0x0c
+#define MIDI_KEY             0x02
+#define MIDI_VELOCITY        0x03
+#define MIDI_PRESSURE        0x04
+#define MIDI_CONTROL         0x05
+#define MIDI_VALUE           0x06
+#define MIDI_PROGRAM         0x07
+#define MIDI_VALUE_LSB       0x08
+#define MIDI_VALUE_MSB       0x09
+#define MIDI_MANUFACTURER_ID 0x0a
+#define MIDI_SYSEX_DATA      0x0b
+#define MIDI_SYSEX_SIZE      0x0c
+#define MIDI_SYSEX_FRAGMENT  0x0d
 #define MIDI_NOTHING         0xff
 //@}
 
 /**
- * Access the lowest 7 bits of a MIDIValue
+ * Create a status byte with a channel number
+ */
+#define MIDI_NIBBLE_VALUE( h, l ) ( ((h)<<4)|((l)&0xf) )
+
+/**
+ * Access the high nibble of a byte.
+ */
+#define MIDI_HIGH_NIBBLE( b ) (((b)>>4)&0xf)
+
+/**
+ * Access the low nibble of a byte.
+ */
+#define MIDI_LOW_NIBBLE( b ) ((b)&0xf)
+
+/**
+ * Compose a MIDILongValue from two MIDIValues
+ */
+#define MIDI_LONG_VALUE( m, l ) (((m & 0x7f)<<7) | (l & 0x7f))
+
+/**
+ * Access the lowest 7 bits of a MIDILongValue
  */
 #define MIDI_LSB( v )  (v)     & 0x7f
 
 /**
- * Access the higher 7 bits of a MIDIValue
+ * Access the higher 7 bits of a MIDILongValue
  */
 #define MIDI_MSB( v ) ((v)>>7) & 0x7f
 
 typedef unsigned char  MIDIByte;
 typedef unsigned short MIDIProperty;
-typedef char           MIDIValue;
+
+
+typedef unsigned char  MIDIStatus;
+typedef char           MIDIChannel;
+typedef char           MIDIKey;
+typedef char           MIDIVelocity;
+typedef char           MIDIPressure;
+typedef char           MIDIControl;
+typedef char           MIDIProgram;
+typedef char           MIDIManufacturerId;
+
+typedef short          MIDIValue;
 typedef short          MIDILongValue;
-typedef unsigned char  MIDIMessageStatus;
 
 #endif
