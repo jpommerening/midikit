@@ -9,9 +9,10 @@ struct MIDIReceiver;
   
 struct MIDIDriver {
   size_t refs;
-  struct MIDISender * senders;
-  struct MIDIReceiver * receivers;
   struct MIDIDriverContext * context;
+  struct MIDISender   * senders;
+  struct MIDIReceiver * receivers;
+  struct MIDIClock    * clock;
 };
 
 struct MIDISender {
@@ -36,6 +37,7 @@ struct MIDIDriver * MIDIDriverCreate() {
   driver->context = NULL;
   driver->senders = NULL;
   driver->receivers = NULL;
+  driver->clock = NULL;
   return driver;
 }
 
@@ -44,6 +46,9 @@ void MIDIDriverDestroy( struct MIDIDriver * driver ) {
   struct MIDIReceiver * next_receiver;
   struct MIDISender * sender = driver->senders;
   struct MIDISender * next_sender;
+  if( driver->clock != NULL ) {
+    MIDIClockRelease( driver->clock );
+  }
   while( receiver != NULL ) {
     MIDIInputRelease( receiver->input );
     next_receiver = receiver->next;

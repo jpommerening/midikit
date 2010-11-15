@@ -1,6 +1,7 @@
 #ifndef MIDIKIT_MIDI_MESSAGE_H
 #define MIDIKIT_MIDI_MESSAGE_H
 #include "midi.h"
+#include "clock.h"
 
 struct MIDIMessage;
 
@@ -11,6 +12,8 @@ void MIDIMessageRelease( struct MIDIMessage * message );
 
 int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIStatus status );
 int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIStatus * status );
+int MIDIMessageSetTimestamp( struct MIDIMessage * message, MIDITimestamp timestamp );
+int MIDIMessageGetTimestamp( struct MIDIMessage * message, MIDITimestamp * timestamp );
 int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
 int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
 
