@@ -23,10 +23,10 @@ static struct MIDIDriverDelegate _loopback = {
 
 struct MIDIDriverDelegate * midiDriverLoopback = &_loopback;
 
-struct MIDIDriver * MIDIDriverCreate() {
+struct MIDIDriver * MIDIDriverCreate( struct MIDIDriverDelegate * delegate ) {
   struct MIDIDriver * driver = malloc( sizeof( struct MIDIDriver ) );
   driver->refs = 1;
-  driver->delegate = NULL;
+  driver->delegate = delegate;
   driver->receivers = NULL;
   driver->clock = NULL;
   return driver;
@@ -92,6 +92,7 @@ int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message 
   struct MIDIReceiver * entry = driver->receivers;
   while( entry != NULL ) {
     MIDIConnectorRelay( entry->target, message );
+    entry = entry->next;
   }
   return 0;
 }

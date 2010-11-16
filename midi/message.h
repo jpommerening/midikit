@@ -14,6 +14,7 @@ int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIStatus status );
 int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIStatus * status );
 int MIDIMessageSetTimestamp( struct MIDIMessage * message, MIDITimestamp timestamp );
 int MIDIMessageGetTimestamp( struct MIDIMessage * message, MIDITimestamp * timestamp );
+int MIDIMessageGetSize( struct MIDIMessage * message, size_t * size );
 int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
 int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
 

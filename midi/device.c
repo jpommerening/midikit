@@ -14,6 +14,7 @@ struct MIDIDevice {
 
 struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate ) {
   struct MIDIDevice * device = malloc( sizeof( struct MIDIDevice ) );
+  device->refs = 1;
   device->in   = NULL;
   device->out  = NULL;
   device->thru = NULL;

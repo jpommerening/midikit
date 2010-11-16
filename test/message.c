@@ -40,6 +40,7 @@ int test003_message( void ) {
    ASSERT_NOT_EQUAL( message, NULL, "Could not create note on message." );
    ASSERT( MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIChannel), &values[0] ) == 0, "Could not set channel number 16." );
    ASSERT( MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIChannel), &values[1] ) != 0, "Can set invalid channel number." );
+   MIDIMessageRelease( message );
    return 0;
 }
 
@@ -86,5 +87,6 @@ int test005_message( void ) {
    ASSERT_EQUAL( buffer[5], result[5], "Sysex-data was not stored properly." );
    ASSERT_EQUAL( buffer[6], result[6], "Sysex-data was not stored properly." );
    ASSERT_EQUAL( buffer[7], result[7], "Sysex-data was not stored properly." );
+   MIDIMessageRelease( message );
    return 0;
 }

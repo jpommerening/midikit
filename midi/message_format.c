@@ -8,6 +8,7 @@
  */
 struct MIDIMessageFormat {
   int (*test)( void * buffer );
+  int (*size)( struct MIDIMessageData * data, size_t * size );
   int (*set)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
   int (*get)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
   int (*encode)( struct MIDIMessageData * data, size_t size, void * buffer );
@@ -73,12 +74,17 @@ static int _decode_three_bytes( struct MIDIMessageData * data, size_t size, void
 
 static int _encode_system_exclusive( struct MIDIMessageData * data, size_t size, void * buffer ) {
   if( data == NULL || buffer == NULL ) return 1;
-  if( size < data->size+3 ) return 1;
-  VOID_BYTE(buffer,0) = data->bytes[0];
-  VOID_BYTE(buffer,1) = data->bytes[1];
-  if( data->size > 0 && data->data != NULL )
-    memcpy( buffer+2, data->data, data->size );
-  VOID_BYTE(buffer,data->size+2) = data->bytes[2];
+  if( data->bytes[2] == 0 ) {
+    if( size < data->size+2 ) return 1;
+    VOID_BYTE(buffer,0) = data->bytes[0];
+    VOID_BYTE(buffer,1) = data->bytes[1];
+    if( data->size > 0 && data->data != NULL )
+      memcpy( buffer+2, data->data, data->size );
+  } else {
+    if( size < data->size ) return 1;
+    if( data->size > 0 && data->data != NULL )
+      memcpy( buffer, data->data, data->size );
+  }
   return 0;  
 }
 
@@ -86,9 +92,46 @@ static int _decode_system_exclusive( struct MIDIMessageData * data, size_t size,
   if( data == NULL || buffer == NULL ) return 1;
   data->bytes[0] = VOID_BYTE(buffer,0);
   data->bytes[1] = VOID_BYTE(buffer,1);
+  data->bytes[2] = 0;
+  data->bytes[3] = 1;
   data->data = malloc( size-2 );
-  memcpy( data->data, (buffer+2), size );
+  memcpy( data->data, (buffer+2), size-2 );
   data->size = size-2;
+  return 0;
+}
+
+//@}
+
+/**
+ * Message size determination
+ */
+//@{
+
+static int _size_one_byte( struct MIDIMessageData * data, size_t * size ) {
+  if( data == NULL || size == NULL ) return 1;
+  *size = 1;
+  return 0;
+}
+
+static int _size_two_bytes( struct MIDIMessageData * data, size_t * size ) {
+  if( data == NULL || size == NULL ) return 1;
+  *size = 2;
+  return 0;
+}
+
+static int _size_three_bytes( struct MIDIMessageData * data, size_t * size ) {
+  if( data == NULL || size == NULL ) return 1;
+  *size = 3;
+  return 0;
+}
+
+static int _size_system_exclusive( struct MIDIMessageData * data, size_t * size ) {
+  if( data == NULL || size == NULL ) return 1;
+  if( data->bytes[2] == 0 ) {
+    *size = data->size + 2; // first fragment contains status & manufacturer id
+  } else {
+    *size = data->size; // following fragments contain pure data
+  }
   return 0;
 }
 
@@ -403,7 +446,8 @@ static int _set_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
     PROPERTY_CASE_SET(MIDI_MANUFACTURER_ID,MIDIManufacturerId,data->bytes[1]);
     PROPERTY_CASE_SET(MIDI_SYSEX_SIZE,size_t,data->size);
     PROPERTY_CASE_SET(MIDI_SYSEX_FRAGMENT,uint8_t,data->bytes[2]);
-    PROPERTY_CASE_BASE(MIDI_SYSEX_DATA,void*);
+    PROPERTY_CASE_BASE(MIDI_SYSEX_DATA,void**);
+      if( data->data != NULL && data->bytes[3] == 1 ) free( data->data );
       data->data = *((void**)value);
       return 0;
       break;
@@ -431,7 +475,7 @@ static int _get_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
     PROPERTY_CASE_GET(MIDI_MANUFACTURER_ID,MIDIManufacturerId,data->bytes[1]);
     PROPERTY_CASE_GET(MIDI_SYSEX_SIZE,size_t,data->size);
     PROPERTY_CASE_GET(MIDI_SYSEX_FRAGMENT,uint8_t,data->bytes[2]);
-    PROPERTY_CASE_BASE(MIDI_SYSEX_DATA,void*);
+    PROPERTY_CASE_BASE(MIDI_SYSEX_DATA,void**);
       *((void**)value) = data->data;
       return 0;
       break;
@@ -592,6 +636,7 @@ static int _get_tune_request_real_time( struct MIDIMessageData * data, MIDIPrope
 
 static struct MIDIMessageFormat _note_off_on = {
   &_test_note_off_on,
+  &_size_three_bytes,
   &_set_note_off_on,
   &_get_note_off_on,
   &_encode_three_bytes,
@@ -600,6 +645,7 @@ static struct MIDIMessageFormat _note_off_on = {
 
 static struct MIDIMessageFormat _polyphonic_key_pressure = {
   &_test_polyphonic_key_pressure,
+  &_size_three_bytes,
   &_set_polyphonic_key_pressure,
   &_get_polyphonic_key_pressure,
   &_encode_three_bytes,
@@ -608,6 +654,7 @@ static struct MIDIMessageFormat _polyphonic_key_pressure = {
 
 static struct MIDIMessageFormat _control_change = {
   &_test_control_change,
+  &_size_three_bytes,
   &_set_control_change,
   &_get_control_change,
   &_encode_three_bytes,
@@ -616,6 +663,7 @@ static struct MIDIMessageFormat _control_change = {
 
 static struct MIDIMessageFormat _program_change = {
   &_test_program_change,
+  &_size_two_bytes,
   &_set_program_change,
   &_get_program_change,
   &_encode_two_bytes,
@@ -624,6 +672,7 @@ static struct MIDIMessageFormat _program_change = {
 
 static struct MIDIMessageFormat _channel_pressure = {
   &_test_channel_pressure,
+  &_size_two_bytes,
   &_set_channel_pressure,
   &_get_channel_pressure,
   &_encode_two_bytes,
@@ -632,6 +681,7 @@ static struct MIDIMessageFormat _channel_pressure = {
 
 static struct MIDIMessageFormat _pitch_wheel_change = {
   &_test_pitch_wheel_change,
+  &_size_three_bytes,
   &_set_pitch_wheel_change,
   &_get_pitch_wheel_change,
   &_encode_three_bytes,
@@ -640,6 +690,7 @@ static struct MIDIMessageFormat _pitch_wheel_change = {
 
 static struct MIDIMessageFormat _system_exclusive = {
   &_test_system_exclusive,
+  &_size_system_exclusive,
   &_set_system_exclusive,
   &_get_system_exclusive,
   &_encode_system_exclusive,
@@ -648,6 +699,7 @@ static struct MIDIMessageFormat _system_exclusive = {
 
 static struct MIDIMessageFormat _time_code_quarter_frame = {
   &_test_time_code_quarter_frame,
+  &_size_two_bytes,
   &_set_time_code_quarter_frame,
   &_get_time_code_quarter_frame,
   &_encode_two_bytes,
@@ -656,6 +708,7 @@ static struct MIDIMessageFormat _time_code_quarter_frame = {
 
 static struct MIDIMessageFormat _song_position_pointer = {
   &_test_song_position_pointer,
+  &_size_three_bytes,
   &_set_song_position_pointer,
   &_get_song_position_pointer,
   &_encode_three_bytes,
@@ -664,6 +717,7 @@ static struct MIDIMessageFormat _song_position_pointer = {
 
 static struct MIDIMessageFormat _song_select = {
   &_test_song_select,
+  &_size_two_bytes,
   &_set_song_select,
   &_get_song_select,
   &_encode_two_bytes,
@@ -672,6 +726,7 @@ static struct MIDIMessageFormat _song_select = {
 
 static struct MIDIMessageFormat _tune_request = {
   &_test_tune_request,
+  &_size_one_byte,
   &_set_tune_request,
   &_get_tune_request_real_time,
   &_encode_one_byte,
@@ -680,6 +735,7 @@ static struct MIDIMessageFormat _tune_request = {
 
 static struct MIDIMessageFormat _real_time = {
   &_test_real_time,
+  &_size_one_byte,
   &_set_real_time,
   &_get_tune_request_real_time,
   &_encode_one_byte,
@@ -735,6 +791,11 @@ struct MIDIMessageFormat * MIDIMessageFormatForStatus( MIDIStatus status ) {
 int MIDIMessageFormatTest( struct MIDIMessageFormat * format, void * buffer ) {
   if( format == NULL || format->test == NULL ) return 1;
   return (format->test)( buffer );
+}
+
+int MIDIMessageFormatGetSize( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t * size ) {
+  if( format == NULL || format->size == NULL ) return 1;
+  return (format->size)( data, size );
 }
 
 int MIDIMessageFormatSet( struct MIDIMessageFormat * format, struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {

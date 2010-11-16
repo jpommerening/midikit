@@ -27,6 +27,7 @@ int test001_message_format( void ) {
   ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_VELOCITY, sizeof(MIDIVelocity), &velocity ), "Could not get message velocity." );  
   ASSERT_EQUAL( velocity, 123, "Stored wrong velocity." );
 
+  free( message );
   return 0;
 }
 
@@ -58,6 +59,7 @@ int test002_message_format( void ) {
   ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_VALUE, sizeof(MIDILongValue), &value ), "Could not get message value." );  
   ASSERT_EQUAL( value, 12345, "Stored wrong value." );
 
+  free( message );
   return 0;
 }
 
@@ -88,5 +90,7 @@ int test003_message_format( void ) {
   for( i=0; i<sysex_size; i++ ) {
     ASSERT_EQUAL( sysex_data[i], buffer[i+2], "Stored wrong system exclusive data." );
   }
+
+  free( message );
   return 0;
 }

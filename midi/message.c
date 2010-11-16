@@ -40,7 +40,7 @@ struct MIDIMessage * MIDIMessageCreate( MIDIStatus status ) {
 }
 
 void MIDIMessageDestroy( struct MIDIMessage * message ) {
-  if( message->data.data != NULL ) free( message->data.data );
+  if( message->data.data != NULL && message->data.bytes[3] == 1 ) free( message->data.data );
   free( message );
 }
 
@@ -72,9 +72,14 @@ int MIDIMessageSetTimestamp( struct MIDIMessage * message, MIDITimestamp timesta
 }
 
 int MIDIMessageGetTimestamp( struct MIDIMessage * message, MIDITimestamp * timestamp ) {
-  if( message == NULL ) return 1;
+  if( message == NULL || timestamp == NULL ) return 1;
   *timestamp = message->timestamp;
   return 0;
+}
+
+int MIDIMessageGetSize( struct MIDIMessage * message, size_t * size ) {
+  if( message == NULL || size == NULL ) return 1;
+  return MIDIMessageFormatGetSize( message->format, &(message->data), size );
 }
 
 int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value ) {
