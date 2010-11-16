@@ -20,9 +20,9 @@ static int _send( struct MIDIDriver * driver, struct MIDIMessage * message ) {
   ASSERT_NO_ERROR( MIDIMessageEncode( message, size, _buffer ), "Could not encode message." );
   for( i=0; i<size; i++ ) {
     if( i%16 == 15 || i==size-1 ) {
-      printf( "%2x\n", _buffer[i] );
+      printf( "%02x\n", _buffer[i] );
     } else {
-      printf( "%2x ", _buffer[i] );
+      printf( "%02x ", _buffer[i] );
     }
   }
   return 0;
