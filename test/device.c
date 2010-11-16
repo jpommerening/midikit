@@ -48,8 +48,8 @@ int test001_device( void ) {
   ASSERT_EQUAL( _status, MIDI_STATUS_TIMING_CLOCK, "Test device did not receive relayed clock message." );
 
   MIDIConnectorRelease( connector );
-  MIDIDeviceRelease( device );
   MIDIMessageRelease( message );
+  MIDIDeviceRelease( device );
   return 0;
 }
 
@@ -81,6 +81,8 @@ int test002_device( void ) {
   ASSERT_NO_ERROR( MIDIMessageSetStatus( message, MIDI_STATUS_STOP ), "Could not change status of real time message." );
   ASSERT_NO_ERROR( MIDIDeviceSend( device_master, message ), "Could not receive message on master device." );
   ASSERT_EQUAL( _status, MIDI_STATUS_STOP, "Slave device did not receive message from master out." );
+
+  MIDIDeviceDetachOut( device_master );
 
   MIDIConnectorRelease( connector );
   MIDIMessageRelease( message );

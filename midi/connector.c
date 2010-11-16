@@ -1,9 +1,10 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "connector.h"
 
 typedef int (*RelayFn)( void *, struct MIDIMessage *  );
-typedef void (*RetainFn)( void *  );
-typedef void (*ReleaseFn)( void *  );
+typedef void (*RetainFn)( void * );
+typedef void (*ReleaseFn)( void * );
 
 extern int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message );
 extern void MIDIDeviceRetain( struct MIDIDevice * device );

@@ -63,6 +63,7 @@ int test001_driver( void ) {
   ASSERT_EQUAL( _buffer[1], key, "Message key byte incorrectly encoded." );
   ASSERT_EQUAL( _buffer[2], velocity, "Message velocity byte incorrectly encoded." );
 
+  MIDIConnectorRelease( connector );
   MIDIDriverRelease( driver );
   MIDIMessageRelease( message );
   return 0;

@@ -91,6 +91,8 @@ int test003_message_format( void ) {
     ASSERT_EQUAL( sysex_data[i], buffer[i+2], "Stored wrong system exclusive data." );
   }
 
+  if( message->data != NULL && message->bytes[3] == 1 )
+    free( message->data );
   free( message );
   return 0;
 }
