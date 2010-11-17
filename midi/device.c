@@ -107,46 +107,46 @@ int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message 
   MIDIMessageGetStatus( message, &status );
   switch( status ) {
     case MIDI_STATUS_NOTE_OFF:
-      MIDIMessageGet( message, MIDI_CHANNEL,  sizeof(MIDIValue), &v[0] );
-      MIDIMessageGet( message, MIDI_KEY,      sizeof(MIDIValue), &v[1] );
-      MIDIMessageGet( message, MIDI_VELOCITY, sizeof(MIDIValue), &v[2] );
+      MIDIMessageGet( message, MIDI_CHANNEL,  sizeof(MIDIChannel),  &v[0] );
+      MIDIMessageGet( message, MIDI_KEY,      sizeof(MIDIKey),      &v[1] );
+      MIDIMessageGet( message, MIDI_VELOCITY, sizeof(MIDIVelocity), &v[2] );
       return MIDIDeviceReceiveNoteOff( device, v[0], v[1], v[2] );
       break;
     case MIDI_STATUS_NOTE_ON:
-      MIDIMessageGet( message, MIDI_CHANNEL,  sizeof(MIDIValue), &v[0] );
-      MIDIMessageGet( message, MIDI_KEY,      sizeof(MIDIValue), &v[1] );
-      MIDIMessageGet( message, MIDI_VELOCITY, sizeof(MIDIValue), &v[2] );
+      MIDIMessageGet( message, MIDI_CHANNEL,  sizeof(MIDIChannel),  &v[0] );
+      MIDIMessageGet( message, MIDI_KEY,      sizeof(MIDIKey),      &v[1] );
+      MIDIMessageGet( message, MIDI_VELOCITY, sizeof(MIDIVelocity), &v[2] );
       return MIDIDeviceReceiveNoteOn( device, v[0], v[1], v[2] );
       break;
     case MIDI_STATUS_POLYPHONIC_KEY_PRESSURE:
-      MIDIMessageGet( message, MIDI_CHANNEL,  sizeof(MIDIValue), &v[0] );
-      MIDIMessageGet( message, MIDI_KEY,      sizeof(MIDIValue), &v[1] );
-      MIDIMessageGet( message, MIDI_VELOCITY, sizeof(MIDIValue), &v[2] );
+      MIDIMessageGet( message, MIDI_CHANNEL,  sizeof(MIDIChannel),  &v[0] );
+      MIDIMessageGet( message, MIDI_KEY,      sizeof(MIDIKey),      &v[1] );
+      MIDIMessageGet( message, MIDI_PRESSURE, sizeof(MIDIPressure), &v[2] );
       return MIDIDeviceReceivePolyphonicKeyPressure( device, v[0], v[1], v[2] );
       break;
     case MIDI_STATUS_CONTROL_CHANGE:
-      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIValue), &v[0] );
-      MIDIMessageGet( message, MIDI_CONTROL, sizeof(MIDIValue), &v[1] );
-      MIDIMessageGet( message, MIDI_VALUE,   sizeof(MIDIValue), &v[2] );
+      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIChannel), &v[0] );
+      MIDIMessageGet( message, MIDI_CONTROL, sizeof(MIDIControl), &v[1] );
+      MIDIMessageGet( message, MIDI_VALUE,   sizeof(MIDIValue),   &v[2] );
       return MIDIDeviceReceiveControlChange( device, v[0], v[1], v[2] );
       break;
     case MIDI_STATUS_PROGRAM_CHANGE:
-      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIValue), &v[0] );
-      MIDIMessageGet( message, MIDI_PROGRAM, sizeof(MIDIValue), &v[1] );
+      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIChannel), &v[0] );
+      MIDIMessageGet( message, MIDI_PROGRAM, sizeof(MIDIProgram), &v[1] );
       return MIDIDeviceReceiveProgramChange( device, v[0], v[1] );
       break;
     case MIDI_STATUS_CHANNEL_PRESSURE:
-      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIValue), &v[0] );
-      MIDIMessageGet( message, MIDI_VALUE,   sizeof(MIDIValue), &v[1] );
+      MIDIMessageGet( message, MIDI_CHANNEL,  sizeof(MIDIChannel),  &v[0] );
+      MIDIMessageGet( message, MIDI_PRESSURE, sizeof(MIDIPressure), &v[1] );
       return MIDIDeviceReceiveChannelPressure( device, v[0], v[1] );
       break;
     case MIDI_STATUS_PITCH_WHEEL_CHANGE:
-      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_CHANNEL, sizeof(MIDIChannel),   &v[0] );
       MIDIMessageGet( message, MIDI_VALUE,   sizeof(MIDILongValue), &lv );
       return MIDIDeviceReceivePitchWheelChange( device, v[0], lv );
       break;
     case MIDI_STATUS_SYSTEM_EXCLUSIVE:
-      MIDIMessageGet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIValue), &v[0] );
+      MIDIMessageGet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &v[0] );
       MIDIMessageGet( message, MIDI_SYSEX_SIZE,      sizeof(size_t), &s );
       MIDIMessageGet( message, MIDI_SYSEX_DATA,      sizeof(void*), &vp );
       MIDIMessageGet( message, MIDI_SYSEX_FRAGMENT,  sizeof(uint8_t), &b );
