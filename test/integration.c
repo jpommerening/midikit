@@ -33,14 +33,24 @@ static int _receive_pkp( struct MIDIDevice * device, MIDIChannel channel, MIDIKe
 }
 
 static int _receive_cc( struct MIDIDevice * device, MIDIChannel channel, MIDIControl control, MIDIValue value ) {
+  printf( "Control Change ( channel=%i, control=%02x, value=%i )\n", (int) channel, (int) control, (int) value );
+  ASSERT_EQUAL( channel, _test_values[0], "Received unexpected channel in control change message." );
+  ASSERT_EQUAL( control, _test_values[1], "Received unexpected control in control change message." );
+  ASSERT_EQUAL( value,   _test_values[2], "Received unexpected value in control change message." );
   return 0;
 }
 
 static int _receive_pc( struct MIDIDevice * device, MIDIChannel channel, MIDIProgram program ) {
+  printf( "Program Change ( channel=%i, program=%i )\n", (int) channel, (int) program );
+  ASSERT_EQUAL( channel, _test_values[0], "Received unexpected channel in program change message." );
+  ASSERT_EQUAL( program, _test_values[1], "Received unexpected program in program change message." );
   return 0;
 }
 
 static int _receive_cp( struct MIDIDevice * device, MIDIChannel channel, MIDIPressure pressure ) {
+  printf( "Channel Pressure ( channel=%i, pressure=%i )\n", (int) channel, (int) pressure );
+  ASSERT_EQUAL( channel,  _test_values[0], "Received unexpected channel in channel pressure message." );
+  ASSERT_EQUAL( pressure, _test_values[1], "Received unexpected pressure in channel pressure message." );
   return 0;
 }
 
@@ -149,20 +159,45 @@ int test001_integration( void ) {
   MIDIConnectorRelease( connector ); // connector is retained by the device 1 & 2.
   connector = NULL;
   
-  ASSERT_NO_ERROR( MIDIDriverProvideOutput( driver, &connector ), "Could not provide driver output." );
+  ASSERT_NO_ERROR( MIDIDriverProvideSendConnector( driver, &connector ), "Could not provide driver output." );
   ASSERT_NO_ERROR( MIDIDeviceAttachOut( device_2, connector ), "Could not attach connector to device 2 out port." );
-  MIDIConnectorRelease( connector ); // connector is retained by the device 2 and driver.
   connector = NULL;
   
-  ASSERT_NO_ERROR( MIDIDriverProvideInput( driver, &connector ), "Could not provide driver input." );
+  ASSERT_NO_ERROR( MIDIDriverProvideReceiveConnector( driver, &connector ), "Could not provide driver input." );
   ASSERT_NO_ERROR( MIDIDeviceAttachIn( device_1, connector ), "Could not attach connector to device 1 in port." );
-  MIDIConnectorRelease( connector ); // connector is retained by the device 1 and driver.
   connector = NULL;
+  
+  _test_values[0] = MIDI_CHANNEL_1;
+  _test_values[1] = 60;
+  _test_values[2] = 92;
+  ASSERT_NO_ERROR( MIDIDeviceSendNoteOn( device_2, _test_values[0], _test_values[1], _test_values[2] ), "Could not send note on event." );
+
+  _test_values[0] = MIDI_CHANNEL_1;
+  _test_values[1] = 60;
+  _test_values[2] = 127;
+  ASSERT_NO_ERROR( MIDIDeviceSendPolyphonicKeyPressure( device_2, _test_values[0], _test_values[1], _test_values[2] ), "Could not send polyphonic key pressure event." );
+
+  _test_values[0] = MIDI_CHANNEL_1;
+  _test_values[1] = 60;
+  _test_values[2] = 0;
+  ASSERT_NO_ERROR( MIDIDeviceSendNoteOff( device_2, _test_values[0], _test_values[1], _test_values[2] ), "Could not send note off event." );
   
   _test_values[0] = MIDI_CHANNEL_2;
-  _test_values[1] = 60;
-  _test_values[2] = 123;
-  ASSERT_NO_ERROR( MIDIDeviceSendNoteOn( device_2, _test_values[0], _test_values[1], _test_values[2] ), "Could not send note on event." );
-  
+  _test_values[1] = 0x07; // Volume controller
+  _test_values[2] = 64;
+  ASSERT_NO_ERROR( MIDIDeviceSendControlChange( device_2, _test_values[0], _test_values[1], _test_values[2] ), "Could not send control change event." );
+
+  _test_values[0] = MIDI_CHANNEL_3;
+  _test_values[1] = 0x18;
+  ASSERT_NO_ERROR( MIDIDeviceSendProgramChange( device_2, _test_values[0], _test_values[1] ), "Could not send program change event." );
+
+  _test_values[0] = MIDI_CHANNEL_4;
+  _test_values[1] = 0x18;
+  ASSERT_NO_ERROR( MIDIDeviceSendChannelPressure( device_2, _test_values[0], _test_values[1] ), "Could not send channel pressure event." );
+
+  MIDIDriverRelease( driver );
+  MIDIDeviceRelease( device_1 );
+  MIDIDeviceRelease( device_2 );
+
   return 0;
 }

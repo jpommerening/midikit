@@ -16,8 +16,8 @@ void MIDIDriverDestroy( struct MIDIDriver * driver );
 void MIDIDriverRetain( struct MIDIDriver * driver );
 void MIDIDriverRelease( struct MIDIDriver * driver );
 
-int MIDIDriverProvideInput( struct MIDIDriver * driver, struct MIDIConnector ** input );
-int MIDIDriverProvideOutput( struct MIDIDriver * driver, struct MIDIConnector ** output );
+int MIDIDriverProvideReceiveConnector( struct MIDIDriver * driver, struct MIDIConnector ** receive );
+int MIDIDriverProvideSendConnector( struct MIDIDriver * driver, struct MIDIConnector ** send );
 
 int MIDIDriverSend( struct MIDIDriver * driver, struct MIDIMessage * message );
 int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message );

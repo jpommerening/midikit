@@ -6,10 +6,14 @@ struct MIDIDriver;
 struct MIDIMessage;
 
 struct MIDIConnector;
-struct MIDIConnectorDelegate {
+struct MIDIConnectorTargetDelegate {
   int (*relay)( void * target, struct MIDIMessage * message );
-  void (*retain)( void * target );
-  void (*release)( void * target );
+  int (*connect)( void * target, struct MIDIConnector * connector );
+  int (*invalidate)( void * target, struct MIDIConnector * connector );
+};
+struct MIDIConnectorSourceDelegate {
+  int (*connect)( void * target, struct MIDIConnector * connector );
+  int (*invalidate)( void * source, struct MIDIConnector * connector );
 };
 
 struct MIDIConnector * MIDIConnectorCreate();
@@ -17,11 +21,20 @@ void MIDIConnectorDestroy( struct MIDIConnector * connector );
 void MIDIConnectorRetain( struct MIDIConnector * connector );
 void MIDIConnectorRelease( struct MIDIConnector * connector );
 
-int MIDIConnectorDetach( struct MIDIConnector * connector );
-int MIDIConnectorAttachWithDelegate( struct MIDIConnector * connector, void * target,
-                                     struct MIDIConnectorDelegate * delegate );
-int MIDIConnectorAttachDevice( struct MIDIConnector * connector, struct MIDIDevice * device );
-int MIDIConnectorAttachDriver( struct MIDIConnector * connector, struct MIDIDriver * driver );
+int MIDIConnectorDetachTarget( struct MIDIConnector * connector );
+int MIDIConnectorAttachTargetWithDelegate( struct MIDIConnector * connector, void * target,
+                                           struct MIDIConnectorTargetDelegate * delegate );
+
+int MIDIConnectorDetachSource( struct MIDIConnector * connector );
+int MIDIConnectorAttachSourceWithDelegate( struct MIDIConnector * connector, void * source,
+                                           struct MIDIConnectorSourceDelegate * delegate );
+
+int MIDIConnectorAttachToDeviceIn( struct MIDIConnector * connector, struct MIDIDevice * device );
+int MIDIConnectorAttachToDriver( struct MIDIConnector * connector, struct MIDIDriver * driver );
+
+int MIDIConnectorAttachFromDeviceOut( struct MIDIConnector * connector, struct MIDIDevice * device );
+int MIDIConnectorAttachFromDeviceThru( struct MIDIConnector * connector, struct MIDIDevice * device );
+int MIDIConnectorAttachFromDriver( struct MIDIConnector * connector, struct MIDIDriver * driver );
 
 int MIDIConnectorRelay( struct MIDIConnector * connector, struct MIDIMessage * message );
 

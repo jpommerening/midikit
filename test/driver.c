@@ -54,7 +54,7 @@ int test001_driver( void ) {
                    "Could not set message velocity." );
   driver = MIDIDriverCreate( &_test_driver );
   ASSERT_NOT_EQUAL( driver, NULL, "Could not create driver!" );
-  MIDIDriverProvideOutput( driver, &connector );
+  ASSERT_NO_ERROR( MIDIDriverProvideSendConnector( driver, &connector ), "Could not provide send connector." );
   ASSERT_NOT_EQUAL( connector, NULL, "Could not provide connector!" );
 
   ASSERT_NO_ERROR( MIDIConnectorRelay( connector, message), "Connector could not relay message to driver." );
@@ -63,7 +63,6 @@ int test001_driver( void ) {
   ASSERT_EQUAL( _buffer[1], key, "Message key byte incorrectly encoded." );
   ASSERT_EQUAL( _buffer[2], velocity, "Message velocity byte incorrectly encoded." );
 
-  MIDIConnectorRelease( connector );
   MIDIDriverRelease( driver );
   MIDIMessageRelease( message );
   return 0;
@@ -90,11 +89,11 @@ int test002_driver( void ) {
   device = MIDIDeviceCreate( NULL );
   ASSERT_NOT_EQUAL( device, NULL, "Could not create device!" );
 
-  ASSERT_NO_ERROR( MIDIDriverProvideInput( driver, &connector_in ), "Could not provide input connector!" );
+  ASSERT_NO_ERROR( MIDIDriverProvideReceiveConnector( driver, &connector_in ), "Could not provide input connector!" );
   ASSERT_NOT_EQUAL( connector_in, NULL, "Provided input connector is NULL!" );
   ASSERT_NO_ERROR( MIDIDeviceAttachIn( device, connector_in ), "Could not attach connector to device input!" );
 
-  ASSERT_NO_ERROR( MIDIDriverProvideOutput( driver, &connector_out ), "Could not provide output connector!" );
+  ASSERT_NO_ERROR( MIDIDriverProvideSendConnector( driver, &connector_out ), "Could not provide output connector!" );
   ASSERT_NOT_EQUAL( connector_out, NULL, "Provided output connector is NULL!" );
   ASSERT_NO_ERROR( MIDIDeviceAttachOut( device, connector_out ), "Could not attach connector to device output!" );
 
@@ -117,8 +116,6 @@ int test002_driver( void ) {
 
   ASSERT_NO_ERROR( MIDIDriverReceive( driver, message ), "Could not simulate received message." );
 
-  MIDIConnectorRelease( connector_in );
-  MIDIConnectorRelease( connector_out );
   MIDIMessageRelease( message );
   MIDIDriverRelease( driver );
   MIDIDeviceRelease( device );
@@ -126,4 +123,5 @@ int test002_driver( void ) {
   if( _buffer != NULL ) free( _buffer );
   return 0;
 }
+
 
