@@ -13,27 +13,16 @@ struct MIDIDevice {
   struct MIDIDeviceDelegate * delegate;
 };
 
-static void _detach_target( struct MIDIConnector ** connector ) {
-  struct MIDIConnector * c = *connector;
-  if( c != NULL ) {
-    *connector = NULL;
-    MIDIConnectorDetachTarget( c );
-    MIDIConnectorRelease( c );
-  }
-}
-
-static void _detach_source( struct MIDIConnector ** connector ) {
-  struct MIDIConnector * c = *connector;
-  if( c != NULL ) {
-    *connector = NULL;
-    MIDIConnectorDetachSource( c );
-    MIDIConnectorRelease( c );
-  }
-}
-
 static int _connect( struct MIDIConnector ** device_connector, struct MIDIConnector * connector ) {
   MIDIConnectorRetain( connector );
   *device_connector = connector;
+  return 0;
+}
+
+static int _disconnect( struct MIDIConnector ** device_connector ) {
+  struct MIDIConnector * connector = *device_connector;
+  *device_connector = NULL;
+  MIDIConnectorRelease( connector );
   return 0;
 }
 
@@ -44,59 +33,56 @@ static int _in_relay( void * devicep, struct MIDIMessage * message ) {
 static int _in_connect( void * devicep, struct MIDIConnector * in ) {
   struct MIDIDevice * device = devicep;
   if( device->in == in ) return 0;
-  if( device->in != NULL ) _detach_target( &(device->in) );
+  if( device->in != NULL ) MIDIConnectorDetachTarget( device->in );
   return _connect( &(device->in), in );
 }
 
-static int _in_invalidate( void * devicep, struct MIDIConnector * in ) {
+static int _in_disconnect( void * devicep, struct MIDIConnector * in ) {
   struct MIDIDevice * device = devicep;
   if( device->in != in ) return 1;
-  _detach_target( &(device->in) );
-  return 0;
+  return _disconnect( &(device->in) );
 }
 
 static int _out_connect( void * devicep, struct MIDIConnector * out ) {
   struct MIDIDevice * device = devicep;
   if( device->out == out ) return 0;
-  if( device->out != NULL ) _detach_source( &(device->out) );
+  if( device->out != NULL ) MIDIConnectorDetachSource( device->out );
   return _connect( &(device->out), out );
 }
 
-static int _out_invalidate( void * devicep, struct MIDIConnector * out ) {
+static int _out_disconnect( void * devicep, struct MIDIConnector * out ) {
   struct MIDIDevice * device = devicep;
   if( device->out != out ) return 1;
-  _detach_source( &(device->out) );
-  return 0;
+  return _disconnect( &(device->out) );
 }
 
 static int _thru_connect( void * devicep, struct MIDIConnector * thru ) {
   struct MIDIDevice * device = devicep;
   if( device->thru == thru ) return 0;
-  if( device->thru != NULL ) _detach_source( &(device->thru) );
+  if( device->thru != NULL ) MIDIConnectorDetachSource( device->thru );
   return _connect( &(device->thru), thru );
 }
 
-static int _thru_invalidate( void * devicep, struct MIDIConnector * thru ) {
+static int _thru_disconnect( void * devicep, struct MIDIConnector * thru ) {
   struct MIDIDevice * device = devicep;
   if( device->thru != thru ) return 1;
-  _detach_source( &(device->thru) );
-  return 0;
+  return _disconnect( &(device->thru) );
 }
 
 struct MIDIConnectorTargetDelegate MIDIDeviceInConnectorDelegate = {
   &_in_relay,
   &_in_connect,
-  &_in_invalidate
+  &_in_disconnect
 };
 
 struct MIDIConnectorSourceDelegate MIDIDeviceOutConnectorDelegate = {
   &_out_connect,
-  &_out_invalidate
+  &_out_disconnect
 };
 
 struct MIDIConnectorSourceDelegate MIDIDeviceThruConnectorDelegate = {
   &_thru_connect,
-  &_thru_invalidate
+  &_thru_disconnect
 };
 
 struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate ) {

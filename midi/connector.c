@@ -4,7 +4,7 @@
 
 typedef int (*RelayFn)( void *, struct MIDIMessage *  );
 typedef int (*ConnectFn)( void *, struct MIDIConnector * );
-typedef int (*InvalidateFn)( void *, struct MIDIConnector * );
+typedef int (*DisconnectFn)( void *, struct MIDIConnector * );
 
 extern struct MIDIConnectorTargetDelegate MIDIDeviceInConnectorDelegate;
 extern struct MIDIConnectorSourceDelegate MIDIDeviceOutConnectorDelegate;
@@ -37,19 +37,23 @@ static int _source_connect( struct MIDIConnector * connector ) {
   return 0;
 }
 
-static int _target_invalidate( struct MIDIConnector * connector ) {
-  if( connector->target != NULL &&
+static int _target_disconnect( struct MIDIConnector * connector ) {
+  void * target = connector->target;
+  connector->target = NULL;
+  if( target != NULL &&
       connector->target_delegate != NULL &&
-      connector->target_delegate->invalidate != NULL )
-    return (connector->target_delegate->invalidate)( connector->target, connector );
+      connector->target_delegate->disconnect != NULL )
+    return (connector->target_delegate->disconnect)( target, connector );
   return 0;
 }
 
-static int _source_invalidate( struct MIDIConnector * connector ) {
-  if( connector->source != NULL &&
+static int _source_disconnect( struct MIDIConnector * connector ) {
+  void * source = connector->source;
+  connector->source = NULL;
+  if( source != NULL &&
       connector->source_delegate != NULL &&
-      connector->source_delegate->invalidate != NULL )
-    return (connector->source_delegate->invalidate)( connector->source, connector );
+      connector->source_delegate->disconnect != NULL )
+    return (connector->source_delegate->disconnect)( source, connector );
   return 0;
 }
 
@@ -66,8 +70,8 @@ struct MIDIConnector * MIDIConnectorCreate() {
 }
 
 void MIDIConnectorDestroy( struct MIDIConnector * connector ) {
-  _source_invalidate( connector );
-  _target_invalidate( connector );
+  _source_disconnect( connector );
+  _target_disconnect( connector );
   free( connector );
 }
 
@@ -82,33 +86,27 @@ void MIDIConnectorRelease( struct MIDIConnector * connector ) {
 }
 
 int MIDIConnectorDetachTarget( struct MIDIConnector * connector ) {
-  connector->target = NULL;
-  connector->target_delegate = NULL;
-  return _source_invalidate( connector );
+  return _target_disconnect( connector );
 }
 
 int MIDIConnectorAttachTargetWithDelegate( struct MIDIConnector * connector, void * target,
                                            struct MIDIConnectorTargetDelegate * delegate ) {
-  _target_invalidate( connector );
+  _target_disconnect( connector );
   connector->target = target;
   connector->target_delegate = delegate;
-  _target_connect( connector );
-  return 0;
+  return _target_connect( connector );
 }
 
 int MIDIConnectorDetachSource( struct MIDIConnector * connector ) {
-  connector->source = NULL;
-  connector->source_delegate = NULL;
-  return _target_invalidate( connector );
+  return _source_disconnect( connector );
 }
 
 int MIDIConnectorAttachSourceWithDelegate( struct MIDIConnector * connector, void * source,
                                            struct MIDIConnectorSourceDelegate * delegate ) {
-  _source_invalidate( connector );
+  _source_disconnect( connector );
   connector->source = source;
   connector->source_delegate = delegate;
-  _source_connect( connector );
-  return 0;
+  return _source_connect( connector );
 }
 
 int MIDIConnectorAttachToDeviceIn( struct MIDIConnector * connector, struct MIDIDevice * device ) {

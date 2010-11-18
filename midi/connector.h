@@ -9,11 +9,11 @@ struct MIDIConnector;
 struct MIDIConnectorTargetDelegate {
   int (*relay)( void * target, struct MIDIMessage * message );
   int (*connect)( void * target, struct MIDIConnector * connector );
-  int (*invalidate)( void * target, struct MIDIConnector * connector );
+  int (*disconnect)( void * target, struct MIDIConnector * connector );
 };
 struct MIDIConnectorSourceDelegate {
   int (*connect)( void * target, struct MIDIConnector * connector );
-  int (*invalidate)( void * source, struct MIDIConnector * connector );
+  int (*disconnect)( void * source, struct MIDIConnector * connector );
 };
 
 struct MIDIConnector * MIDIConnectorCreate();

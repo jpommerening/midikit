@@ -33,7 +33,6 @@ static void _list_destroy( struct MIDIConnectorList ** list, int (*fn)( struct M
   struct MIDIConnectorList * next;
   item = *list;
   *list = NULL;
-printf( "destroy\n" );
   while( item != NULL ) {
     if( fn != NULL ) (*fn)( item->connector );
     MIDIConnectorRelease( item->connector );
@@ -56,7 +55,7 @@ static void _list_push( struct MIDIConnectorList ** list, struct MIDIConnector *
 static void _list_remove( struct MIDIConnectorList ** list, struct MIDIConnector * connector, int (*fn)( struct MIDIConnector * ) ) {
   struct MIDIConnectorList * item;
   struct MIDIConnectorList * release;
-  if( list == NULL ) return;
+  if( list == NULL || *list==NULL ) return;
   while( *list != NULL ) {
     item = *list;
     if( item->connector == connector ) {
@@ -67,9 +66,7 @@ static void _list_remove( struct MIDIConnectorList ** list, struct MIDIConnector
       list = &(item->next);
     }
   }
-printf( "release listed." );
   _list_destroy( &release, fn );
-printf( "remove done\n" );
 }
 
 static int _receiver_connect( void * driverp, struct MIDIConnector * receiver ) {
@@ -78,7 +75,7 @@ static int _receiver_connect( void * driverp, struct MIDIConnector * receiver ) 
   return 0;
 }
 
-static int _receiver_invalidate( void * driverp, struct MIDIConnector * receiver ) {
+static int _receiver_disconnect( void * driverp, struct MIDIConnector * receiver ) {
   struct MIDIDriver * driver = driverp;
   _list_remove( &(driver->receivers), receiver, &MIDIConnectorDetachSource );
   return 0;
@@ -94,7 +91,7 @@ static int _sender_connect( void * driverp, struct MIDIConnector * sender ) {
   return 0;
 }
 
-static int _sender_invalidate( void * driverp, struct MIDIConnector * sender ) {
+static int _sender_disconnect( void * driverp, struct MIDIConnector * sender ) {
   struct MIDIDriver * driver = driverp;
   _list_remove( &(driver->senders), sender, &MIDIConnectorDetachTarget );
   return 0;
@@ -102,13 +99,13 @@ static int _sender_invalidate( void * driverp, struct MIDIConnector * sender ) {
 
 struct MIDIConnectorSourceDelegate MIDIDriverReceiveConnectorDelegate = {
   &_receiver_connect,
-  &_receiver_invalidate
+  &_receiver_disconnect
 };
 
 struct MIDIConnectorTargetDelegate MIDIDriverSendConnectorDelegate = {
   &_sender_relay,
   &_sender_connect,
-  &_sender_invalidate
+  &_sender_disconnect
 };
 
 void MIDIDriverDestroy( struct MIDIDriver * driver ) {
