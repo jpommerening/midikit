@@ -107,16 +107,8 @@ void MIDIDeviceRetain( struct MIDIDevice * device ) {
 }
 
 void MIDIDeviceRelease( struct MIDIDevice * device ) {
-  struct MIDIConnector * in = device->in;
   if( ! --device->refs ) {
     MIDIDeviceDestroy( device );
-  } else {
-    // device and connector have circular dependencies
-    // we try to break them like this ..
-    if( device->refs == 1 && in != NULL ) {
-      device->in = NULL;
-      MIDIConnectorRelease( in );
-    }
   }
 }
 

@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include "connector.h"
 
 typedef int (*RelayFn)( void *, struct MIDIMessage *  );

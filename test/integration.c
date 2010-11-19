@@ -55,10 +55,18 @@ static int _receive_cp( struct MIDIDevice * device, MIDIChannel channel, MIDIPre
 }
 
 static int _receive_pwc( struct MIDIDevice * device, MIDIChannel channel, MIDILongValue value ) {
+  printf( "Pitch Wheel Change ( channel=%i, value=%i )\n", (int) channel, (int) value );
+  ASSERT_EQUAL( channel,         _test_values[0], "Received unexpected channel in pitch wheel change message." );
+  ASSERT_EQUAL( MIDI_MSB(value), _test_values[1], "Received unexpected value in pitch wheel change message." );
+  ASSERT_EQUAL( MIDI_LSB(value), _test_values[2], "Received unexpected value in pitch wheel change message." );
   return 0;
 }
 
 static int _receive_sx( struct MIDIDevice * device, MIDIManufacturerId manufacturer_id, size_t size, void * data, uint8_t fragment ) {
+  printf( "System Exclusive ( manufacturer_id=%02x, size=%i, fragment=%i )\n", (int) manufacturer_id, (int) size, (int) fragment );
+  ASSERT_EQUAL( manufacturer_id, _test_values[0], "Received unexpected manufacturer id in system exclusive message." );
+  ASSERT_EQUAL( size,            _test_values[1], "Received unexpected size in system exclusive message." );
+  ASSERT_EQUAL( fragment,        _test_values[2], "Received unexpected fragment in system exclusive message." );
 //uint8_t * values = data;
   return 0;
 }
@@ -194,6 +202,11 @@ int test001_integration( void ) {
   _test_values[0] = MIDI_CHANNEL_4;
   _test_values[1] = 0x18;
   ASSERT_NO_ERROR( MIDIDeviceSendChannelPressure( device_2, _test_values[0], _test_values[1] ), "Could not send channel pressure event." );
+
+  _test_values[0] = MIDI_CHANNEL_5;
+  _test_values[1] = 123;
+  _test_values[2] = 45;
+  ASSERT_NO_ERROR( MIDIDeviceSendPitchWheelChange( device_2, _test_values[0], MIDI_LONG_VALUE( _test_values[1], _test_values[2] ) ), "Could not send pitch wheel change event." );
 
   MIDIDriverRelease( driver );
   MIDIDeviceRelease( device_1 );

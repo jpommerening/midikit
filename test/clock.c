@@ -87,12 +87,12 @@ int test005_clock( void ) {
 
   ASSERT_NOT_EQUAL( clock, NULL, "Could not create MIDI clock." );
   ASSERT_NO_ERROR( MIDIClockGetNow( clock, &start ), "Could not get current clock time." );
-  for( i=0; i<10000; i++ ) {
+  for( i=0; i<1000; i++ ) {
     MIDIClockGetNow( clock, &ticks );
     if( ticks != start ) break;
   }
   ASSERT( ticks > start, "Clock did not tick in 1000 loop cycles." );
-  ASSERT_EQUAL( ticks, start+1, "Clock ticked more than 1 step. Insufficient precision." );
+  ASSERT_NEAR_GREATER( ticks-start, 1, "Clock ticked more than 1 step. Insufficient precision." );
   MIDIClockRelease( clock );
   return 0;
 }

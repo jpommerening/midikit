@@ -1,11 +1,10 @@
 
 PROJECTDIR=..
+SUBDIR=test
 
 include $(PROJECTDIR)/config.mk
 
-OBJDIR=.
-
-CFLAGS := $(CFLAGS) -I..
+CFLAGS := $(CFLAGS) -I$(PROJECTDIR)
 LDFLAGS := $(LDFLAGS) -L$(LIBDIR) -lmidikit
 
 OBJS=$(OBJDIR)/midi.o $(OBJDIR)/clock.o $(OBJDIR)/message_format.o \

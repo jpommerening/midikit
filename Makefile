@@ -1,5 +1,6 @@
 
 PROJECTDIR=.
+SUBDIR=.
 
 include config.mk
 

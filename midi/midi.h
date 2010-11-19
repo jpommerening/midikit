@@ -245,6 +245,18 @@
  */
 #define MIDI_MSB( v ) ((v)>>7) & 0x7f
 
+/**
+ * MIDI Booleans, whenever the type is MIDIBoolean you
+ * can expect them to work like "real" booleans.
+ * When the type is MIDIValue you can't expect them to be
+ * normalized and MIDI semantics apply.
+ */
+//@{
+#define MIDI_ON  0x7f
+#define MIDI_OFF 0x00
+#define MIDI_BOOL( v ) (((v)>=64) ? MIDI_ON : MIDI_OFF)
+//@}
+
 typedef unsigned char  MIDIByte;
 typedef unsigned short MIDIProperty;
 
@@ -258,7 +270,8 @@ typedef char           MIDIControl;
 typedef char           MIDIProgram;
 typedef char           MIDIManufacturerId;
 
-typedef short          MIDIValue;
+typedef char           MIDIBoolean;
+typedef char           MIDIValue;
 typedef short          MIDILongValue;
 
 #endif
