@@ -14,7 +14,7 @@
 #define MIDI_CONTROL_UNDEFINED0            0x03
 #define MIDI_CONTROL_FOOT_CONTROLLER       0x04
 #define MIDI_CONTROL_PORTAMENTO_TIME       0x05
-#define MIDI_CONTROL_DATA_ENTRY_MSB        0x06
+#define MIDI_CONTROL_DATA_ENTRY            0x06
 #define MIDI_CONTROL_CHANNEL_VOLUME        0x07
 #define MIDI_CONTROL_BALANCE               0x08
 #define MIDI_CONTROL_UNDEFINED1            0x09
@@ -40,28 +40,57 @@
 #define MIDI_CONTROL_UNDEFINED13           0x1d
 #define MIDI_CONTROL_UNDEFINED14           0x1e
 #define MIDI_CONTROL_UNDEFINED15           0x1f
+/* 0x20 - 0x3f = Control 0x01 - 0x1f LSB */
 
-#define MIDI_CONTROL_DAMPLER_PEDAL         0x40
+#define MIDI_CONTROL_DAMPER_PEDAL          0x40
 #define MIDI_CONTROL_PORTAMENTO            0x41
 #define MIDI_CONTROL_SOSTENUTO             0x42
 #define MIDI_CONTROL_SOFT_PEDAL            0x43
 #define MIDI_CONTROL_LEGATO_FOOTSWITCH     0x44
 #define MIDI_CONTROL_HOLD2                 0x45
 #define MIDI_CONTROL_SOUND_CONTROLLER1     0x46
+#define MIDI_CONTROL_SOUND_VARIATION       MIDI_CONTROL_SOUND_CONTROLLER1
 #define MIDI_CONTROL_SOUND_CONTROLLER2     0x47
+#define MIDI_CONTROL_SOUND_TIMBRE          MIDI_CONTROL_SOUND_CONTROLLER2
 #define MIDI_CONTROL_SOUND_CONTROLLER3     0x48
+#define MIDI_CONTROL_SOUND_RELEASE_TIME    MIDI_CONTROL_SOUND_CONTROLLER3
 #define MIDI_CONTROL_SOUND_CONTROLLER4     0x49
+#define MIDI_CONTROL_SOUND_ATTACK_TIME     MIDI_CONTROL_SOUND_CONTROLLER4
 #define MIDI_CONTROL_SOUND_CONTROLLER5     0x4a
+#define MIDI_CONTROL_SOUND_BRIGHTNESS      MIDI_CONTROL_SOUND_CONTROLLER5
 #define MIDI_CONTROL_SOUND_CONTROLLER6     0x4b
+#define MIDI_CONTROL_SOUND_DECAY_TIME      MIDI_CONTROL_SOUND_CONTROLLER6
 #define MIDI_CONTROL_SOUND_CONTROLLER7     0x4c
+#define MIDI_CONTROL_SOUND_VIBRATO_RATE    MIDI_CONTROL_SOUND_CONTROLLER7
 #define MIDI_CONTROL_SOUND_CONTROLLER8     0x4d
+#define MIDI_CONTROL_SOUND_VIBRATO_DEPTH   MIDI_CONTROL_SOUND_CONTROLLER8
 #define MIDI_CONTROL_SOUND_CONTROLLER9     0x4e
+#define MIDI_CONTROL_SOUND_VIBRATO_DELAY   MIDI_CONTROL_SOUND_CONTROLLER9
 #define MIDI_CONTROL_SOUND_CONTROLLER10    0x4f
 #define MIDI_CONTROL_GENERAL_PURPOSE_CONTROLLER5 0x50
 #define MIDI_CONTROL_GENERAL_PURPOSE_CONTROLLER6 0x51
 #define MIDI_CONTROL_GENERAL_PURPOSE_CONTROLLER7 0x52
 #define MIDI_CONTROL_GENERAL_PURPOSE_CONTROLLER8 0x53
 #define MIDI_CONTROL_PORTAMENTO_CONTROL    0x54
+#define MIDI_CONTROL_UNDEFINED16           0x55
+#define MIDI_CONTROL_UNDEFINED17           0x56
+#define MIDI_CONTROL_UNDEFINED18           0x57
+#define MIDI_CONTROL_UNDEFINED19           0x58
+#define MIDI_CONTROL_UNDEFINED20           0x59
+#define MIDI_CONTROL_UNDEFINED21           0x5a
+#define MIDI_CONTROL_EFFECTS1_DEPTH        0x5b
+#define MIDI_CONTROL_REVERB_SEND_LEVEL     MIDI_CONTROL_EFFECTS1_DEPTH
+#define MIDI_CONTROL_EFFECTS2_DEPTH        0x5c
+#define MIDI_CONTROL_EFFECTS3_DEPTH        0x5d
+#define MIDI_CONTROL_CHORUS_SEND_LEVEL     MIDI_CONTROL_EFFECTS3_DEPTH
+#define MIDI_CONTROL_EFFECTS4_DEPTH        0x5e
+#define MIDI_CONTROL_EFFECTS5_DEPTH        0x5f
+#define MIDI_CONTROL_DATA_INCREMENT        0x60
+#define MIDI_CONTROL_DATA_DECREMENT        0x61
+#define MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER 0x62
+/* 0x63 = Control 0x62 LSB */
+#define MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER     0x64
+/* 0x64 = Control 0x63 LSB */
 
 #define MIDI_CONTROL_ALL_SOUND_OFF         0x78
 #define MIDI_CONTROL_RESET_ALL_CONTROLLERS 0x79
@@ -77,12 +106,12 @@
 
 struct MIDIController;
 struct MIDIControllerDelegate {
-  int (*recv_b)( struct MIDIController * controller, struct MIDIDevice * device, MIDIControl control, MIDIBoolean value );
-  int (*recv_v)( struct MIDIController * controller, struct MIDIDevice * device, MIDIControl control, MIDIValue value );
   int (*recv_lv)( struct MIDIController * controller, struct MIDIDevice * device, MIDIControl control, MIDILongValue value );
+  int (*recv_bv)( struct MIDIController * controller, struct MIDIDevice * device, MIDIControl control, MIDIBoolean value );
+  int (*recv_sv)( struct MIDIController * controller, struct MIDIDevice * device, MIDIControl control, MIDIValue value );
 };
 
-struct MIDIController * MIDIControllerCreate( struct MIDIControllerDelegate * delegate );
+struct MIDIController * MIDIControllerCreate( struct MIDIControllerDelegate * delegate, MIDIChannel channel );
 void MIDIControllerDestroy( struct MIDIController * controller );
 void MIDIControllerRetain( struct MIDIController * controller );
 void MIDIControllerRelease( struct MIDIController * controller );
