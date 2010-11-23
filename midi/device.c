@@ -4,6 +4,8 @@
 #include "device.h"
 #include "message.h"
 #include "connector.h"
+#include "controller.h"
+#include "timer.h"
 
 struct MIDIDevice {
   size_t refs;
@@ -11,6 +13,12 @@ struct MIDIDevice {
   struct MIDIConnector * out;
   struct MIDIConnector * thru;
   struct MIDIDeviceDelegate * delegate;
+  MIDIChannel base_channel;
+  MIDIBoolean omni_mode;
+  MIDIBoolean poly_mode;
+  struct MIDITimer          * timer;
+//struct MIDIInstrument     * instrument[MIDI_CHANNEL_15+1];
+  struct MIDIController     * controller[MIDI_CHANNEL_15+1];
 };
 
 static int _connect( struct MIDIConnector ** device_connector, struct MIDIConnector * connector ) {
@@ -87,18 +95,35 @@ struct MIDIConnectorSourceDelegate MIDIDeviceThruConnectorDelegate = {
 
 struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate ) {
   struct MIDIDevice * device = malloc( sizeof( struct MIDIDevice ) );
+  MIDIChannel channel;
+
   device->refs = 1;
   device->in   = NULL;
   device->out  = NULL;
   device->thru = NULL;
-  device->delegate = delegate;
+  device->delegate     = delegate;
+  device->base_channel = MIDI_CHANNEL_1;
+  device->omni_mode    = MIDI_OFF;
+  device->poly_mode    = MIDI_ON;
+  device->timer        = NULL;
+  for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_15; channel++ ) {
+  //device->instrument[(int)channel] = NULL;
+    device->controller[(int)channel] = NULL;
+  }
   return device;
 }
 
 void MIDIDeviceDestroy( struct MIDIDevice * device ) {
+  MIDIChannel channel;
+
   MIDIDeviceDetachIn( device );
   MIDIDeviceDetachOut( device );
   MIDIDeviceDetachThru( device );
+  if( device->timer != NULL ) MIDITimerRelease( device->timer );
+  for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_15; channel++ ) {
+  //if( device->instrument[(int)channel] != NULL ) MIDIInstrumentRelease( device->instrument[(int)channel] );;
+    if( device->controller[(int)channel] != NULL ) MIDIControllerRelease( device->controller[(int)channel] );;
+  }
   free( device );
 }
 
@@ -140,6 +165,81 @@ int MIDIDeviceDetachThru( struct MIDIDevice * device ) {
 int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIConnector * thru ) {
   if( device->thru != NULL ) MIDIDeviceDetachThru( device );
   return MIDIConnectorAttachFromDeviceThru( thru, device );
+}
+
+int MIDIDeviceSetBaseChannel( struct MIDIDevice * device, MIDIChannel channel ) {
+  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
+  device->base_channel = channel;
+  return 0;
+}
+
+int MIDIDeviceGetBaseChannel( struct MIDIDevice * device, MIDIChannel * channel ) {
+  if( channel == NULL ) return 1;
+  *channel = device->base_channel;
+  return 0;
+}
+
+int MIDIDeviceSetTimer( struct MIDIDevice * device, struct MIDITimer * timer ) {
+  if( device->timer != NULL ) MIDITimerRelease( device->timer );
+  MIDITimerRetain( timer );
+  device->timer = timer;
+  return 0;
+}
+
+int MIDIDeviceGetTimer( struct MIDIDevice * device, struct MIDITimer ** timer ) {
+  if( timer == NULL ) return 1;
+  *timer = device->timer;
+  return 0;
+}
+
+/*
+int MIDIDeviceSetChannelInstrument( struct MIDIDevice * device, MIDIChannel channel, struct MIDIInstrument * instrument ) {
+  if( channel == MIDI_CHANNEL_ALL ) {
+    for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
+      if( MIDIDeviceSetChannelInstrument( device, channel, instrument ) ) return 1;
+    }
+    return 0;
+  }
+  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
+  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
+  if( device->instrument[(int)channel] == instrument ) return 0;
+  if( device->instrument[(int)channel] != NULL ) MIDIControllerRelease( device->instrument[(int)channel] );
+  MIDIInstrumentRetain( controller );
+  device->instrument[(int)channel] = instrument;
+  return 0;
+}
+
+int MIDIDeviceGetChannelInstrument( struct MIDIDevice * device, MIDIChannel channel, struct MIDIInstrument ** instrument ) {
+  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
+  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
+  if( instrument == NULL ) return 1;
+  *instrument = device->instrument[(int)channel];
+  return 0;
+}
+*/
+
+int MIDIDeviceSetChannelController( struct MIDIDevice * device, MIDIChannel channel, struct MIDIController * controller ) {
+  if( channel == MIDI_CHANNEL_ALL ) {
+    for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
+      if( MIDIDeviceSetChannelController( device, channel, controller ) ) return 1;
+    }
+    return 0;
+  }
+  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
+  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
+  if( device->controller[(int)channel] == controller ) return 0;
+  if( device->controller[(int)channel] != NULL ) MIDIControllerRelease( device->controller[(int)channel] );
+  MIDIControllerRetain( controller );
+  device->controller[(int)channel] = controller;
+  return 0;
+}
+
+int MIDIDeviceGetChannelController( struct MIDIDevice * device, MIDIChannel channel, struct MIDIController ** controller ) {
+  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
+  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
+  if( controller == NULL ) return 1;
+  *controller = device->controller[(int)channel];
+  return 0;
 }
 
 int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message ) {
@@ -206,9 +306,11 @@ int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message 
       return MIDIDeviceReceiveTimeCodeQuarterFrame( device, v[0], v[1] );
       break;
     case MIDI_STATUS_SONG_POSITION_POINTER:
+      if( device->timer != NULL ) MIDITimerReceive( device->timer, device, message );
       MIDIMessageGet( message, MIDI_VALUE, sizeof(MIDILongValue), &lv );
       return MIDIDeviceReceiveSongPositionPointer( device, lv );
     case MIDI_STATUS_SONG_SELECT:
+      if( device->timer != NULL ) MIDITimerReceive( device->timer, device, message );
       MIDIMessageGet( message, MIDI_VALUE, sizeof(MIDIValue), &v[0] );
       return MIDIDeviceReceiveSongSelect( device, v[0] );
       break;
@@ -224,6 +326,7 @@ int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message 
     case MIDI_STATUS_STOP:
     case MIDI_STATUS_ACTIVE_SENSING:
     case MIDI_STATUS_RESET:
+      if( device->timer != NULL ) MIDITimerReceive( device->timer, device, message );
       return MIDIDeviceReceiveRealTime( device, status );
       break;
     default:
@@ -568,11 +671,11 @@ int MIDIDeviceSendEndOfExclusive( struct MIDIDevice * device ) {
 //@{
 
 int MIDIDeviceReceiveRealTime( struct MIDIDevice * device, MIDIStatus status ) {
-  if( device->delegate == NULL || device->delegate->recv_rt == NULL ) {
-    return 0;
-  }
   if( status < MIDI_STATUS_TIMING_CLOCK || status > MIDI_STATUS_RESET ) {
     return 1;
+  }
+  if( device->delegate == NULL || device->delegate->recv_rt == NULL ) {
+    return 0;
   }
   return (*device->delegate->recv_rt)( device, status );
 }

@@ -33,7 +33,7 @@ static int _receive_pkp( struct MIDIDevice * device, MIDIChannel channel, MIDIKe
 }
 
 static int _receive_cc( struct MIDIDevice * device, MIDIChannel channel, MIDIControl control, MIDIValue value ) {
-  printf( "Control Change ( channel=%i, control=%02x, value=%i )\n", (int) channel, (int) control, (int) value );
+  printf( "Control Change ( channel=%i, control=0x%02x, value=%i )\n", (int) channel, (int) control, (int) value );
   ASSERT_EQUAL( channel, _test_values[0], "Received unexpected channel in control change message." );
   ASSERT_EQUAL( control, _test_values[1], "Received unexpected control in control change message." );
   ASSERT_EQUAL( value,   _test_values[2], "Received unexpected value in control change message." );
@@ -63,7 +63,7 @@ static int _receive_pwc( struct MIDIDevice * device, MIDIChannel channel, MIDILo
 }
 
 static int _receive_sx( struct MIDIDevice * device, MIDIManufacturerId manufacturer_id, size_t size, void * data, uint8_t fragment ) {
-  printf( "System Exclusive ( manufacturer_id=%02x, size=%i, fragment=%i )\n", (int) manufacturer_id, (int) size, (int) fragment );
+  printf( "System Exclusive ( manufacturer_id=0x%02x, size=%i, fragment=%i )\n", (int) manufacturer_id, (int) size, (int) fragment );
   ASSERT_EQUAL( manufacturer_id, _test_values[0], "Received unexpected manufacturer id in system exclusive message." );
   ASSERT_EQUAL( size,            _test_values[1], "Received unexpected size in system exclusive message." );
   ASSERT_EQUAL( fragment,        _test_values[2], "Received unexpected fragment in system exclusive message." );

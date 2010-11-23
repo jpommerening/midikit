@@ -191,6 +191,8 @@
 #define MIDI_CHANNEL_14 0xd
 #define MIDI_CHANNEL_15 0xe
 #define MIDI_CHANNEL_16 0xf
+#define MIDI_CHANNEL_BASE 0x10
+#define MIDI_CHANNEL_ALL  0x1f
 //@}
 
 /**

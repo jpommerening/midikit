@@ -5,6 +5,8 @@
 
 struct MIDIConnector;
 struct MIDIMessage;
+struct MIDIController;
+struct MIDITimer;
 
 struct MIDIDevice;
 struct MIDIDeviceDelegate {
@@ -38,6 +40,18 @@ int MIDIDeviceAttachOut( struct MIDIDevice * device, struct MIDIConnector * out 
 
 int MIDIDeviceDetachThru( struct MIDIDevice * device );
 int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIConnector * thru );
+
+int MIDIDeviceSetBaseChannel( struct MIDIDevice * device, MIDIChannel channel );
+int MIDIDeviceGetBaseChannel( struct MIDIDevice * device, MIDIChannel * channel );
+
+int MIDIDeviceSetTimer( struct MIDIDevice * device, struct MIDITimer * timer );
+int MIDIDeviceGetTimer( struct MIDIDevice * device, struct MIDITimer ** timer );
+
+//int MIDIDeviceSetChannelInstrument( struct MIDIDevice * device, MIDIChannel channel, struct MIDIInstrument * instrument );
+//int MIDIDeviceGetChannelInstrument( struct MIDIDevice * device, MIDIChannel channel, struct MIDIInstrument ** instrument );
+
+int MIDIDeviceSetChannelController( struct MIDIDevice * device, MIDIChannel channel, struct MIDIController * controller );
+int MIDIDeviceGetChannelController( struct MIDIDevice * device, MIDIChannel channel, struct MIDIController ** controller );
 
 int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message );
 int MIDIDeviceSend( struct MIDIDevice * device, struct MIDIMessage * message );
