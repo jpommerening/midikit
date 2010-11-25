@@ -5,7 +5,7 @@
 
 MIDIStatus _status;
 
-static int _receive_rt( struct MIDIDevice * device, MIDIStatus status ) {
+static int _receive_rt( struct MIDIDevice * device, MIDIStatus status, MIDITimestamp timestamp ) {
   _status = status;
   return 0;
 }
@@ -44,7 +44,7 @@ int test001_device( void ) {
   ASSERT_NO_ERROR( MIDIDeviceAttachIn( device, connector ), "Could not attach input to device." );
   ASSERT_NO_ERROR( MIDIConnectorRelay( connector, message ), "Could not relay message." );
   ASSERT_EQUAL( _status, MIDI_STATUS_RESET, "Test device did not receive relayed reset message." );
-  ASSERT_NO_ERROR( MIDIDeviceReceiveRealTime( device, MIDI_STATUS_TIMING_CLOCK ), "Could not simulate received message." );
+  ASSERT_NO_ERROR( MIDIDeviceReceiveRealTime( device, MIDI_STATUS_TIMING_CLOCK, -1 ), "Could not simulate received message." );
   ASSERT_EQUAL( _status, MIDI_STATUS_TIMING_CLOCK, "Test device did not receive relayed clock message." );
 
   MIDIConnectorRelease( connector );

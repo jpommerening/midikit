@@ -2,10 +2,11 @@
 #define MIDIKIT_MIDI_H
 
 /**
- * Channel Voice Messages
+ * @defgroup MIDIStatus_ChannelVoice
+ * Channel Voice Messages.
  * (Status has 4 bits & is followed by a 4 bit channel number.)
+ * @{
  */
-//@{
 
 /**
  * Note Off event.
@@ -53,13 +54,14 @@
  */
 #define MIDI_STATUS_PITCH_WHEEL_CHANGE 0xe
 
-//@}
+/** @} */
 
 /**
- * System Common Messages
+ * @defgroup MIDIStatus_SystemCommon
+ * System Common Messages.
  * (Status has eight bits.)
+ * @{
  */
-//@{
 
 /**
  * System Exclusive.
@@ -107,13 +109,14 @@
  */
 #define MIDI_STATUS_END_OF_EXCLUSIVE 0xf7
 
-//@}
+/** @} */
 
 /**
- * System Real-Time Messages
- * (Status has eight bits.)
+ * @defgroup MIDIStatus_RealTime
+ * System Real-Time Messages.
+ * (Status has eight bits, message has no data bytes.)
+ * @{
  */
-//@{
 
 /**
  * Timing Clock.
@@ -169,12 +172,18 @@
  */
 #define MIDI_STATUS_RESET 0xff
  
-//@}
+/** @} */
 
 /**
- * MIDI channel enumeration
+ * @defgroup MIDIChannel
+ * @see MIDIChannel
+ * MIDI channel enumeration values.
+ * Whenever a MIDIChannel is expected any of the MIDI
+ * channels 1-16 can be specified. In some cases special
+ * constants for a device's base channel or all channels (1-16)
+ * can be used.
+ * @{
  */
-//@{
 #define MIDI_CHANNEL_1  0x0
 #define MIDI_CHANNEL_2  0x1
 #define MIDI_CHANNEL_3  0x2
@@ -193,12 +202,14 @@
 #define MIDI_CHANNEL_16 0xf
 #define MIDI_CHANNEL_BASE 0x10
 #define MIDI_CHANNEL_ALL  0x1f
-//@}
+/** @} */
 
 /**
- * MIDIMessage property type enumeration
+ * @defgroup MIDIProperty
+ * @see MIDIProperty
+ * MIDIMessage property type enumeration.
+ * @{
  */
-//@{
 #define MIDI_STATUS          0x00
 #define MIDI_CHANNEL         0x01
 #define MIDI_KEY             0x02
@@ -215,7 +226,7 @@
 #define MIDI_SYSEX_FRAGMENT  0x0d
 #define MIDI_TIME_CODE_TYPE  0x0e
 #define MIDI_NOTHING         0xff
-//@}
+/** @} */
 
 /**
  * Create a status byte with a channel number
@@ -248,20 +259,25 @@
 #define MIDI_MSB( v ) ((v)>>7) & 0x7f
 
 /**
- * MIDI Booleans, whenever the type is MIDIBoolean you
- * can expect them to work like "real" booleans.
+ * @defgroup MIDIBoolean
+ * @brief MIDI Booleans.
+ * @see MIDIBoolean
+ * Whenever the type is MIDIBoolean you can expect them
+ * to work like "real" booleans.
  * When the type is MIDIValue you can't expect them to be
  * normalized and MIDI semantics apply.
+ * @{
  */
-//@{
 #define MIDI_ON  0x7f
 #define MIDI_OFF 0x00
 #define MIDI_BOOL( v ) (((v)>=64) ? MIDI_ON : MIDI_OFF)
-//@}
+/** @} */
 
 typedef unsigned char  MIDIByte;
 typedef unsigned short MIDIProperty;
 
+typedef double    MIDISamplingRate;
+typedef long long MIDITimestamp;
 
 typedef unsigned char  MIDIStatus;
 typedef char           MIDIChannel;
@@ -270,7 +286,7 @@ typedef char           MIDIVelocity;
 typedef char           MIDIPressure;
 typedef char           MIDIControl;
 typedef char           MIDIProgram;
-typedef char           MIDIManufacturerId;
+typedef char           MIDIManufacturerId; /**< @todo Make this 4 bytes and sysex-decoder/encoder read var length */
 
 typedef char           MIDIBoolean;
 typedef char           MIDIValue;

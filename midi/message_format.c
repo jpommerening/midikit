@@ -5,6 +5,7 @@
 /**
  * Message format descriptor.
  * Contains pointers to functions that access messages of a certain type.
+ * @see MIDIMessageData
  */
 struct MIDIMessageFormat {
   int (*test)( void * buffer );
@@ -19,10 +20,11 @@ struct MIDIMessageFormat {
 
 #pragma mark Encoding & decoding
 /**
+ * @internal
  * Encoding & decoding functions.
  * These functions encode a MIDI message to or from a stream.
+ * @{
  */
-//@{
 
 static int _encode_one_byte( struct MIDIMessageData * data, size_t size, void * buffer ) {
   if( data == NULL || buffer == NULL ) return 1;
@@ -100,12 +102,17 @@ static int _decode_system_exclusive( struct MIDIMessageData * data, size_t size,
   return 0;
 }
 
-//@}
-
 /**
- * Message size determination
+ * @}
  */
-//@{
+
+#pragma mark Message size determination
+/**
+ * @internal
+ * Message size determination
+ * Determine the size of a message.
+ * @{
+ */
 
 static int _size_one_byte( struct MIDIMessageData * data, size_t * size ) {
   if( data == NULL || size == NULL ) return 1;
@@ -128,20 +135,24 @@ static int _size_three_bytes( struct MIDIMessageData * data, size_t * size ) {
 static int _size_system_exclusive( struct MIDIMessageData * data, size_t * size ) {
   if( data == NULL || size == NULL ) return 1;
   if( data->bytes[2] == 0 ) {
-    *size = data->size + 2; // first fragment contains status & manufacturer id
+    *size = data->size + 2; /* first fragment contains status & manufacturer id */
   } else {
-    *size = data->size; // following fragments contain pure data
+    *size = data->size; /* following fragments contain pure data */
   }
   return 0;
 }
 
-//@}
+/**
+ * @}
+ */
 
 #pragma mark Message format detectors
 /**
+ * @internal
  * Message format detectors.
+ * Detect the message format using the first byte.
+ * @{
  */
-//@{
 
 static int _test_note_off_on( void * buffer ) {
   return (VOID_BYTE(buffer,0) & 0xf0) == (MIDI_STATUS_NOTE_OFF<<4)
@@ -198,14 +209,17 @@ static int _test_real_time( void * buffer ) {
   return 0;
 }
 
-//@}
+/**
+ * @}
+ */
 
 #pragma mark Getters and setters
 /**
+ * @internal
  * Getters and setters.
  * Functions to get ans set properties of the different messages.
+ * @{
  */
-//@{
 
 #define PROPERTY_CASE_BASE(flag,type) \
     case flag: \
@@ -243,6 +257,13 @@ static int _test_real_time( void * buffer ) {
 
 /**
  * Set properties of note on/off messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_note_off_on( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -259,6 +280,13 @@ static int _set_note_off_on( struct MIDIMessageData * data, MIDIProperty propert
 
 /**
  * Get properties of note on/off messages.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
  */
 static int _get_note_off_on( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -275,6 +303,13 @@ static int _get_note_off_on( struct MIDIMessageData * data, MIDIProperty propert
 
 /**
  * Set properties of polyphonic key pressure messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_polyphonic_key_pressure( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -291,6 +326,13 @@ static int _set_polyphonic_key_pressure( struct MIDIMessageData * data, MIDIProp
 
 /**
  * Get properties of polyphonic key pressure messages.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
  */
 static int _get_polyphonic_key_pressure( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -307,6 +349,13 @@ static int _get_polyphonic_key_pressure( struct MIDIMessageData * data, MIDIProp
 
 /**
  * Set properties of control change messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_control_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -323,6 +372,13 @@ static int _set_control_change( struct MIDIMessageData * data, MIDIProperty prop
 
 /**
  * Get properties of control change messages.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
  */
 static int _get_control_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -339,6 +395,13 @@ static int _get_control_change( struct MIDIMessageData * data, MIDIProperty prop
 
 /**
  * Set properties of program change messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_program_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -354,6 +417,13 @@ static int _set_program_change( struct MIDIMessageData * data, MIDIProperty prop
 
 /**
  * Get properties of program change messages.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
  */
 static int _get_program_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -369,6 +439,13 @@ static int _get_program_change( struct MIDIMessageData * data, MIDIProperty prop
 
 /**
  * Set properties of channel pressure messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_channel_pressure( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -384,6 +461,13 @@ static int _set_channel_pressure( struct MIDIMessageData * data, MIDIProperty pr
 
 /**
  * Get properties of channel pressure messages.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
  */
 static int _get_channel_pressure( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -399,6 +483,13 @@ static int _get_channel_pressure( struct MIDIMessageData * data, MIDIProperty pr
 
 /**
  * Set properties of pitch wheel change messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_pitch_wheel_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -419,6 +510,13 @@ static int _set_pitch_wheel_change( struct MIDIMessageData * data, MIDIProperty 
 
 /**
  * Get properties of pitch wheel change messages.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
  */
 static int _get_pitch_wheel_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -438,6 +536,13 @@ static int _get_pitch_wheel_change( struct MIDIMessageData * data, MIDIProperty 
 
 /**
  * Set properties of system exclusive messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_system_exclusive( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   if( size == 0 || value == NULL ) return 1;
@@ -451,15 +556,15 @@ static int _set_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
       data->data = *((void**)value);
       return 0;
       break;
-  //case MIDI_SYSEX_DATA:
-  //  if( data->size == 0 || data->data == NULL ) {
-  //    data->data = malloc( size );
-  //  } else {
-  //    data->data = realloc( data->data, size );
-  //  }
-  //  data->size = size;
-  //  memcpy( data->data, value, size );
-  //  return 0;
+  /*case MIDI_SYSEX_DATA:
+      if( data->size == 0 || data->data == NULL ) {
+        data->data = malloc( size );
+      } else {
+        data->data = realloc( data->data, size );
+      }
+      data->size = size;
+      memcpy( data->data, value, size );
+      return 0;*/
     PROPERTY_DEFAULT;
   }
   return 1;
@@ -467,6 +572,13 @@ static int _set_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
 
 /**
  * Get properties of system exclusive messages.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
  */
 static int _get_system_exclusive( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   if( size == 0 || value == NULL ) return 1;
@@ -479,10 +591,10 @@ static int _get_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
       *((void**)value) = data->data;
       return 0;
       break;
-  //case MIDI_SYSEX_DATA:
-  //  if( data->size == 0 || data->data == NULL ) return 0;
-  //  memcpy( value, data->data, (size < data->size) ? size : data->size );
-  //  return 0;
+  /*case MIDI_SYSEX_DATA:
+      if( data->size == 0 || data->data == NULL ) return 0;
+      memcpy( value, data->data, (size < data->size) ? size : data->size );
+      return 0;*/
     PROPERTY_DEFAULT;
   }
   return 1;
@@ -490,6 +602,13 @@ static int _get_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
 
 /**
  * Set properties of time code quarter frame messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -505,6 +624,13 @@ static int _set_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProp
 
 /**
  * Get properties of time code quarter frame messages.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
  */
 static int _get_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -520,6 +646,13 @@ static int _get_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProp
 
 /**
  * Set properties of song position pointer messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_song_position_pointer( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -539,6 +672,13 @@ static int _set_song_position_pointer( struct MIDIMessageData * data, MIDIProper
 
 /**
  * Get properties of song position pointer messages.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
  */
 static int _get_song_position_pointer( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -557,6 +697,13 @@ static int _get_song_position_pointer( struct MIDIMessageData * data, MIDIProper
 
 /**
  * Set properties of song select messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_song_select( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -571,6 +718,13 @@ static int _set_song_select( struct MIDIMessageData * data, MIDIProperty propert
 
 /**
  * Get properties of song select messages.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
  */
 static int _get_song_select( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -586,6 +740,13 @@ static int _get_song_select( struct MIDIMessageData * data, MIDIProperty propert
 
 /**
  * Set properties of tune request messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_tune_request( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   return 1;
@@ -593,6 +754,13 @@ static int _set_tune_request( struct MIDIMessageData * data, MIDIProperty proper
 
 /**
  * Set properties of real time messages.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
  */
 static int _set_real_time( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -606,6 +774,13 @@ static int _set_real_time( struct MIDIMessageData * data, MIDIProperty property,
 
 /**
  * Get properties of tune request and real time messages.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
  */
 static int _get_tune_request_real_time( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   uint8_t * m = &(data->bytes[0]);
@@ -626,13 +801,17 @@ static int _get_tune_request_real_time( struct MIDIMessageData * data, MIDIPrope
 #undef PROPERTY_CASE_GET_L
 #undef PROPERTY_DEFAULT
 
-//@}
-
 /**
+ * @}
+ */
+
+#pragma mark Message format definitions
+/**
+ * @internal
  * Message format definitions.
  * These definitions hold some message formats.
+ * @{
  */
-//@{
 
 static struct MIDIMessageFormat _note_off_on = {
   &_test_note_off_on,
@@ -742,16 +921,22 @@ static struct MIDIMessageFormat _real_time = {
   &_decode_one_byte
 };
 
-//@}
+/**
+ * @}
+ */
+
+#pragma mark Public functions
 
 #define N_ELEM(a) (sizeof(a) / sizeof(a[0]))
 
-#pragma mark Public functions
 /**
- * Public functions.
+ * @brief Detect the format of message stored in a buffer.
+ * Determine the message format used in a stream of bytes.
+ * @public @memberof MIDIMessageFormat
+ * @param buffer The message as it would appear on a MIDI cable.
+ * @return a pointer to the correct message format if the format could be detected.
+ * @return a NULL pointer if the format could not be detected.
  */
-//@{
-
 struct MIDIMessageFormat * MIDIMessageFormatDetect( void * buffer ) {
   static struct MIDIMessageFormat * formats[] = {
     &_note_off_on,
@@ -776,46 +961,128 @@ struct MIDIMessageFormat * MIDIMessageFormatDetect( void * buffer ) {
   return NULL;
 }
 
+/**
+ * @brief Get a format used for a given status.
+ * Determine the format that shall be used when accessing messages of
+ * a known status.
+ * If the status byte looks like a channel status it is correctly
+ * shifted so that the correct byte can be checked by MIDIMessageFormatDetect.
+ * @see MIDIMessageFormatDetect
+ * @public @memberof MIDIMessageFormat
+ * @param status A message status.
+ * @return a pointer to the correct message format if the format could be detected.
+ * @return a NULL pointer if the format could not be detected or if the given
+ *         status is not an allowed MIDIStatus.
+ */
 struct MIDIMessageFormat * MIDIMessageFormatForStatus( MIDIStatus status ) {
   uint8_t byte;
   if( status >= 0x80 ) {
     byte = status;
-    if( byte < 0xf0 ) return NULL; // messed up channel status?
+    if( byte < 0xf0 ) return NULL; /* messed up channel status? */
   } else {
     byte = status << 4;
-    if( byte < 0x80 ) return NULL; // no status bit?
+    if( byte < 0x80 ) return NULL; /* no status bit? */
   }
   return MIDIMessageFormatDetect( &byte );
 }
 
+/**
+ * @brief Test that the format can be used for a given buffer.
+ * Test that the format specified by @c format can be used to
+ * decode the bytes in the buffer.
+ * @public @memberof MIDIMessageFormat
+ * @param format The message format.
+ * @param buffer A pointer to the buffer to test.
+ * @retval 0 on success.
+ * @retval 1 If the format can not be used to access the buffer.
+ */
 int MIDIMessageFormatTest( struct MIDIMessageFormat * format, void * buffer ) {
   if( format == NULL || format->test == NULL ) return 1;
   return (format->test)( buffer );
 }
 
+/**
+ * @brief Get the size of a given message.
+ * Determine the size of a given message data object using a
+ * given message format. This is constant for all messages except
+ * system exclusive messages.
+ * @public @memberof MIDIMessageFormat
+ * @param format The message format.
+ * @param data   The message data.
+ * @param size   A pointer to the variable in which to store the result.
+ * @retval 0 on success.
+ * @retval 1 If the size could not be determined.
+ */
 int MIDIMessageFormatGetSize( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t * size ) {
   if( format == NULL || format->size == NULL ) return 1;
   return (format->size)( data, size );
 }
 
+/**
+ * @brief Set properties.
+ * Set properties of messages with a given format.
+ * @public @memberof MIDIMessageFormat
+ * @param format   The message format.
+ * @param data     The message data object to write to.
+ * @param property The property to set.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied to the message property.
+ * @retval 0 on success.
+ * @retval 1 if the property was not set.
+ */
 int MIDIMessageFormatSet( struct MIDIMessageFormat * format, struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   if( format == NULL || format->set == NULL ) return 1;
   return (format->set)( data, property, size, value );
 }
 
+/**
+ * @brief Get properties.
+ * Get properties of messages with a given format.
+ * @public @memberof MIDIMessageFormat
+ * @param format   The message format.
+ * @param data     The message data object to read from.
+ * @param property The property to get.
+ * @param size     The size of the memory object pointed to by @c value.
+ * @param value    A pointer to the memory object who's contents shall be
+ *                 copied from the message property.
+ * @retval 0 on success.
+ * @retval 1 if the value was not set.
+ */
 int MIDIMessageFormatGet( struct MIDIMessageFormat * format, struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
   if( format == NULL || format->get == NULL ) return 1;
   return (format->get)( data, property, size, value );
 }
 
+/**
+ * @brief Encode messages.
+ * Encode message data objects into a buffer.
+ * @public @memberof MIDIMessageFormat
+ * @param format   The message format.
+ * @param data     The message data object to read from.
+ * @param size     The size of the memory pointed to by @c buffer.
+ * @param buffer   The buffer to encode the message into.
+ * @retval 0 on success.
+ * @retval 1 if the message could not be encoded.
+ */
 int MIDIMessageFormatEncode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer ) {
   if( format == NULL || format->encode == NULL ) return 1;
   return (format->encode)( data, size, buffer );
 }
 
+/**
+ * @brief Decode messages.
+ * Decode message data objects from a buffer.
+ * @public @memberof MIDIMessageFormat
+ * @param format   The message format.
+ * @param data     The message data object to read from.
+ * @param size     The size of the memory pointed to by @c buffer.
+ * @param buffer   The buffer to decode the message from.
+ * @retval 0 on success.
+ * @retval 1 if the message could not be encoded.
+ */
 int MIDIMessageFormatDecode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer ) {
   if( format == NULL || format->decode == NULL ) return 1;
   return (format->decode)( data, size, buffer );
 }
 
-//@}

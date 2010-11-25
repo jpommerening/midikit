@@ -12,6 +12,12 @@ struct MIDIMessage {
   MIDITimestamp timestamp;
 };
 
+#pragma mark Creation and destruction
+/**
+ * @name Creation and destruction
+ * Creating, destroying and reference counting of MIDIMessage objects.
+ * @{
+ */
 
 struct MIDIMessage * MIDIMessageCreate( MIDIStatus status ) {
   struct MIDIMessage * message;
@@ -53,6 +59,8 @@ void MIDIMessageRelease( struct MIDIMessage * message ) {
     MIDIMessageDestroy( message );
   }
 }
+
+/** @} */
 
 int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIStatus status ) {
   struct MIDIMessageFormat * format = MIDIMessageFormatForStatus( status );

@@ -4,9 +4,10 @@
 #include "device.h"
 
 /**
+ * @name MIDI control numbers.
  * Various MIDI control numbers, legal values for MIDIControl variables.
+ * @{
  */
-//@{
 
 #define MIDI_CONTROL_BANK_SELECT           0x00
 #define MIDI_CONTROL_MODULATION_WHEEL      0x01
@@ -101,7 +102,7 @@
 #define MIDI_CONTROL_MONO_MODE_ON          0x7e
 #define MIDI_CONTROL_POLY_MODE_ON          0x7f
 
-//@}
+/** @} */
 
 
 struct MIDIController;

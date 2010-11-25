@@ -91,7 +91,7 @@ static int _receive_eox( struct MIDIDevice * device ) {
   return 0;
 }
 
-static int _receive_rt( struct MIDIDevice * device, MIDIStatus status ) {
+static int _receive_rt( struct MIDIDevice * device, MIDIStatus status, MIDITimestamp timestamp ) {
   return 0;
 }
 
