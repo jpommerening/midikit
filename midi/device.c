@@ -506,7 +506,7 @@ int MIDIDeviceGetChannelController( struct MIDIDevice * device, MIDIChannel chan
  */
  
 static int _recv_cc_omni( struct MIDIDevice * device, MIDIChannel channel,
-                           MIDIControl control, MIDIValue value ) {
+                          MIDIControl control, MIDIValue value ) {
   int result = 0, i;
   struct MIDIController * ctl;
   struct MIDIController * recv[N_CHANNEL] = { NULL };
@@ -531,7 +531,7 @@ static int _recv_cc_omni( struct MIDIDevice * device, MIDIChannel channel,
 }
 
 static int _recv_cc( struct MIDIDevice * device, MIDIChannel channel,
-                      MIDIControl control, MIDIValue value ) {
+                     MIDIControl control, MIDIValue value ) {
   if( device->omni_mode == MIDI_OFF ) {
     if( channel == device->base_channel &&
         device->controller[(int)channel] != NULL ) {
@@ -542,6 +542,11 @@ static int _recv_cc( struct MIDIDevice * device, MIDIChannel channel,
     return _recv_cc_omni( device, channel, control, value );
   }
   return 0;
+}
+
+static int _recv_rt( struct MIDIDevice * device, MIDIStatus status, MIDITimestamp timestamp ) {
+  if( device->timer == NULL ) return 0;
+  return MIDITimerReceiveRealTime( device->timer, device, status, timestamp );
 }
  
 /** @} */
@@ -822,10 +827,11 @@ int MIDIDeviceSendPolyphonicKeyPressure( struct MIDIDevice * device, MIDIChannel
  * @retval 1 if the message could not be processed.
  */
 int MIDIDeviceReceiveControlChange( struct MIDIDevice * device, MIDIChannel channel, MIDIControl control, MIDIValue value ) {
+  int result = _recv_cc( device, channel, control, value );
   if( device->delegate == NULL || device->delegate->recv_cc == NULL ) {
-    return 0;
+    return result;
   }
-  return (*device->delegate->recv_cc)( device, channel, control, value );
+  return result + (*device->delegate->recv_cc)( device, channel, control, value );
 }
 
 /**
@@ -1226,13 +1232,15 @@ int MIDIDeviceSendEndOfExclusive( struct MIDIDevice * device ) {
  * @retval 1 if the message could not be processed.
  */
 int MIDIDeviceReceiveRealTime( struct MIDIDevice * device, MIDIStatus status, MIDITimestamp timestamp ) {
+  int result;
   if( status < MIDI_STATUS_TIMING_CLOCK || status > MIDI_STATUS_RESET ) {
     return 1;
   }
+  result = _recv_rt( device, status, timestamp );
   if( device->delegate == NULL || device->delegate->recv_rt == NULL ) {
-    return 0;
+    return result;
   }
-  return (*device->delegate->recv_rt)( device, status, timestamp );
+  return result + (*device->delegate->recv_rt)( device, status, timestamp );
 }
 
 /**

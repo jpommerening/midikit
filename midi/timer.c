@@ -41,22 +41,9 @@ void MIDITimerRelease( struct MIDITimer * timer ) {
   }
 }
 
-int MIDITimerReceive( struct MIDITimer * timer, struct MIDIDevice * device,
-                      struct MIDIMessage * message ) {
-  MIDIStatus    status;
-  MIDITimestamp timestamp;
-  MIDILongValue value;
-  if( message == NULL ) return 1;
-  MIDIMessageGetStatus( message, &status );
-  MIDIMessageGetTimestamp( message, &timestamp );
+int MIDITimerReceiveRealTime( struct MIDITimer * timer, struct MIDIDevice * device,
+                              MIDIStatus status, MIDITimestamp timestamp ) {
   switch( status ) {
-    case MIDI_STATUS_SONG_POSITION_POINTER:
-      MIDIMessageGet( message, MIDI_VALUE, sizeof(MIDILongValue), &value );
-      timer->song_position = value;
-      break;
-    case MIDI_STATUS_SONG_SELECT:
-      timer->song_position = 0;
-      break;
     case MIDI_STATUS_TIMING_CLOCK:
       break;
     case MIDI_STATUS_START:
@@ -71,16 +58,9 @@ int MIDITimerReceive( struct MIDITimer * timer, struct MIDIDevice * device,
   return 0;
 }
 
-int MIDITimerSend( struct MIDITimer * timer, struct MIDIDevice * device,
-                   struct MIDIMessage * message ) {
-  MIDIStatus status;
-  if( message == NULL ) return 1;
-  MIDIMessageGetStatus( message, &status );
+int MIDITimerSendRealTime( struct MIDITimer * timer, struct MIDIDevice * device,
+                           MIDIStatus status, MIDITimestamp timestamp ) {
   switch( status ) {
-    case MIDI_STATUS_SONG_POSITION_POINTER:
-      break;
-    case MIDI_STATUS_SONG_SELECT:
-      break;
     case MIDI_STATUS_TIMING_CLOCK:
       break;
     case MIDI_STATUS_START:

@@ -93,6 +93,7 @@
 #define MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER     0x64
 /* 0x64 = Control 0x63 LSB */
 
+/* channel mode controls */
 #define MIDI_CONTROL_ALL_SOUND_OFF         0x78
 #define MIDI_CONTROL_RESET_ALL_CONTROLLERS 0x79
 #define MIDI_CONTROL_LOCAL_CONTROL         0x7a
@@ -104,17 +105,41 @@
 
 /** @} */
 
+/**
+ * @name MIDI registered parameters
+ * @{
+ */
+
+#define MIDI_CONTROL_RPN_PITCH_BEND_RANGE 0x0000
+#define MIDI_CONTROL_RPN_FINE_TUNING      0x0001
+#define MIDI_CONTROL_RPN_COARSE_TUNING    0x0002
+#define MIDI_CONTROL_RPN_RESET            0x3fff
+
+#define MIDI_CONTROL_RPN_PITCH_BEND_RANGE_SEMITONES 0
+#define MIDI_CONTROL_RPN_PITCH_BEND_RANGE_CENTS     1
+#define MIDI_CONTROL_RPN_FINE_TUNING_MSB            2
+#define MIDI_CONTROL_RPN_FINE_TUNING_LSB            3
+#define MIDI_CONTROL_RPN_COARSE_TUNING_MSB          4
+
+/** @} */
+
+struct MIDINonRegisteredParameter {
+  MIDILongValue number;
+  MIDILongValue value;
+};
 
 struct MIDIController;
 struct MIDIControllerDelegate {
-  int (*recv_lv)( struct MIDIController * controller, struct MIDIDevice * device, MIDIControl control, MIDILongValue value );
-  int (*recv_bv)( struct MIDIController * controller, struct MIDIDevice * device, MIDIControl control, MIDIBoolean value );
-  int (*recv_sv)( struct MIDIController * controller, struct MIDIDevice * device, MIDIControl control, MIDIValue value );
+  int (*recv_cc)( struct MIDIController * controller, struct MIDIDevice * device,
+                  MIDIChannel channel, MIDIControl control, MIDILongValue value );
 };
 
-struct MIDIController * MIDIControllerCreate( struct MIDIControllerDelegate * delegate, MIDIChannel channel );
+struct MIDIController * MIDIControllerCreate( struct MIDIControllerDelegate * delegate );
 void MIDIControllerDestroy( struct MIDIController * controller );
 void MIDIControllerRetain( struct MIDIController * controller );
 void MIDIControllerRelease( struct MIDIController * controller );
+
+int MIDIControllerReceiveControlChange( struct MIDIController * controller, struct MIDIDevice * device,
+                                        MIDIChannel channel, MIDIControl control, MIDIValue value );
 
 #endif

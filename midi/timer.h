@@ -16,7 +16,9 @@ void MIDITimerDestroy( struct MIDITimer * timer );
 void MIDITimerRetain( struct MIDITimer * timer );
 void MIDITimerRelease( struct MIDITimer * timer );
 
-int MIDITimerReceive( struct MIDITimer * timer, struct MIDIDevice * device, struct MIDIMessage * message );
-int MIDITimerSend( struct MIDITimer * timer, struct MIDIDevice * device, struct MIDIMessage * message );
+int MIDITimerReceiveRealTime( struct MIDITimer * timer, struct MIDIDevice * device,
+                              MIDIStatus status, MIDITimestamp timestamp );
+int MIDITimerSendRealTime( struct MIDITimer * timer, struct MIDIDevice * device,
+                           MIDIStatus status, MIDITimestamp timestamp );
 
 #endif
