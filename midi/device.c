@@ -7,6 +7,8 @@
 #include "controller.h"
 #include "timer.h"
 
+#define N_CHANNEL 16
+
 struct MIDIDevice {
   size_t refs;
   struct MIDIConnector * in;
@@ -17,8 +19,8 @@ struct MIDIDevice {
   MIDIBoolean omni_mode;
   MIDIBoolean poly_mode;
   struct MIDITimer          * timer;
-/*struct MIDIInstrument     * instrument[MIDI_CHANNEL_15+1]; */
-  struct MIDIController     * controller[MIDI_CHANNEL_15+1];
+/*struct MIDIInstrument     * instrument[N_CHANNEL]; */
+  struct MIDIController     * controller[N_CHANNEL];
 };
 
 /**
@@ -114,7 +116,7 @@ struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate ) {
   device->omni_mode    = MIDI_OFF;
   device->poly_mode    = MIDI_ON;
   device->timer        = NULL;
-  for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_15; channel++ ) {
+  for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
   /*device->instrument[(int)channel] = NULL;*/
     device->controller[(int)channel] = NULL;
   }
@@ -134,7 +136,7 @@ void MIDIDeviceDestroy( struct MIDIDevice * device ) {
   MIDIDeviceDetachOut( device );
   MIDIDeviceDetachThru( device );
   if( device->timer != NULL ) MIDITimerRelease( device->timer );
-  for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_15; channel++ ) {
+  for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
   /*if( device->instrument[(int)channel] != NULL ) MIDIInstrumentRelease( device->instrument[(int)channel] );;*/
     if( device->controller[(int)channel] != NULL ) MIDIControllerRelease( device->controller[(int)channel] );;
   }
@@ -494,6 +496,54 @@ int MIDIDeviceGetChannelController( struct MIDIDevice * device, MIDIChannel chan
   return 0;
 }
 
+/** @} */
+
+#pragma mark Internal message routing
+/**
+ * @internal
+ * Internal message routing
+ * @{
+ */
+ 
+static int _recv_cc_omni( struct MIDIDevice * device, MIDIChannel channel,
+                           MIDIControl control, MIDIValue value ) {
+  int result = 0, i;
+  struct MIDIController * ctl;
+  struct MIDIController * recv[N_CHANNEL] = { NULL };
+  MIDIChannel c;
+  
+  for( c=MIDI_CHANNEL_1; c<=MIDI_CHANNEL_16; c++ ) {
+    if( device->controller[(int)c] != NULL ) {
+      i   = 0;
+      ctl = device->controller[(int)c];
+      while( i<N_CHANNEL
+          && recv[i]!=NULL
+          && recv[i]!=ctl ) i++;
+      if( recv[i] != ctl ) {
+        recv[i]   = ctl;
+        recv[i+1] = NULL;
+        result   += MIDIControllerReceiveControlChange( ctl, device, channel,
+                                                        control, value );
+      }
+    }
+  }
+  return result;
+}
+
+static int _recv_cc( struct MIDIDevice * device, MIDIChannel channel,
+                      MIDIControl control, MIDIValue value ) {
+  if( device->omni_mode == MIDI_OFF ) {
+    if( channel == device->base_channel &&
+        device->controller[(int)channel] != NULL ) {
+      return MIDIControllerReceiveControlChange( device->controller[(int)channel],
+                                                 device, channel, control, value );
+    }
+  } else {
+    return _recv_cc_omni( device, channel, control, value );
+  }
+  return 0;
+}
+ 
 /** @} */
 
 #pragma mark Message passing
