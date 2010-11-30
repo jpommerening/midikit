@@ -19,8 +19,8 @@ extern int test_error;
 #define ASSERT_NOT_EQUAL( x, y, message )        ASSERT_CMP( x, !=, y, message, #x " may not be equal to " #y "!" )
 #define ASSERT_GREATER( x, y, message )          ASSERT_CMP( x, >, y, message, #x " has to be greater than " #y "!" )
 #define ASSERT_LESS( x, y, message )             ASSERT_CMP( x, <, y, message, #x " has to be less than " #y "!" )
-#define ASSERT_GREATER_OR_EQUAL( x, y, message ) ASSERT_CMP( x, >=, y, message, #x "has to be greater or equal " #y "!" )
-#define ASSERT_LESS_OR_EQUAL( x, y, message )    ASSERT_CMP( x, <=, y, message, #x "has to be less or equal " #y "!" )
+#define ASSERT_GREATER_OR_EQUAL( x, y, message ) ASSERT_CMP( x, >=, y, message, #x " has to be greater or equal " #y "!" )
+#define ASSERT_LESS_OR_EQUAL( x, y, message )    ASSERT_CMP( x, <=, y, message, #x " has to be less or equal " #y "!" )
 
 #define ASSERT_NEAR_DELTA 0.01
 #define ASSERT_NEAR_LESS_NUM( y )    (y)*( ((y)>=0) ? (1.0-ASSERT_NEAR_DELTA) : (1.0+ASSERT_NEAR_DELTA) )
@@ -35,3 +35,4 @@ extern int test_error;
 
 #define ASSERT_ERROR_CHECKER 0
 #define ASSERT_NO_ERROR( command, message )  ASSERT_BASE( (command) == 0 && ASSERT_ERROR_CHECKER == 0, message, #command " returned an error!" ) 
+#define ASSERT_ERROR( command, message )  ASSERT_BASE( (command) != 0 || ASSERT_ERROR_CHECKER != 0, message, #command " returned no error!" ) 

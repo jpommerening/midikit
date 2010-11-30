@@ -4,9 +4,10 @@ SUBDIR=midi
 
 include ../config.mk
 
-OBJS=$(OBJDIR)/midi.o $(OBJDIR)/message.o $(OBJDIR)/message_format.o \
-     $(OBJDIR)/clock.o $(OBJDIR)/connector.o  $(OBJDIR)/driver.o \
-     $(OBJDIR)/device.o $(OBJDIR)/controller.o $(OBJDIR)/timer.o
+OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/message.o \
+     $(OBJDIR)/message_format.o $(OBJDIR)/clock.o $(OBJDIR)/connector.o \
+     $(OBJDIR)/driver.o $(OBJDIR)/device.o $(OBJDIR)/controller.o \
+     $(OBJDIR)/timer.o
 LIB=$(LIBDIR)/libmidikit$(LIB_SUFFIX)
 
 .PHONY: all clean $(LIB)
@@ -25,6 +26,7 @@ $(LIB): $(OBJS)
 	$(CC) $(LDFLAGS_LIB) -o $@ $^
 
 $(OBJDIR)/midi.o: midi.c midi.h
+$(OBJDIR)/util.o: util.c util.h
 $(OBJDIR)/clock.o: clock.c clock.h
 $(OBJDIR)/message_format.o: message_format.c message_format.h midi.h
 $(OBJDIR)/message.o: message.c message.h midi.h clock.h message_format.h
