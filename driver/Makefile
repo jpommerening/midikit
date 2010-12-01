@@ -10,7 +10,7 @@ all: $(DRIVERS)
 clean:
 
 generic: generic/.make
-apple-midi: apple-midi/.make
+applemidi: applemidi/.make
 osc: osc/.make
 
 %/.make:

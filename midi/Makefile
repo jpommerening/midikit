@@ -7,7 +7,7 @@ include ../config.mk
 OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/message.o \
      $(OBJDIR)/message_format.o $(OBJDIR)/clock.o $(OBJDIR)/connector.o \
      $(OBJDIR)/driver.o $(OBJDIR)/device.o $(OBJDIR)/controller.o \
-     $(OBJDIR)/timer.o
+     $(OBJDIR)/timer.o $(OBJDIR)/message_queue.o
 LIB=$(LIBDIR)/libmidikit$(LIB_SUFFIX)
 
 .PHONY: all clean $(LIB)
@@ -35,3 +35,4 @@ $(OBJDIR)/device.o: device.c device.h midi.h message.h clock.h connector.h
 $(OBJDIR)/driver.o: driver.c driver.h midi.h message.h clock.h connector.h
 $(OBJDIR)/controller.o: controller.c controller.h midi.h device.h
 $(OBJDIR)/timer.o: timer.c timer.h midi.h device.h
+$(OBJDIR)/message_queue.o: message_queue.c message_queue.h message.h
