@@ -112,7 +112,8 @@ static struct MIDIDeviceDelegate _test_device = {
   &_receive_rt
 };
 
-static int _send( struct MIDIDriver * driver, struct MIDIMessage * message ) {
+static int _send( void * implementation, struct MIDIMessage * message ) {
+  struct MIDIDriver * driver = implementation;
   size_t size, i;
   uint8_t buffer[32];
   MIDIMessageGetSize( message, &size );

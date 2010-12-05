@@ -5,6 +5,11 @@
 
 #define USEC_PER_SEC 1000000.0
 
+/**
+ * @brief Provider for accurate timestamps.
+ * The MIDIClock provides accurate timestamps at any desired
+ * rate with a selectable offset.
+ */
 struct MIDIClock {
   size_t           refs;
   MIDITimestamp    offset;

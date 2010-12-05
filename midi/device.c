@@ -9,6 +9,79 @@
 
 #define N_CHANNEL 16
 
+
+/**
+ * @struct MIDIDeviceDelegate device.h
+ * @brief Delegate to respond to received messages.
+ * Every time the device receives a message, the device calls one of these
+ * callbacks (if available) with the message properties.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_nof
+ * @brief Note off callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_non
+ * @brief Note on callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_pkp
+ * @brief Polyphonic key pressure callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_cc
+ * @brief Control change callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_pc
+ * @brief Program change callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_cp
+ * @brief Channel pressure callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_pwc
+ * @brief Pitch wheel change callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_sx
+ * @brief System exclusive callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_tcqf
+ * @brief Time code quarter frame callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_spp
+ * @brief Song position pointer callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_ss
+ * @brief Song select callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_tr
+ * @brief Tune request callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_eox
+ * @brief End of exclusive callback.
+ */
+/**
+ * @public @property MIDIDeviceDelegate::recv_rt
+ * @brief Real time callback.
+ */
+
+/**
+ * @struct MIDIDevice device.h
+ * @brief An abstract MIDI device.
+ * The MIDIDevice class provides a skeleton for customized MIDI devices.
+ * Standardized functionality can be plugged in by using MIDITimer,
+ * MIDIController and MIDIInstrument objects.
+ * Every MIDIDevice is equipped with an input, an output and a thru-port
+ * that forwards every MIDIMessage received on the input.
+ */
 struct MIDIDevice {
   size_t refs;
   struct MIDIConnector * in;
@@ -23,6 +96,7 @@ struct MIDIDevice {
   struct MIDIController     * controller[N_CHANNEL];
 };
 
+#pragma mark Internal connector attachment.
 /**
  * @internal
  * Methods that solve recurring tasks, especially when attaching
@@ -501,7 +575,7 @@ int MIDIDeviceGetChannelController( struct MIDIDevice * device, MIDIChannel chan
 #pragma mark Internal message routing
 /**
  * @internal
- * Internal message routing
+ * Internal message routing.
  * @{
  */
  

@@ -91,7 +91,7 @@ INPUT                  = midi driver
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.h \
                          *.c
-RECURSIVE              = NO
+RECURSIVE              = YES
 EXCLUDE                = 
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
@@ -232,7 +232,7 @@ SKIP_FUNCTION_MACROS   = YES
 #---------------------------------------------------------------------------
 # Configuration::additions related to external references
 #---------------------------------------------------------------------------
-TAGFILES               = qtools_docs/qtools.tag=../../qtools_docs/html
+TAGFILES               = #qtools_docs/qtools.tag=../../qtools_docs/html
 GENERATE_TAGFILE       =
 ALLEXTERNALS           = NO
 EXTERNAL_GROUPS        = YES

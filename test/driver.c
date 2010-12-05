@@ -7,7 +7,8 @@
 
 static unsigned char * _buffer = NULL;
 
-static int _send( struct MIDIDriver * driver, struct MIDIMessage * message ) {
+static int _send( void * implementation, struct MIDIMessage * message ) {
+//struct MIDIDriver * driver = implementation;
   size_t size, i;
 
   ASSERT_NO_ERROR( MIDIMessageGetSize( message, &size ), "Could not determine message size." );

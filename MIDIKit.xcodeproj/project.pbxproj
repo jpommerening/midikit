@@ -31,10 +31,22 @@
 		5924AA5612932186004F9C67 /* midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307CE129320B40067DE03 /* midi.c */; };
 		59460C3412932833001C2C13 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 59460C311293282E001C2C13 /* main.c */; };
 		59460C3712932B61001C2C13 /* libMIDIKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 592307A112931F520067DE03 /* libMIDIKit.dylib */; };
+		59A048B112A95E16001B597E /* applemidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048AA12A95E16001B597E /* applemidi.h */; };
+		59A048B212A95E16001B597E /* rtp.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048AC12A95E16001B597E /* rtp.h */; };
+		59A048B312A95E16001B597E /* command_section.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048AE12A95E16001B597E /* command_section.c */; };
+		59A048B412A95E16001B597E /* journal.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048AF12A95E16001B597E /* journal.c */; };
+		59A048B512A95E16001B597E /* rtpmidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048B012A95E16001B597E /* rtpmidi.h */; };
+		59A048BC12A95E56001B597E /* util.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048BA12A95E56001B597E /* util.h */; };
+		59A048BD12A95E5D001B597E /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048B712A95E49001B597E /* util.c */; };
+		59A048C012A96873001B597E /* message_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048BE12A96873001B597E /* message_queue.c */; };
+		59A048C112A96873001B597E /* message_queue.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048BF12A96873001B597E /* message_queue.h */; };
 		59AACD8C1297E49B006DB19D /* controller.c in Sources */ = {isa = PBXBuildFile; fileRef = 59AACD8A1297E49B006DB19D /* controller.c */; };
 		59AACD8D1297E49B006DB19D /* controller.h in Headers */ = {isa = PBXBuildFile; fileRef = 59AACD8B1297E49B006DB19D /* controller.h */; };
 		59AACD911297E4AC006DB19D /* timer.c in Sources */ = {isa = PBXBuildFile; fileRef = 59AACD8F1297E4AC006DB19D /* timer.c */; };
 		59AACD921297E4AC006DB19D /* timer.h in Headers */ = {isa = PBXBuildFile; fileRef = 59AACD901297E4AC006DB19D /* timer.h */; };
+		59DE6B3312AB85BD00DCFEAF /* rtp.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3212AB85BD00DCFEAF /* rtp.c */; };
+		59DE6B3612AB8C3700DCFEAF /* message_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3512AB8C3700DCFEAF /* message_queue.c */; };
+		59DE6B3712AB8DF700DCFEAF /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048B912A95E56001B597E /* util.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -95,10 +107,22 @@
 		592307E0129320E40067DE03 /* test_main.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = test_main.1; sourceTree = "<group>"; };
 		5924AA59129321D2004F9C67 /* generate_main.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = generate_main.sh; sourceTree = "<group>"; };
 		59460C311293282E001C2C13 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		59A048AA12A95E16001B597E /* applemidi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = applemidi.h; sourceTree = "<group>"; };
+		59A048AC12A95E16001B597E /* rtp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rtp.h; sourceTree = "<group>"; };
+		59A048AE12A95E16001B597E /* command_section.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = command_section.c; sourceTree = "<group>"; };
+		59A048AF12A95E16001B597E /* journal.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = journal.c; sourceTree = "<group>"; };
+		59A048B012A95E16001B597E /* rtpmidi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rtpmidi.h; sourceTree = "<group>"; };
+		59A048B712A95E49001B597E /* util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = util.c; sourceTree = "<group>"; };
+		59A048B912A95E56001B597E /* util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = util.c; sourceTree = "<group>"; };
+		59A048BA12A95E56001B597E /* util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = util.h; sourceTree = "<group>"; };
+		59A048BE12A96873001B597E /* message_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = message_queue.c; sourceTree = "<group>"; };
+		59A048BF12A96873001B597E /* message_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = message_queue.h; sourceTree = "<group>"; };
 		59AACD8A1297E49B006DB19D /* controller.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = controller.c; sourceTree = "<group>"; };
 		59AACD8B1297E49B006DB19D /* controller.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = controller.h; sourceTree = "<group>"; };
 		59AACD8F1297E4AC006DB19D /* timer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = timer.c; sourceTree = "<group>"; };
 		59AACD901297E4AC006DB19D /* timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = timer.h; sourceTree = "<group>"; };
+		59DE6B3212AB85BD00DCFEAF /* rtp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rtp.c; sourceTree = "<group>"; };
+		59DE6B3512AB8C3700DCFEAF /* message_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = message_queue.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -163,12 +187,16 @@
 				592307B21293209F0067DE03 /* driver.h */,
 				592307B31293209F0067DE03 /* message_format.c */,
 				592307B41293209F0067DE03 /* message_format.h */,
+				59A048BE12A96873001B597E /* message_queue.c */,
+				59A048BF12A96873001B597E /* message_queue.h */,
 				592307B51293209F0067DE03 /* message.c */,
 				592307B61293209F0067DE03 /* message.h */,
 				592307B71293209F0067DE03 /* midi.c */,
 				592307B81293209F0067DE03 /* midi.h */,
 				59AACD8F1297E4AC006DB19D /* timer.c */,
 				59AACD901297E4AC006DB19D /* timer.h */,
+				59A048B912A95E56001B597E /* util.c */,
+				59A048BA12A95E56001B597E /* util.h */,
 			);
 			path = midi;
 			sourceTree = "<group>";
@@ -184,9 +212,11 @@
 				592307CB129320B40067DE03 /* integration.c */,
 				59460C311293282E001C2C13 /* main.c */,
 				592307CC129320B40067DE03 /* message_format.c */,
+				59DE6B3512AB8C3700DCFEAF /* message_queue.c */,
 				592307CD129320B40067DE03 /* message.c */,
 				592307CE129320B40067DE03 /* midi.c */,
 				592307CF129320B40067DE03 /* test.h */,
+				59A048B712A95E49001B597E /* util.c */,
 			);
 			path = test;
 			sourceTree = "<group>";
@@ -194,6 +224,9 @@
 		592307AA12931F7E0067DE03 /* driver */ = {
 			isa = PBXGroup;
 			children = (
+				59A048A912A95E16001B597E /* applemidi */,
+				59A048AB12A95E16001B597E /* common */,
+				59A048AD12A95E16001B597E /* rtpmidi */,
 			);
 			path = driver;
 			sourceTree = "<group>";
@@ -204,6 +237,34 @@
 				592307E0129320E40067DE03 /* test_main.1 */,
 			);
 			name = Documentation;
+			path = documentation;
+			sourceTree = "<group>";
+		};
+		59A048A912A95E16001B597E /* applemidi */ = {
+			isa = PBXGroup;
+			children = (
+				59A048AA12A95E16001B597E /* applemidi.h */,
+			);
+			path = applemidi;
+			sourceTree = "<group>";
+		};
+		59A048AB12A95E16001B597E /* common */ = {
+			isa = PBXGroup;
+			children = (
+				59DE6B3212AB85BD00DCFEAF /* rtp.c */,
+				59A048AC12A95E16001B597E /* rtp.h */,
+			);
+			path = common;
+			sourceTree = "<group>";
+		};
+		59A048AD12A95E16001B597E /* rtpmidi */ = {
+			isa = PBXGroup;
+			children = (
+				59A048AE12A95E16001B597E /* command_section.c */,
+				59A048AF12A95E16001B597E /* journal.c */,
+				59A048B012A95E16001B597E /* rtpmidi.h */,
+			);
+			path = rtpmidi;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -222,6 +283,11 @@
 				592307C61293209F0067DE03 /* midi.h in Headers */,
 				59AACD8D1297E49B006DB19D /* controller.h in Headers */,
 				59AACD921297E4AC006DB19D /* timer.h in Headers */,
+				59A048B112A95E16001B597E /* applemidi.h in Headers */,
+				59A048B212A95E16001B597E /* rtp.h in Headers */,
+				59A048B512A95E16001B597E /* rtpmidi.h in Headers */,
+				59A048BC12A95E56001B597E /* util.h in Headers */,
+				59A048C112A96873001B597E /* message_queue.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -252,6 +318,7 @@
 				5923079D12931F520067DE03 /* Sources */,
 				5923079E12931F520067DE03 /* Frameworks */,
 				5923079F12931F520067DE03 /* Headers */,
+				59A048C212A9769F001B597E /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -308,6 +375,22 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		59A048C212A9769F001B597E /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "DOT_PATH=/usr/local/graphviz-2.14/bin\nDOXY_PATH=/Applications/Doxygen.app/Contents/Resources\nexport PATH=$PATH:$DOT_PATH:$DOXY_PATH\ncd $SRCROOT\ndoxygen\nmake -C documentation/html install";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		5923079D12931F520067DE03 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -322,6 +405,11 @@
 				592307C51293209F0067DE03 /* midi.c in Sources */,
 				59AACD8C1297E49B006DB19D /* controller.c in Sources */,
 				59AACD911297E4AC006DB19D /* timer.c in Sources */,
+				59A048B312A95E16001B597E /* command_section.c in Sources */,
+				59A048B412A95E16001B597E /* journal.c in Sources */,
+				59A048C012A96873001B597E /* message_queue.c in Sources */,
+				59DE6B3312AB85BD00DCFEAF /* rtp.c in Sources */,
+				59DE6B3612AB8C3700DCFEAF /* message_queue.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -338,6 +426,8 @@
 				5924AA5512932186004F9C67 /* message.c in Sources */,
 				5924AA5612932186004F9C67 /* midi.c in Sources */,
 				59460C3412932833001C2C13 /* main.c in Sources */,
+				59A048BD12A95E5D001B597E /* util.c in Sources */,
+				59DE6B3712AB8DF700DCFEAF /* util.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

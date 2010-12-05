@@ -5,15 +5,15 @@
 struct MIDIMessage;
 struct MIDIMessageQueue;
 
-struct MIDIMessageQueue * MIDIMessageQueueCreate( size_t size );
+struct MIDIMessageQueue * MIDIMessageQueueCreate();
 void MIDIMessageQueueDestroy( struct MIDIMessageQueue * queue );
 void MIDIMessageQueueRetain( struct MIDIMessageQueue * queue );
 void MIDIMessageQueueRelease( struct MIDIMessageQueue * queue );
 
-int MIDIMessageQueueGetSize( struct MIDIMessageQueue * queue, size_t * size );
-int MIDIMessageQueueGetAvail( struct MIDIMessageQueue * queue, size_t * size );
+int MIDIMessageQueueGetLength( struct MIDIMessageQueue * queue, size_t * length );
 
 int MIDIMessageQueuePush( struct MIDIMessageQueue * queue, struct MIDIMessage * message );
-int MIDIMessageQueuePop( struct MIDIMessageQueue * queue, struct MIDIMessage * message );
+int MIDIMessageQueuePeek( struct MIDIMessageQueue * queue, struct MIDIMessage ** message );
+int MIDIMessageQueuePop( struct MIDIMessageQueue * queue, struct MIDIMessage ** message );
 
 #endif

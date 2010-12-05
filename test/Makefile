@@ -10,6 +10,7 @@ LDFLAGS := $(LDFLAGS) -L$(LIBDIR) -lmidikit
 OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/clock.o \
      $(OBJDIR)/message_format.o $(OBJDIR)/message.o \
      $(OBJDIR)/connector.o $(OBJDIR)/device.o $(OBJDIR)/driver.o \
+     $(OBJDIR)/message_queue.o \
      $(OBJDIR)/integration.o
 BIN=test_main
 
@@ -39,6 +40,7 @@ $(OBJDIR)/message.o: message.c test.h
 $(OBJDIR)/connector.o: connector.c test.h
 $(OBJDIR)/device.o: device.c test.h
 $(OBJDIR)/driver.o: driver.c test.h
+$(OBJDIR)/message_queue.o: message_queue.c test.h
 $(OBJDIR)/integration.o: integration.c test.h
 
 tests.passed: $(BINDIR)/$(BIN)

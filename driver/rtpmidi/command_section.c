@@ -3,13 +3,13 @@
  * @brief MIDI command section
  * The MIDI command section has the following format:
  *
- * <tt>
+ * <pre>
  *     0                   1                   2                   3
  *     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *    |B|J|Z|P|LEN... |  MIDI list ...                                |
  *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * </tt>
+ * </pre>
  *
  * The MIDI command section begins with a variable-length header.
  */
@@ -63,7 +63,7 @@ struct RTPMIDICommandSection {
 /**
  * @brief MIDI list.
  *
- * <tt>
+ * <pre>
  *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *    |  Delta Time 0     (1-4 octets long, or 0 octets if Z = 1)     |
  *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -79,14 +79,10 @@ struct RTPMIDICommandSection {
  *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *    |  MIDI Command N   (0 or more octets long)                     |
  *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * </tt>
+ * </pre>
  */
   struct MIDIMessageList * midi_list;
 
 };
 
-struct MIDIMessageList {
-  struct MIDIMessage * message;
-  struct MIDIMessageList * next;
-};
 

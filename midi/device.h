@@ -10,27 +10,22 @@ struct MIDITimer;
 
 struct MIDIDevice;
 
-/**
- * @brief Delegate to respond to received messages.
- * Every time the device receives a message, the device calls one of these
- * callbacks (if available) with the message properties.
- */
 struct MIDIDeviceDelegate {
-  int (*recv_nof)( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIVelocity velocity );  /**< @brief Note on callback.  */
-  int (*recv_non)( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIVelocity velocity );  /**< @brief Note off callback. */
-  int (*recv_pkp)( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIPressure pressute );  /**< @brief Polyphonic key pressure callback. */
-  int (*recv_cc)( struct MIDIDevice * device, MIDIChannel channel, MIDIControl control, MIDIValue value ); /**< @brief Control change callback.    */
-  int (*recv_pc)( struct MIDIDevice * device, MIDIChannel channel, MIDIProgram program );                  /**< @brief Program change callback.    */
-  int (*recv_cp)( struct MIDIDevice * device, MIDIChannel channel, MIDIPressure value );                   /**< @brief Channel pressure callback.  */
-  int (*recv_pwc)( struct MIDIDevice * device, MIDIChannel channel, MIDILongValue value );                 /**< @brief Pitch wheel change callback */
+  int (*recv_nof)( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIVelocity velocity );
+  int (*recv_non)( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIVelocity velocity );
+  int (*recv_pkp)( struct MIDIDevice * device, MIDIChannel channel, MIDIKey key, MIDIPressure pressute );
+  int (*recv_cc)( struct MIDIDevice * device, MIDIChannel channel, MIDIControl control, MIDIValue value );
+  int (*recv_pc)( struct MIDIDevice * device, MIDIChannel channel, MIDIProgram program );
+  int (*recv_cp)( struct MIDIDevice * device, MIDIChannel channel, MIDIPressure value );
+  int (*recv_pwc)( struct MIDIDevice * device, MIDIChannel channel, MIDILongValue value );
   int (*recv_sx)( struct MIDIDevice * device, MIDIManufacturerId manufacturer_id,
-                  size_t size, void * data, uint8_t fragment );                                            /**< @brief System exclusive callback */
-  int (*recv_tcqf)( struct MIDIDevice * device, MIDIValue time_code_type, MIDIValue value );               /**< @brief Time code quarter frame callback */
-  int (*recv_spp)( struct MIDIDevice * device, MIDILongValue value );                                      /**< @brief Song position pointer callback */
-  int (*recv_ss)( struct MIDIDevice * device, MIDIValue value );                                           /**< @brief Song select callback */
-  int (*recv_tr)( struct MIDIDevice * device );                                                            /**< @brief Tune request callback */
-  int (*recv_eox)( struct MIDIDevice * device );                                                           /**< @brief End of exclusive callback */
-  int (*recv_rt)( struct MIDIDevice * device, MIDIStatus status, MIDITimestamp );                          /**< @brief Real time callback */
+                  size_t size, void * data, uint8_t fragment );
+  int (*recv_tcqf)( struct MIDIDevice * device, MIDIValue time_code_type, MIDIValue value );
+  int (*recv_spp)( struct MIDIDevice * device, MIDILongValue value );
+  int (*recv_ss)( struct MIDIDevice * device, MIDIValue value );
+  int (*recv_tr)( struct MIDIDevice * device );
+  int (*recv_eox)( struct MIDIDevice * device );
+  int (*recv_rt)( struct MIDIDevice * device, MIDIStatus status, MIDITimestamp );
 };
 
 struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate );

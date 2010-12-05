@@ -44,8 +44,15 @@ static char * _control_names[] = {
 };
 */
 
+/** @internal */
 struct MIDINRPList;
 
+/**
+ * @brief Convenience class to handle control changes.
+ * The MIDIController implements the full set of controls
+ * specified by the MIDI standard and can be attached to
+ * any MIDIDevice channel to monitor control change messages.
+ */
 struct MIDIController {
   size_t refs;
   struct MIDIControllerDelegate * delegate;
@@ -270,6 +277,26 @@ void MIDIControllerRelease( struct MIDIController * controller ) {
 
 /** @} */
 
+#pragma mark Message passing
+/**
+ * @name Message passing
+ * Receiving and sending MIDIMessage objects.
+ * @{
+ */
+
+/**
+ * @brief Receive a "Control Change" message.
+ * This is called by the connected device when receives a "Control Change" message.
+ * It can be used to simulate the reception of such a message.
+ * @public @memberof MIDIController
+ * @param controller The controller.
+ * @param device     The midi device.
+ * @param channel    The channel on which the control change occured.
+ * @param control    The control that was changed.
+ * @param value      The new value of the control.
+ * @retval 0 on success.
+ * @retval 1 if the message could not be processed.
+ */
 int MIDIControllerReceiveControlChange( struct MIDIController * controller, struct MIDIDevice * device,
                                         MIDIChannel channel, MIDIControl control, MIDIValue value ) {
   if( control == MIDI_CONTROL_DATA_ENTRY ||
@@ -314,7 +341,21 @@ int MIDIControllerReceiveControlChange( struct MIDIController * controller, stru
   return 0;
 }
 
+/**
+ * @brief Send a "Control Change" message.
+ * This can be used to notify other devices when controls have been changed.
+ * @public @memberof MIDIController
+ * @param controller The controller.
+ * @param device     The midi device.
+ * @param channel    The channel on which the control change occured.
+ * @param control    The control that was changed.
+ * @param value      The new value of the control.
+ * @retval 0 on success.
+ * @retval 1 if the message could not be sent.
+ */
 int MIDIControllerSendControlChange( struct MIDIController * controller, struct MIDIDevice * device,
                                      MIDIChannel channel, MIDIControl control, MIDIValue value ) {
   return 0;
 }
+
+/** @} */

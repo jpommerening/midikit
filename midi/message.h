@@ -4,6 +4,11 @@
 #include "clock.h"
 
 struct MIDIMessage;
+struct MIDIMessageList;
+struct MIDIMessageList {
+  struct MIDIMessage * message;
+  struct MIDIMessageList * next;
+};
 
 struct MIDIMessage * MIDIMessageCreate( MIDIStatus status );
 void MIDIMessageDestroy( struct MIDIMessage * message );
@@ -18,7 +23,7 @@ int MIDIMessageGetSize( struct MIDIMessage * message, size_t * size );
 int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
 int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
 
-int MIDIMessageDecode( struct MIDIMessage * message, size_t bytes, unsigned char * buffer );
 int MIDIMessageEncode( struct MIDIMessage * message, size_t bytes, unsigned char * buffer );
+int MIDIMessageDecode( struct MIDIMessage * message, size_t bytes, unsigned char * buffer );
 
 #endif
