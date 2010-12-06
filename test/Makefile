@@ -4,8 +4,8 @@ SUBDIR=test
 
 include $(PROJECTDIR)/config.mk
 
-CFLAGS := $(CFLAGS) -I$(PROJECTDIR)
-LDFLAGS := $(LDFLAGS) -L$(LIBDIR) -lmidikit
+CFLAGS := $(CFLAGS)
+LDFLAGS := $(LDFLAGS) -lmidikit
 
 OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/clock.o \
      $(OBJDIR)/message_format.o $(OBJDIR)/message.o \

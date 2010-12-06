@@ -2,21 +2,21 @@
 MKDIR_P = mkdir -p
 LN_S = ln -s
 
-CC = clang
-CFLAGS = -O3 -Wall
-CFLAGS_OBJ = $(CFLAGS) -c
-LDFLAGS =
-LDFLAGS_LIB = $(LDFLAGS) -shared -O4
-LDFLAGS_BIN = $(LDFLAGS)
-
-LIB_SUFFIX = .so
-BIN_SUFFIX =
-
 BUILDDIR := $(PROJECTDIR)/build
 
 OBJDIR := $(BUILDDIR)/$(SUBDIR)
 LIBDIR := $(BUILDDIR)
 BINDIR := $(BUILDDIR)
 
-DRIVERS=generic apple-midi osc
+CC = clang
+CFLAGS = -O3 -Wall -I$(PROJECTDIR)
+CFLAGS_OBJ = $(CFLAGS) -c
+LDFLAGS = -L$(LIBDIR)
+LDFLAGS_LIB = $(LDFLAGS) -shared -O4
+LDFLAGS_BIN = $(LDFLAGS)
+
+LIB_SUFFIX = .so
+BIN_SUFFIX =
+
+DRIVERS=generic applemidi osc
 

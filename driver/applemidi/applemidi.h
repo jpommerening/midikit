@@ -1,5 +1,6 @@
 #ifndef MIDIKIT_DRIVER_APPLEMIDI_H
 #define MIDIKIT_DRIVER_APPLEMIDI_H
+#include <stdlib.h>
 #include "midi/driver.h"
 
 #define MIDI_APPLEMIDI_PROTOCOL_SIGNATURE          0xffff
