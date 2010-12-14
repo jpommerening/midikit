@@ -21,6 +21,7 @@ documentation: midi driver
 
 midi: midi/.make
 midi-clean: midi/.make-clean
+driver: driver/.make
 driver-clean: driver/.make-clean
 test: test/.make
 test-clean: test/.make-clean

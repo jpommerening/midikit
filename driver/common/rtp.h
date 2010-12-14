@@ -1,14 +1,16 @@
 #ifndef MIDIKIT_DRIVER_RTP_H
 #define MIDIKIT_DRIVER_RTP_H
 #include <stdlib.h>
+#include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 #define RTP_MAX_PEERS 16
 
 struct RTPAddress {
   unsigned long ssrc;
   socklen_t size;
-  struct sockaddr * addr;
+  struct sockaddr_storage addr;
 };
 
 struct RTPPeer {
@@ -63,8 +65,12 @@ int RTPSessionGetSamplingRate( struct RTPSession * session, double * rate );
 
 int RTPSessionAddPeer( struct RTPSession * session, struct RTPPeer * peer );
 int RTPSessionRemovePeer( struct RTPSession * session, struct RTPPeer * peer );
+int RTPSessionFindPeerBySSRC( struct RTPSession * session, struct RTPPeer ** peer,
+                              unsigned long ssrc );
+int RTPSessionFindPeerByAddress( struct RTPSession * session, struct RTPPeer ** peer,
+                                 socklen_t size, struct sockaddr * addr );
 
-int RTPSendToPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload, struct RTPPacketInfo * info );
-int RTPReceiveFromPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload, struct RTPPacketInfo * info );
+int RTPSessionSendToPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload, struct RTPPacketInfo * info );
+int RTPSessionReceiveFromPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload, struct RTPPacketInfo * info );
 
 #endif

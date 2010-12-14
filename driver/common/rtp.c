@@ -182,8 +182,7 @@ struct RTPPeer * RTPPeerCreate( unsigned long ssrc, socklen_t size, struct socka
   peer->refs = 1;
   peer->address.ssrc = ssrc;
   peer->address.size = size;
-  peer->address.addr = malloc( size );
-  memcpy( peer->address.addr, addr, size );
+  memcpy( &(peer->address.addr), addr, size );
   peer->timestamp_diff = 0;
   peer->in_seqnum      = 0;
   peer->in_timestamp   = 0;
@@ -194,9 +193,6 @@ struct RTPPeer * RTPPeerCreate( unsigned long ssrc, socklen_t size, struct socka
 }
   
 void RTPPeerDestroy( struct RTPPeer * peer ) {
-  if( peer->address.addr != NULL ) {
-    free( peer->address.addr );
-  }
   free( peer );
 }
 
@@ -218,8 +214,8 @@ int RTPPeerGetSSRC( struct RTPPeer * peer, unsigned long * ssrc ) {
 
 int RTPPeerGetAddress( struct RTPPeer * peer, socklen_t * size, struct sockaddr ** addr ) {
   if( size == NULL || addr == NULL ) return 1;
-  *size = peer->address.size;
-  *addr = peer->address.addr;
+  *size =   peer->address.size;
+  *addr = &(peer->address.addr);
   return 0;
 }
 
@@ -245,33 +241,20 @@ struct RTPSession {
  */
 
 static void _init_addr_with_socket( struct RTPAddress * address, int socket ) {
-  char buffer[SOCKADDR_BUFLEN];
-  unsigned long seed = socket;
-  struct sockaddr * addr = (void*) &(buffer[0]);
-  socklen_t i, size = sizeof(buffer);
-  getsockname( socket, addr, &size );
-  for( i=0; i<size; i++ ) {
-    seed *= buffer[i];
-  }
-  srandom( seed );
-  
   address->ssrc = random();
-  address->size = size;
-  address->addr = malloc( size );
-  memcpy( address->addr, addr, size );
+  getsockname( socket, &(address->addr), &(address->size) );
 }
 
 static void _init_addr_empty( struct RTPAddress * address ) {
   address->ssrc = 0;
   address->size = 0;
-  address->addr = NULL;
+  memset( &(address->addr), 0, sizeof(address->addr) );
 }
 
 static void _init_addr( struct RTPAddress * address, socklen_t size, struct sockaddr * addr ) {
   address->ssrc = 0;
-  address->addr = malloc( size );
   address->size = size;
-  memcpy( address->addr, addr, size );
+  memcpy( &(address->addr), addr, size );
 }
 
 static unsigned long _get_timestamp( struct RTPSession * session ) {
@@ -309,9 +292,26 @@ struct RTPSession * RTPSessionCreate( int socket ) {
   return session;
 }
 
-void RTPSessionDestroy( struct RTPSession * session );
-void RTPSessionRetain( struct RTPSession * session );
-void RTPSessionRelease( struct RTPSession * session );
+void RTPSessionDestroy( struct RTPSession * session ) {
+  int i;
+  for( i=0; i<RTP_MAX_PEERS; i++ ) {
+    if( session->peers[i] != NULL ) {
+      RTPPeerRelease( session->peers[i] );
+    }
+  }
+  free( session->buffer );
+  free( session );
+}
+
+void RTPSessionRetain( struct RTPSession * session ) {
+  session->refs++;
+}
+
+void RTPSessionRelease( struct RTPSession * session ) {
+  if( ! --session->refs ) {
+    RTPSessionDestroy( session );
+  }
+}
 
 int RTPSessionSetMarker( struct RTPSession * session, unsigned char marker ) {
   if( marker ) {
@@ -494,8 +494,8 @@ static int _decode_packet( struct RTPSession * session, struct RTPPacketInfo * i
   return 0;
 }
 
-int RTPSendToPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload,
-                   struct RTPPacketInfo * info ) {
+int RTPSessionSendToPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload,
+                          struct RTPPacketInfo * info ) {
   size_t header_size     = 12 + ((info->csrc_count & 0x0f) * 4 );
   size_t ext_header_size = header_size;
   size_t data_size       = ext_header_size + size;
@@ -524,17 +524,20 @@ int RTPSendToPeer( struct RTPSession * session, struct RTPPeer * peer, size_t si
   }
   
   _encode_packet( session, info, total_size, session->buffer );
-  
   total_size = sendto( session->socket, session->buffer, total_size, 0,
-                       peer->address.addr, peer->address.size );
+                       &(peer->address.addr), peer->address.size );
+
+  if( total_size == -1 ) {
+    return 1;
+  }
   
   peer->out_seqnum    = info->sequence_number;
   peer->out_timestamp = info->timestamp;
   return 0;
 }
 
-int RTPReceiveFromPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload,
-                        struct RTPPacketInfo * info ) {
+int RTPSessionReceiveFromPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload,
+                               struct RTPPacketInfo * info ) {
   peer->in_seqnum    = info->sequence_number;
   peer->in_timestamp = info->timestamp;
   return 0;
@@ -553,10 +556,8 @@ int RTPSessionReceive( struct RTPSession * session, size_t size, void * payload,
     info = &_info;
   }
   
-  address.size = 0;
-  address.addr = (struct sockaddr *) &buffer;
   total_size = recvfrom( session->socket, session->buffer, session->buflen,
-                         0, address.addr, &address.size );
+                         0, &address.addr, &address.size );
 
   if( total_size >= session->buflen ) {
     // message probably too large for buffer, grow buffer & cancel
@@ -568,7 +569,7 @@ int RTPSessionReceive( struct RTPSession * session, size_t size, void * payload,
     return 1;
   }
   
-  RTPSessionFindPeerByAddress( session, &peer, address.size, address.addr );
+  RTPSessionFindPeerByAddress( session, &peer, address.size, &address.addr );
   
   _decode_packet( session, info, total_size, session->buffer );
   
@@ -576,5 +577,5 @@ int RTPSessionReceive( struct RTPSession * session, size_t size, void * payload,
     memcpy( payload, info->data, (size < total_size ? size : total_size) );
   }
   
-  return RTPReceiveFromPeer( session, peer, info->size, info->data, info );
+  return RTPSessionReceiveFromPeer( session, peer, info->size, info->data, info );
 }

@@ -18,5 +18,5 @@ LDFLAGS_BIN = $(LDFLAGS)
 LIB_SUFFIX = .so
 BIN_SUFFIX =
 
-DRIVERS=generic applemidi osc
+DRIVERS=applemidi
 

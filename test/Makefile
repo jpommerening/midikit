@@ -5,13 +5,14 @@ SUBDIR=test
 include $(PROJECTDIR)/config.mk
 
 CFLAGS := $(CFLAGS)
-LDFLAGS := $(LDFLAGS) -lmidikit
+LDFLAGS := $(LDFLAGS) -lmidikit -lmidikit-driver
 
 OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/clock.o \
      $(OBJDIR)/message_format.o $(OBJDIR)/message.o \
      $(OBJDIR)/connector.o $(OBJDIR)/device.o $(OBJDIR)/driver.o \
      $(OBJDIR)/message_queue.o \
-     $(OBJDIR)/integration.o
+     $(OBJDIR)/integration.o \
+     $(OBJDIR)/driver_rtp.o
 BIN=test_main
 
 MAIN_C=main.c
@@ -42,9 +43,10 @@ $(OBJDIR)/device.o: device.c test.h
 $(OBJDIR)/driver.o: driver.c test.h
 $(OBJDIR)/message_queue.o: message_queue.c test.h
 $(OBJDIR)/integration.o: integration.c test.h
+$(OBJDIR)/driver_rtp.o: driver_rtp.c test.h
 
 tests.passed: $(BINDIR)/$(BIN)
 	LD_LIBRARY_PATH=$(LIBDIR) $(BINDIR)/$(BIN) && touch $@
 
-$(MAIN_C): midi.c util.c clock.c message_format.c message.c connector.c device.c driver.c integration.c
+$(MAIN_C): midi.c util.c clock.c message_format.c message.c connector.c device.c driver.c integration.c driver_rtp.c
 	./generate_main.sh -o $(MAIN_C) $^
