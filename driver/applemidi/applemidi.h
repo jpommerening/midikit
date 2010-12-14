@@ -1,16 +1,8 @@
 #ifndef MIDIKIT_DRIVER_APPLEMIDI_H
 #define MIDIKIT_DRIVER_APPLEMIDI_H
 #include <stdlib.h>
+#include <sys/socket.h>
 #include "midi/driver.h"
-
-#define MIDI_APPLEMIDI_PROTOCOL_SIGNATURE          0xffff
-
-#define MIDI_APPLEMIDI_COMMAND_INVITATION          0x494e /** "IN" */
-#define MIDI_APPLEMIDI_COMMAND_INVITATION_REJECTED 0x4e4f /** "NO" */
-#define MIDI_APPLEMIDI_COMMAND_INVITATION_ACCEPTED 0x4f4b /** "OK" */
-#define MIDI_APPLEMIDI_COMMAND_ENDSESSION          0x4259 /** "BY" */
-#define MIDI_APPLEMIDI_COMMAND_SYNCHRONIZATION     0x434b /** "CK" */
-#define MIDI_APPLEMIDI_COMMAND_RECEIVER_FEEDBACK   0x5253 /** "RS" */
 
 struct MIDIDriverAppleMIDI;
 extern struct MIDIDriverDelegate MIDIDriverDelegateAppleMIDI;
@@ -25,13 +17,13 @@ int MIDIDriverAppleMIDIGetRTPPort( struct MIDIDriverAppleMIDI * driver, unsigned
 int MIDIDriverAppleMIDISetControlPort( struct MIDIDriverAppleMIDI * driver, unsigned short port ); 
 int MIDIDriverAppleMIDIGetControlPort( struct MIDIDriverAppleMIDI * driver, unsigned short * port ); 
 
-int MIDIDriverAppleMIDISetPeerAddress( struct MIDIDriverAppleMIDI * driver, size_t length, char * address, unsigned short port );
-int MIDIDriverAppleMIDIGetPeerAddress( struct MIDIDriverAppleMIDI * driver, size_t length, char * address, unsigned short * port );
+int MIDIDriverAppleMIDIAddPeer( struct MIDIDriverAppleMIDI * driver, socklen_t size_t, struct sockaddr * address );
+int MIDIDriverAppleMIDIRemovePeer( struct MIDIDriverAppleMIDI * driver, socklen_t size_t, struct sockaddr * address );
 
 int MIDIDriverAppleMIDIGetLatency( struct MIDIDriverAppleMIDI * driver, double seconds );
 
-//int MIDIDriverAppleMIDIGetRTPSocket( struct MIDIDriverAppleMIDI * driver, int * sockid );
-//int MIDIDriverAppleMIDIGetControlSocket( struct MIDIDriverAppleMIDI * driver, int * sockid );
+int MIDIDriverAppleMIDIGetRTPSocket( struct MIDIDriverAppleMIDI * driver, int * socket );
+int MIDIDriverAppleMIDIGetControlSocket( struct MIDIDriverAppleMIDI * driver, int * socket );
 
 int MIDIDriverAppleMIDIConnect( struct MIDIDriverAppleMIDI * driver );
 int MIDIDriverAppleMIDIDisconnect( struct MIDIDriverAppleMIDI * driver );

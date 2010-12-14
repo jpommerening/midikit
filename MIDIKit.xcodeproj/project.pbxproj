@@ -47,6 +47,9 @@
 		59DE6B3312AB85BD00DCFEAF /* rtp.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3212AB85BD00DCFEAF /* rtp.c */; };
 		59DE6B3612AB8C3700DCFEAF /* message_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3512AB8C3700DCFEAF /* message_queue.c */; };
 		59DE6B3712AB8DF700DCFEAF /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048B912A95E56001B597E /* util.c */; };
+		59DE6B3A12ABCBD100DCFEAF /* cfintegration.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3812ABCBD100DCFEAF /* cfintegration.c */; };
+		59DE6B3B12ABCBD100DCFEAF /* cfintegration.h in Headers */ = {isa = PBXBuildFile; fileRef = 59DE6B3912ABCBD100DCFEAF /* cfintegration.h */; };
+		59DE6B3D12B01C0D00DCFEAF /* applemidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3C12B01C0D00DCFEAF /* applemidi.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -123,6 +126,9 @@
 		59AACD901297E4AC006DB19D /* timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = timer.h; sourceTree = "<group>"; };
 		59DE6B3212AB85BD00DCFEAF /* rtp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rtp.c; sourceTree = "<group>"; };
 		59DE6B3512AB8C3700DCFEAF /* message_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = message_queue.c; sourceTree = "<group>"; };
+		59DE6B3812ABCBD100DCFEAF /* cfintegration.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cfintegration.c; sourceTree = "<group>"; };
+		59DE6B3912ABCBD100DCFEAF /* cfintegration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cfintegration.h; sourceTree = "<group>"; };
+		59DE6B3C12B01C0D00DCFEAF /* applemidi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = applemidi.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -175,6 +181,8 @@
 		592307A812931F6C0067DE03 /* midi */ = {
 			isa = PBXGroup;
 			children = (
+				59DE6B3812ABCBD100DCFEAF /* cfintegration.c */,
+				59DE6B3912ABCBD100DCFEAF /* cfintegration.h */,
 				592307AB1293209F0067DE03 /* clock.c */,
 				592307AC1293209F0067DE03 /* clock.h */,
 				592307AD1293209F0067DE03 /* connector.c */,
@@ -244,6 +252,7 @@
 			isa = PBXGroup;
 			children = (
 				59A048AA12A95E16001B597E /* applemidi.h */,
+				59DE6B3C12B01C0D00DCFEAF /* applemidi.c */,
 			);
 			path = applemidi;
 			sourceTree = "<group>";
@@ -288,6 +297,7 @@
 				59A048B512A95E16001B597E /* rtpmidi.h in Headers */,
 				59A048BC12A95E56001B597E /* util.h in Headers */,
 				59A048C112A96873001B597E /* message_queue.h in Headers */,
+				59DE6B3B12ABCBD100DCFEAF /* cfintegration.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -410,6 +420,8 @@
 				59A048C012A96873001B597E /* message_queue.c in Sources */,
 				59DE6B3312AB85BD00DCFEAF /* rtp.c in Sources */,
 				59DE6B3612AB8C3700DCFEAF /* message_queue.c in Sources */,
+				59DE6B3A12ABCBD100DCFEAF /* cfintegration.c in Sources */,
+				59DE6B3D12B01C0D00DCFEAF /* applemidi.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
