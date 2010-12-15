@@ -50,6 +50,7 @@
 		59DE6B3A12ABCBD100DCFEAF /* cfintegration.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3812ABCBD100DCFEAF /* cfintegration.c */; };
 		59DE6B3B12ABCBD100DCFEAF /* cfintegration.h in Headers */ = {isa = PBXBuildFile; fileRef = 59DE6B3912ABCBD100DCFEAF /* cfintegration.h */; };
 		59DE6B3D12B01C0D00DCFEAF /* applemidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3C12B01C0D00DCFEAF /* applemidi.c */; };
+		59DE6B4312B808FB00DCFEAF /* driver_rtp.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B4212B808FB00DCFEAF /* driver_rtp.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -129,6 +130,7 @@
 		59DE6B3812ABCBD100DCFEAF /* cfintegration.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cfintegration.c; sourceTree = "<group>"; };
 		59DE6B3912ABCBD100DCFEAF /* cfintegration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cfintegration.h; sourceTree = "<group>"; };
 		59DE6B3C12B01C0D00DCFEAF /* applemidi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = applemidi.c; sourceTree = "<group>"; };
+		59DE6B4212B808FB00DCFEAF /* driver_rtp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = driver_rtp.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -217,6 +219,7 @@
 				592307C8129320B40067DE03 /* connector.c */,
 				592307C9129320B40067DE03 /* device.c */,
 				592307CA129320B40067DE03 /* driver.c */,
+				59DE6B4212B808FB00DCFEAF /* driver_rtp.c */,
 				592307CB129320B40067DE03 /* integration.c */,
 				59460C311293282E001C2C13 /* main.c */,
 				592307CC129320B40067DE03 /* message_format.c */,
@@ -437,9 +440,10 @@
 				5924AA5412932186004F9C67 /* message_format.c in Sources */,
 				5924AA5512932186004F9C67 /* message.c in Sources */,
 				5924AA5612932186004F9C67 /* midi.c in Sources */,
-				59460C3412932833001C2C13 /* main.c in Sources */,
 				59A048BD12A95E5D001B597E /* util.c in Sources */,
 				59DE6B3712AB8DF700DCFEAF /* util.c in Sources */,
+				59DE6B4312B808FB00DCFEAF /* driver_rtp.c in Sources */,
+				59460C3412932833001C2C13 /* main.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

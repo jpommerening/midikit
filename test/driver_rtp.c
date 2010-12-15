@@ -98,8 +98,8 @@ int test003_rtp( void ) {
   info.timestamp = 0;
   info.csrc[0] = 0x80706050;
   info.csrc[1] = 0x04030201;
-  info.size = 0;
-  info.data = NULL;
+  info.payload_size = 0;
+  info.payload = NULL;
 
   ASSERT_NO_ERROR( RTPSessionFindPeerBySSRC( session, &peer, RTP_CLIENT_SSRC ),
                    "Could not find peer." );

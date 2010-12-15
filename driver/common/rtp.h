@@ -7,24 +7,8 @@
 
 #define RTP_MAX_PEERS 16
 
-struct RTPAddress {
-  unsigned long ssrc;
-  socklen_t size;
-  struct sockaddr_storage addr;
-};
-
-struct RTPPeer {
-  size_t refs;
-  struct RTPAddress address;
-  unsigned long timestamp_diff;
-  unsigned long in_timestamp;
-  unsigned long out_timestamp;
-  unsigned long in_seqnum;
-  unsigned long out_seqnum;
-  void * info;
-}; 
-
 struct RTPPacketInfo {
+  struct RTPPeer * peer;
   unsigned char  padding;         // number of padding bytes
   unsigned char  extension;       // extension present?
   unsigned char  csrc_count;      // number of valid entries in csrc[]
@@ -32,10 +16,11 @@ struct RTPPacketInfo {
   unsigned char  payload_type;
   unsigned short sequence_number;
   unsigned long  timestamp;
-  unsigned long  ssrc;     // sender ssrc identifier
+  unsigned long  ssrc;            // sender ssrc identifier
   unsigned long  csrc[16];
-  size_t size; // size of payload
-  void * data; // payload
+  size_t total_size;   // total packet size in bytes
+  size_t payload_size; // size of payload
+  void * payload;      // payload
 };
 
 

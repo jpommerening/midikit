@@ -177,6 +177,47 @@ struct RTPHeader {
  * profiles.
  */
 
+struct RTPAddress {
+  unsigned long ssrc;
+  socklen_t size;
+  struct sockaddr_storage addr;
+};
+
+struct RTPPeer {
+  size_t refs;
+  struct RTPAddress address;
+  unsigned long timestamp_diff;
+  unsigned long in_timestamp;
+  unsigned long out_timestamp;
+  unsigned long in_seqnum;
+  unsigned long out_seqnum;
+  void * info;
+};
+
+struct RTPSession {
+  size_t refs;
+  
+  int socket;
+  struct RTPAddress self;
+  struct RTPPeer *  peers[RTP_MAX_PEERS];
+  struct RTPPacketInfo info;
+  
+  size_t buflen;
+  void * buffer;
+
+  size_t padding_block_size;  
+};
+
+/**
+ * @brief Create an RTPPeer instance.
+ * Allocate space and initialize an RTPPeer instance.
+ * @public @memberof RTPPeer
+ * @param ssrc The synchronization source identifier that uniquely identifies the peer.
+ * @param size The size of the address pointed to by @c addr.
+ * @param addr A pointer to an address that can be used to send packets to the client.
+ * @return a pointer to the created peer structure on success.
+ * @return a @c NULL pointer if the peer could not created.
+ */
 struct RTPPeer * RTPPeerCreate( unsigned long ssrc, socklen_t size, struct sockaddr * addr ) {
   struct RTPPeer * peer = malloc( sizeof( struct RTPPeer ) );
   peer->refs = 1;
@@ -191,47 +232,69 @@ struct RTPPeer * RTPPeerCreate( unsigned long ssrc, socklen_t size, struct socka
   peer->info = NULL;
   return peer;
 }
-  
+
+/**
+ * @brief Destroy an RTPPeer instance.
+ * Free all resources occupied by the peer.
+ * @public @memberof RTPPeer
+ * @param peer The peer.
+ */
 void RTPPeerDestroy( struct RTPPeer * peer ) {
   free( peer );
 }
 
+/**
+ * @brief Retain an RTPPeer instance.
+ * Increment the reference counter of a peer so that it won't be destroyed.
+ * @public @memberof RTPPeer
+ * @param peer The peer.
+ */
 void RTPPeerRetain( struct RTPPeer * peer ) {
   peer->refs++;
 }
 
+/**
+ * @brief Release an RTPPeer instance.
+ * Decrement the reference counter of a peer. If the reference count
+ * reached zero, destroy the peer.
+ * @public @memberof RTPPeer
+ * @param peer The peer.
+ */
 void RTPPeerRelease( struct RTPPeer * peer ) {
   if( ! --peer->refs ) {
     RTPPeerDestroy( peer );
   }
 }
 
+/**
+ * Get the synchronization source identifier of a peer.
+ * @public @memberof RTPPeer
+ * @param peer The peer.
+ * @param ssrc The synchronization source.
+ * @retval 0 on success.
+ * @retval >0 if the SSRC could not be obtained.
+ */
 int RTPPeerGetSSRC( struct RTPPeer * peer, unsigned long * ssrc ) {
   if( ssrc == NULL ) return 1;
   *ssrc = peer->address.ssrc;
   return 0;
 }
 
+/**
+ * Obtain the size of the address and a pointer to it's content.
+ * @public @memberof RTPPeer
+ * @param peer The peer.
+ * @param size The size.
+ * @param addr The address.
+ * @retval 0 on success.
+ * @retval >0 if the address could not be obtained.
+ */
 int RTPPeerGetAddress( struct RTPPeer * peer, socklen_t * size, struct sockaddr ** addr ) {
   if( size == NULL || addr == NULL ) return 1;
   *size =   peer->address.size;
-  *addr = &(peer->address.addr);
+  *addr = (struct sockaddr *) &(peer->address.addr);
   return 0;
 }
-
-struct RTPSession {
-  size_t refs;
-  
-  int socket;
-  struct RTPAddress self;
-  struct RTPPeer *  peers[RTP_MAX_PEERS];
-  
-  size_t buflen;
-  void * buffer;
-
-  size_t         padding_block_size;  
-  unsigned char  marker_payload_type;
-};
 
 #pragma mark Creation and destruction
 /**
@@ -242,7 +305,7 @@ struct RTPSession {
 
 static void _init_addr_with_socket( struct RTPAddress * address, int socket ) {
   address->ssrc = random();
-  getsockname( socket, &(address->addr), &(address->size) );
+  getsockname( socket, (struct sockaddr *) &(address->addr), &(address->size) );
 }
 
 static void _init_addr_empty( struct RTPAddress * address ) {
@@ -288,10 +351,24 @@ struct RTPSession * RTPSessionCreate( int socket ) {
     session->buflen = 0;
   }
   
-  session->marker_payload_type  = 0;
+  session->info.peer         = NULL;
+  session->info.padding      = 0;
+  session->info.extension    = 0;
+  session->info.csrc_count   = 0;
+  session->info.marker       = 0;
+  session->info.payload_type = 0;
+  session->info.ssrc         = session->self.ssrc;
+  session->info.payload_size = 0;
+  session->info.payload      = NULL;
   return session;
 }
 
+/**
+ * @brief Destroy an RTPSession instance.
+ * Free all resources occupied by the session.
+ * @public @memberof RTPSession
+ * @param session The session.
+ */
 void RTPSessionDestroy( struct RTPSession * session ) {
   int i;
   for( i=0; i<RTP_MAX_PEERS; i++ ) {
@@ -303,10 +380,23 @@ void RTPSessionDestroy( struct RTPSession * session ) {
   free( session );
 }
 
+/**
+ * @brief Retain an RTPSession instance.
+ * Increment the reference counter of a session so that it won't be destroyed.
+ * @public @memberof RTPSession
+ * @param session The session.
+ */
 void RTPSessionRetain( struct RTPSession * session ) {
   session->refs++;
 }
 
+/**
+ * @brief Release an RTPSession instance.
+ * Decrement the reference counter of a session. If the reference count
+ * reached zero, destroy the session.
+ * @public @memberof RTPSession
+ * @param session The session.
+ */
 void RTPSessionRelease( struct RTPSession * session ) {
   if( ! --session->refs ) {
     RTPSessionDestroy( session );
@@ -314,29 +404,24 @@ void RTPSessionRelease( struct RTPSession * session ) {
 }
 
 int RTPSessionSetMarker( struct RTPSession * session, unsigned char marker ) {
-  if( marker ) {
-    session->marker_payload_type |= 0x80;
-  } else {
-    session->marker_payload_type &= 0x7f;
-  }
+  session->info.marker = marker ? 1 : 0;
   return 0;
 }
 
 int RTPSessionGetMarker( struct RTPSession * session, unsigned char * marker ) {
   if( marker == NULL ) return 1;
-  *marker = session->marker_payload_type & 0x80;
+  *marker = session->info.marker;
   return 0;
 }
 
 int RTPSessionSetPayloadType( struct RTPSession * session, unsigned char payload_type ) {
-  session->marker_payload_type &= 0x80;
-  session->marker_payload_type |= payload_type & 0x7f;
+  session->info.payload_type = payload_type & 0x7f;
   return 0;
 }
 
 int RTPSessionGetPayloadType( struct RTPSession * session, unsigned char * payload_type ) {
   if( payload_type == NULL ) return 1;
-  *payload_type = session->marker_payload_type & 0x7f;
+  *payload_type = session->info.payload_type;
   return 0;
 }
 
@@ -401,20 +486,21 @@ int RTPSessionFindPeerByAddress( struct RTPSession * session, struct RTPPeer ** 
  * Encode an RTP packet for transmission over network.
  * Read all RTP information (timestamp, ssrc, payload-size, etc.) from an info structure
  * and encode it to an RTP packet.
- * @private @memberof RTPSession
+ * @relates RTPSession
  * @param info The packet information structure to fill.
- * @param size The size of the received packet in bytes.
+ * @param size The size of buffer that should hold the packet.
+ * @param data The buffer to hold the encoded packet.
  */
-static int _encode_packet( struct RTPSession * session, struct RTPPacketInfo * info, size_t size, void * data ) {
+static int RTPEncodePacket( struct RTPPacketInfo * info, size_t size, void * data ) {
   int i, j;
   unsigned char * buffer = data;
   size_t header_size     = 12 + ( info->csrc_count * 4 );
   size_t ext_header_size = header_size + ( info->extension ? 4 : 0 );
-  size_t data_size       = ext_header_size + info->size;
-  size_t total_size      = data_size + info->padding;
+  size_t total_size      = ext_header_size + info->payload_size + info->padding;
+  info->total_size = total_size;
 
   if( total_size > size ) return 1;
-
+  
   buffer[0] = 0x80
             | ( info->padding ? 0x20 : 0 )
             | ( info->extension ? 0x10 : 0 )
@@ -450,8 +536,8 @@ static int _encode_packet( struct RTPSession * session, struct RTPPacketInfo * i
     buffer[header_size+3] = 0;
   }
   
-  if( info->size > 0 && info->data != NULL ) {
-    memcpy( data+ext_header_size, info->data, info->size );
+  if( info->payload_size > 0 && info->payload != NULL ) {
+    memcpy( data+ext_header_size, info->payload, info->payload_size );
   //memset( data+data_size, 0, info->padding-1 ); // should be ignored
     buffer[total_size-1] = info->padding;
   }
@@ -462,16 +548,16 @@ static int _encode_packet( struct RTPSession * session, struct RTPPacketInfo * i
  * Decode an RTP packet received on a socket.
  * Store all RTP information (timestamp, ssrc, payload-size, etc.) inside the info structure
  * and set the info-structures data pointer to the location of the payload.
- * @private @memberof RTPSession
+ * @relates RTPSession
  * @param info The packet information structure to fill.
  * @param size The size of the received packet in bytes.
+ * @param data The buffer holding the encoded packet.
  */
-static int _decode_packet( struct RTPSession * session, struct RTPPacketInfo * info, size_t size, void * data ) {
+static int RTPDecodePacket( struct RTPPacketInfo * info, size_t size, void * data ) {
   int i, j;
   unsigned char * buffer = data;
   size_t header_size;
   size_t ext_header_size;
-  size_t data_size;
   size_t total_size = size;
 
   if( ( buffer[0] & 0x60 ) != 0x80 ) {
@@ -516,57 +602,61 @@ static int _decode_packet( struct RTPSession * session, struct RTPPacketInfo * i
     ext_header_size = header_size;
   }
 
-  info->size = total_size - ext_header_size - info->padding;
+  info->total_size   = total_size;
+  info->payload_size = total_size - ext_header_size - info->padding;
 
-  if( info->size == 0 ) {
-    info->data = NULL;
+  if( info->payload_size == 0 ) {
+    info->payload = NULL;
   } else {
-    if( info->data != NULL ) {
-      memcpy( info->data, data+ext_header_size, info->size );
+    if( info->payload != NULL ) {
+      memcpy( info->payload, data+ext_header_size, info->payload_size );
     } else {
-      info->data = data+ext_header_size;
+      info->payload = data+ext_header_size;
     }
   }
   return 0;
 }
 
+int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * info ) {
+  size_t bytes_sent;
+  struct RTPPeer * peer = info->peer;
+  if( peer == NULL ) return 1;
+
+  RTPEncodePacket( info, session->buflen, session->buffer );
+  bytes_sent = sendto( session->socket, session->buffer, info->total_size, 0,
+                       (struct sockaddr *) &(peer->address.addr), peer->address.size );
+  if( bytes_sent != info->total_size ) {
+    return bytes_sent;
+  } else {
+    return 0;
+  }
+}
+
+int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo * info ) {
+  size_t bytes_received;
+  struct RTPPeer peer;
+
+  bytes_received = recvfrom( session->socket, session->buffer, session->buflen, 0,
+                             (struct sockaddr *) &(peer.address.addr), &peer.address.size );
+  RTPDecodePacket( info, bytes_received, session->buffer );
+  RTPSessionFindPeerBySSRC( session, &(info->peer), info->ssrc );
+  return 0;
+}
+
 int RTPSessionSendToPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload,
                           struct RTPPacketInfo * info ) {
-  size_t header_size     = 12 + ((info->csrc_count & 0x0f) * 4 );
-  size_t ext_header_size = header_size;
-  size_t data_size       = ext_header_size + size;
-  size_t total_size      = data_size;
-  
-  if( session->padding_block_size ) {
-    info->padding = session->padding_block_size - ( data_size % session->padding_block_size );
-    total_size   += info->padding;
+  void * delegate = NULL;
+  if( delegate != NULL ) {
+    // delegate->preparePacket( peer, size, payload, info )
   } else {
-    info->padding = 0;
+    info->peer            = peer;
+    info->ssrc            = session->self.ssrc;
+    info->payload_size    = size;
+    info->payload         = payload;
+    info->sequence_number = peer->out_seqnum + 1;
+    info->timestamp       = peer->out_timestamp + 123;
   }
-  info->csrc_count      = info->csrc_count & 0x0f;
-  info->sequence_number = peer->out_seqnum + 1;
-  info->timestamp       = 0;
-  info->ssrc            = session->self.ssrc;
-  info->size            = size;
-  info->data            = payload;
-
-  if( total_size > session->buflen ) {
-    session->buflen = total_size * 1.2;
-    session->buffer = realloc( session->buffer, session->buflen );
-    if( session->buffer == NULL ) {
-      session->buflen = 0;
-      return 1;
-    }
-  }
-  
-  _encode_packet( session, info, total_size, session->buffer );
-  total_size = sendto( session->socket, session->buffer, total_size, 0,
-                       &(peer->address.addr), peer->address.size );
-
-  if( total_size == -1 ) {
-    return 1;
-  }
-  
+  RTPSessionSendPacket( session, info );
   peer->out_seqnum    = info->sequence_number;
   peer->out_timestamp = info->timestamp;
   return 0;
@@ -574,96 +664,47 @@ int RTPSessionSendToPeer( struct RTPSession * session, struct RTPPeer * peer, si
 
 int RTPSessionReceiveFromPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload,
                                struct RTPPacketInfo * info ) {
+  void * delegate = NULL;
+  if( delegate != NULL ) {
+    // delegate->processPacket( peer, size, payload, info )
+  }
   peer->in_seqnum    = info->sequence_number;
   peer->in_timestamp = info->timestamp;
   return 0;
 }
 
-int RTPSessionReceive( struct RTPSession * session, size_t size, void * payload,
-                       struct RTPPacketInfo * info ) {
-  struct RTPPeer * peer;
-  struct RTPPacketInfo _info;
-                        
-  char buffer[SOCKADDR_BUFLEN];
-  struct RTPAddress address;
-  size_t total_size;
-  
+int RTPSessionSend( struct RTPSession * session, size_t size, void * payload,
+                    struct RTPPacketInfo * info ) {
+  int i;
   if( info == NULL ) {
-    info = &_info;
+    info = &(session->info);
   }
-  
-  total_size = recvfrom( session->socket, session->buffer, session->buflen,
-                         0, &address.addr, &address.size );
-
-  if( total_size >= session->buflen ) {
-    // message probably too large for buffer, grow buffer & cancel
-    session->buflen = total_size * 1.2;
-    session->buffer = realloc( session->buffer, session->buflen );
-    if( session->buffer == NULL ) {
-      session->buflen = 0;
+  if( info->peer == NULL ) {
+    for( i=0; i<RTP_MAX_PEERS; i++ ) {
+      if( session->peers[i] != NULL ) {
+        RTPSessionSendToPeer( session, session->peers[i], size, payload, info );
+      }
     }
-    return 1;
+  } else {
+    RTPSessionSendToPeer( session, info->peer, size, payload, info );
   }
   
-  RTPSessionFindPeerByAddress( session, &peer, address.size, &address.addr );
-  
-  _decode_packet( session, info, total_size, session->buffer );
-  
-  if( payload != NULL ) {
-    memcpy( payload, info->data, (size < total_size ? size : total_size) );
-  }
-  
-  return RTPSessionReceiveFromPeer( session, peer, info->size, info->data, info );
+  return 0;
 }
 
-/*
- * New calling strategy:
- *
- * SEND:
- *
- * RTPSessionSend( session, size, payload, info=NULL )
- *  |
- * < is info NULL?> -yes-+
- *  |                    |
- *  no         ( use session->info )
- *  |                    |
- *  +--------------------+
- *  |
- * ( send to next peer in list ) -+-> RTPSessionSendToPeer( session, peer, size, payload, info=NULL )
- *                                |           |
- *                                |   ( call delegate )
- *                                |   ( encode packet )
- *                                |    ( send packet )
- *                                |           |
- *  +-----------------------------------------+
- *  |                             |
- * < more peers connected? > -yes-+
- *  |
- * ( done )
- *
- * RECEIVE:
- *
- * RTPSessionReceive( session, size, payload, info=NULL )
- *  |
- * < is info NULL?> -yes-+
- *  |                    |
- *  no         ( use session->info )
- *  |                    |
- *  +--------------------+
- *  |
- * ( receive packet )
- * ( decode packet )
- *  |
- * < is peer in list? > -yes-> RTPSessionReceiveFromPeer( session, peer, size, payload, info=NULL )
- *                                     |
- *                             ( call delegate )
- *                                     |
- *  +----------------------------------+
- *  |
- * < message fits into payload buffer? > -no-> return
- *  |
- *  yes
- *  |
- * ( store message )
- * ( done )
- */
+int RTPSessionReceive( struct RTPSession * session, size_t size, void * payload,
+                       struct RTPPacketInfo * info ) {
+  if( info == NULL ) {
+    info = &(session->info);
+  }
+  RTPSessionReceivePacket( session, info );
+  if( info->peer != NULL ) {
+    RTPSessionReceiveFromPeer( session, info->peer, info->payload_size, info->payload,
+                               info );
+  }
+  if( size >= info->payload_size && payload != NULL ) {
+    memcpy( payload, info->payload, info->payload_size );
+    info->payload = payload;
+  }
+  return 0;
+}
