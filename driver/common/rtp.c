@@ -397,100 +397,136 @@ int RTPSessionFindPeerByAddress( struct RTPSession * session, struct RTPPeer ** 
   return 1;
 }
 
+/**
+ * Encode an RTP packet for transmission over network.
+ * Read all RTP information (timestamp, ssrc, payload-size, etc.) from an info structure
+ * and encode it to an RTP packet.
+ * @private @memberof RTPSession
+ * @param info The packet information structure to fill.
+ * @param size The size of the received packet in bytes.
+ */
 static int _encode_packet( struct RTPSession * session, struct RTPPacketInfo * info, size_t size, void * data ) {
-  int i;
-  unsigned long buffer = 0;
+  int i, j;
+  unsigned char * buffer = data;
+  size_t header_size     = 12 + ( info->csrc_count * 4 );
+  size_t ext_header_size = header_size + ( info->extension ? 4 : 0 );
+  size_t data_size       = ext_header_size + info->size;
+  size_t total_size      = data_size + info->padding;
+
+  if( total_size > size ) return 1;
+
+  buffer[0] = 0x80
+            | ( info->padding ? 0x20 : 0 )
+            | ( info->extension ? 0x10 : 0 )
+            | ( info->csrc_count & 0x0f );
+  
+  buffer[1] = ( info->payload_type & 0x7f )
+            | ( info->marker ? 0x80 : 0x00 );
+  
+  buffer[2] =   info->sequence_number        & 0xff;
+  buffer[3] = ( info->sequence_number >> 8 ) & 0xff;
+
+  buffer[4] =   info->timestamp         & 0xff;
+  buffer[5] = ( info->timestamp >> 8 )  & 0xff;
+  buffer[6] = ( info->timestamp >> 16 ) & 0xff;
+  buffer[7] = ( info->timestamp >> 24 ) & 0xff;
+
+  buffer[8]  =   info->ssrc         & 0xff;
+  buffer[9]  = ( info->ssrc >> 8 )  & 0xff;
+  buffer[10] = ( info->ssrc >> 16 ) & 0xff;
+  buffer[11] = ( info->ssrc >> 24 ) & 0xff;
+
+  for( i=0, j=0; i<info->csrc_count; i++, j+=4 ) {
+    buffer[12+j] =   info->csrc[i]         & 0xff;
+    buffer[13+j] = ( info->csrc[i] >> 8 )  & 0xff;
+    buffer[14+j] = ( info->csrc[i] >> 16 ) & 0xff;
+    buffer[15+j] = ( info->csrc[i] >> 24 ) & 0xff;
+  }
+  
   if( info->extension ) {
-    buffer |= 0x90 | ( info->csrc_count & 0x0f );
-  } else {
-    buffer |= 0x80 | ( info->csrc_count & 0x0f );
-  }
-  if( info->padding > 0 ) {
-    buffer |= buffer | 0x40;
-  }
-  buffer <<= 8;
-  
-  if( info->marker ) {
-    buffer |= 0x80 | info->payload_type;
-  } else {
-    buffer |= 0x7f & info->payload_type;
-  }
-  buffer <<= 24;
-  
-  buffer |= htons( info->sequence_number );
-  memcpy( data,   &buffer, 4 );
-  buffer = htonl( info->timestamp );
-  data += 4;
-  memcpy( data, &buffer, 4 );
-  buffer = htonl( info->ssrc );
-  data += 4;
-  memcpy( data, &buffer, 4 );
-  data += 4;
-  for( i=0; i<info->csrc_count; i++ ) {
-    buffer = htonl( info->csrc[i] );
-    memcpy( data, &buffer, 4 );
-    data += 4;
-  }
-  
-  if( info->extension ) {
-    buffer = 0;
-    memcpy( data, &buffer, 4 );
-    data += 4;
+    buffer[header_size]   = 0;
+    buffer[header_size+1] = 0;
+    buffer[header_size+2] = 0;
+    buffer[header_size+3] = 0;
   }
   
   if( info->size > 0 && info->data != NULL ) {
-    memcpy( data, info->data, info->size );
-    data += info->size;
-    memset( data, 0, info->padding );
-    *((unsigned char *) (data+info->padding-1)) = info->padding;
+    memcpy( data+ext_header_size, info->data, info->size );
+  //memset( data+data_size, 0, info->padding-1 ); // should be ignored
+    buffer[total_size-1] = info->padding;
   }
   return 0;
 }
 
+/**
+ * Decode an RTP packet received on a socket.
+ * Store all RTP information (timestamp, ssrc, payload-size, etc.) inside the info structure
+ * and set the info-structures data pointer to the location of the payload.
+ * @private @memberof RTPSession
+ * @param info The packet information structure to fill.
+ * @param size The size of the received packet in bytes.
+ */
 static int _decode_packet( struct RTPSession * session, struct RTPPacketInfo * info, size_t size, void * data ) {
-  int i;
-  unsigned long buffer = 0;
-  size_t ext_header_size;
+  int i, j;
+  unsigned char * buffer = data;
   size_t header_size;
+  size_t ext_header_size;
+  size_t data_size;
+  size_t total_size = size;
 
-  memcpy( &buffer, data, 4 );
-  info->sequence_number = ntohl( buffer & 0xffff );
-  buffer >>= 16;
-  info->marker       = buffer & 0x80;
-  info->payload_type = buffer & 0x7f;
-  buffer >>= 8;
-  if( buffer & 0x20 ) {
-    info->padding = *((unsigned char *) (data+size-1));
+  if( ( buffer[0] & 0x60 ) != 0x80 ) {
+    return 1; // wrong rtp version
   }
-  info->extension  = buffer & 0x10;
-  info->csrc_count = buffer & 0x0f;
-  if( (buffer & 0xc0) != 0x80 ) return 1;
-  
-  header_size = 12 + ((info->csrc_count & 0x0f) * 4 );
-  
-  memcpy( &buffer, data, 4 );
-  info->timestamp  = ntohl( buffer );
-  data += 4;
-  memcpy( &buffer, data+4, 4 );
-  data += 4;
-  info->ssrc = ntohl( buffer );
-  for( i=0; i<info->csrc_count; i++ ) {
-    memcpy( &buffer, data, 4 );
-    info->csrc[i] = ntohl( buffer );
-    data += 4;
+  info->padding         = ( buffer[0] & 0x20 ) ? buffer[total_size-1] : 0;
+  info->extension       = ( buffer[0] & 0x10 ) ? 1 : 0;
+  info->csrc_count      =   buffer[0] & 0x0f;
+
+  info->marker          = ( buffer[1] & 0x80 ) ? 1 : 0;
+  info->payload_type    =   buffer[1] & 0x7f;
+
+  info->sequence_number =   buffer[2]
+                        | ( buffer[3] << 8 );
+
+  info->timestamp       =   buffer[4]
+                        | ( buffer[5] << 8 )
+                        | ( buffer[6] << 16 )
+                        | ( buffer[7] << 24 );
+
+  info->ssrc            =   buffer[8]
+                        | ( buffer[9] << 8 )
+                        | ( buffer[10] << 16 )
+                        | ( buffer[11] << 24 );
+
+  header_size = 12 + ( info->csrc_count * 4 );
+
+  for( i=0, j=0; i<info->csrc_count; i++, j+=4 ) {
+    info->csrc[i] =   buffer[12+j]
+                  | ( buffer[13+j] << 8 )
+                  | ( buffer[14+j] << 16 )
+                  | ( buffer[15+j] << 24 );
   }
-  
+
   if( info->extension ) {
-    memcpy( &buffer, data, 4 );
-    ext_header_size = header_size + 4 + ntohl( buffer & 0xffff );
-    data += ext_header_size-header_size;
+    //buffer[header_size];
+    //buffer[header_size+1];
+    j =   buffer[header_size+2]
+      | ( buffer[header_size+3] << 8 );
+    ext_header_size = header_size + 4 + (j*4);
+  } else {
+    ext_header_size = header_size;
   }
 
-  if( info->padding ) {
-    info->size = size - ext_header_size - info->padding;
+  info->size = total_size - ext_header_size - info->padding;
+
+  if( info->size == 0 ) {
+    info->data = NULL;
+  } else {
+    if( info->data != NULL ) {
+      memcpy( info->data, data+ext_header_size, info->size );
+    } else {
+      info->data = data+ext_header_size;
+    }
   }
-  
-  info->data = data;
   return 0;
 }
 
@@ -579,3 +615,55 @@ int RTPSessionReceive( struct RTPSession * session, size_t size, void * payload,
   
   return RTPSessionReceiveFromPeer( session, peer, info->size, info->data, info );
 }
+
+/*
+ * New calling strategy:
+ *
+ * SEND:
+ *
+ * RTPSessionSend( session, size, payload, info=NULL )
+ *  |
+ * < is info NULL?> -yes-+
+ *  |                    |
+ *  no         ( use session->info )
+ *  |                    |
+ *  +--------------------+
+ *  |
+ * ( send to next peer in list ) -+-> RTPSessionSendToPeer( session, peer, size, payload, info=NULL )
+ *                                |           |
+ *                                |   ( call delegate )
+ *                                |   ( encode packet )
+ *                                |    ( send packet )
+ *                                |           |
+ *  +-----------------------------------------+
+ *  |                             |
+ * < more peers connected? > -yes-+
+ *  |
+ * ( done )
+ *
+ * RECEIVE:
+ *
+ * RTPSessionReceive( session, size, payload, info=NULL )
+ *  |
+ * < is info NULL?> -yes-+
+ *  |                    |
+ *  no         ( use session->info )
+ *  |                    |
+ *  +--------------------+
+ *  |
+ * ( receive packet )
+ * ( decode packet )
+ *  |
+ * < is peer in list? > -yes-> RTPSessionReceiveFromPeer( session, peer, size, payload, info=NULL )
+ *                                     |
+ *                             ( call delegate )
+ *                                     |
+ *  +----------------------------------+
+ *  |
+ * < message fits into payload buffer? > -no-> return
+ *  |
+ *  yes
+ *  |
+ * ( store message )
+ * ( done )
+ */

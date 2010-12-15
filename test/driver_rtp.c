@@ -83,19 +83,21 @@ int test002_rtp( void ) {
 int test003_rtp( void ) {
   struct RTPPeer * peer;
   struct RTPPacketInfo info;
-  char send_buffer[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
-  char recv_buffer[32];
+  unsigned char send_buffer[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+  unsigned char recv_buffer[32];
   int s, bytes;
   ASSERT_NO_ERROR( _rtp_socket( &s, &client_address ),
                    "Could not create client socket." );
 
   info.padding = 0;
   info.extension = 0;
-  info.csrc_count = 0;
+  info.csrc_count = 2;
   info.marker = 0;
   info.payload_type = 96;
-  info.sequence_number = 0;
+  info.sequence_number = 0x1234;
   info.timestamp = 0;
+  info.csrc[0] = 0x80706050;
+  info.csrc[1] = 0x04030201;
   info.size = 0;
   info.data = NULL;
 
@@ -105,7 +107,11 @@ int test003_rtp( void ) {
                    "Could not send payload to peer." );
 
   bytes = recv( s, &recv_buffer[0], sizeof(recv_buffer), 0 );
-  printf( "bytes received: %i\n", bytes );
+  ASSERT_EQUAL( bytes, 28, "Received message of unexpected size." );
+  ASSERT_EQUAL( recv_buffer[0], 0x82, "First byte (V, P, X, CC) of RTP message has incorrect value." );
+  ASSERT_EQUAL( recv_buffer[1],   96, "Second byte (M, PT) of RTP message has incorrect value." );
+  // ASSERT_EQUAL( recv_buffer[2], 0x34, "Third byte (Seqnum LSB) of RTP message has incorrect value." );
+  // ASSERT_EQUAL( recv_buffer[3], 0x12, "Forth byte (Seqnum MSB) of RTP message has incorrect value." );
   return 0;
 }
 
