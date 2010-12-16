@@ -1,11 +1,12 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include "test.h"
 #include "driver/common/rtp.h"
 
 #define RTP_ADDRESS "127.0.0.1"
 #define RTP_SERVER_PORT 5004
 #define RTP_CLIENT_PORT 5005
-#define RTP_CLIENT_SSRC 1234567890
+#define RTP_CLIENT_SSRC 123456789
 
 static struct RTPSession * session = NULL;
 
@@ -112,6 +113,7 @@ int test003_rtp( void ) {
   ASSERT_EQUAL( recv_buffer[1],   96, "Second byte (M, PT) of RTP message has incorrect value." );
   // ASSERT_EQUAL( recv_buffer[2], 0x34, "Third byte (Seqnum LSB) of RTP message has incorrect value." );
   // ASSERT_EQUAL( recv_buffer[3], 0x12, "Forth byte (Seqnum MSB) of RTP message has incorrect value." );
+  close( s );
   return 0;
 }
 
@@ -120,6 +122,38 @@ int test003_rtp( void ) {
  * are correctly interpreted.
  */
 int test004_rtp( void ) {
+  struct RTPPeer * peer;
+  struct RTPPacketInfo info;
+  unsigned char send_buffer[20] = { 0xa0, 96,   // V=2, P=0, X=0, CC=0, PT=96
+                                    0x34, 0x12, // Seqnum = 0x1234
+                                    5, 6, 7, 8, // timestamp
+                                  ( RTP_CLIENT_SSRC ) & 0xff,
+                                  ( RTP_CLIENT_SSRC >> 8 ) & 0xff,
+                                  ( RTP_CLIENT_SSRC >> 16 ) & 0xff,
+                                  ( RTP_CLIENT_SSRC >> 24 ) & 0xff,
+                                  1, 2, 3, 4,
+                                  0xca, 0xfe, 0x00, 4 };
+  unsigned char recv_buffer[8];
+  int s;
+  ASSERT_NO_ERROR( _rtp_socket( &s, &client_address ),
+                   "Could not create client socket." );
+
+  ASSERT_NO_ERROR( RTPSessionFindPeerBySSRC( session, &peer, RTP_CLIENT_SSRC ),
+                   "Could not find peer." );
+
+  sendto( s, &send_buffer[0], sizeof(send_buffer), 0,
+          (struct sockaddr *) &server_address, sizeof(server_address) );
+  ASSERT_NO_ERROR( RTPSessionReceive( session, sizeof(recv_buffer), &recv_buffer[0], &info ),
+                   "Could not send payload to peer." );
+
+  ASSERT_EQUAL( info.payload_size, 4, "Received message of unexpected size." );
+  ASSERT_EQUAL( info.padding, 4, "Message has unexpected padding." );
+  ASSERT_EQUAL( info.ssrc, RTP_CLIENT_SSRC, "Message has unexpected SSRC." );
+  ASSERT_EQUAL( recv_buffer[0], 1, "First byte of RTP payload has incorrect value." );
+  ASSERT_EQUAL( recv_buffer[1], 2, "Second byte of RTP payload has incorrect value." );
+  ASSERT_EQUAL( recv_buffer[2], 3, "Third byte of RTP payload has incorrect value." );
+  ASSERT_EQUAL( recv_buffer[3], 4, "Fourth byte of RTP payload has incorrect value." );
+  close( s );
   return 0;
 }
 

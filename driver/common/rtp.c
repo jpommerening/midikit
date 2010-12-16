@@ -560,7 +560,7 @@ static int RTPDecodePacket( struct RTPPacketInfo * info, size_t size, void * dat
   size_t ext_header_size;
   size_t total_size = size;
 
-  if( ( buffer[0] & 0x60 ) != 0x80 ) {
+  if( ( buffer[0] & 0xc0 ) != 0x80 ) {
     return 1; // wrong rtp version
   }
   info->padding         = ( buffer[0] & 0x20 ) ? buffer[total_size-1] : 0;
@@ -697,6 +697,10 @@ int RTPSessionReceive( struct RTPSession * session, size_t size, void * payload,
   if( info == NULL ) {
     info = &(session->info);
   }
+  // info must be cleaned up!
+  info->payload_size = 0;
+  info->payload = NULL;
+  info->peer = NULL;
   RTPSessionReceivePacket( session, info );
   if( info->peer != NULL ) {
     RTPSessionReceiveFromPeer( session, info->peer, info->payload_size, info->payload,
