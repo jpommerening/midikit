@@ -618,28 +618,66 @@ static int RTPDecodePacket( struct RTPPacketInfo * info, size_t size, void * dat
 }
 
 int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * info ) {
-  size_t bytes_sent;
-  struct RTPPeer * peer = info->peer;
-  if( peer == NULL ) return 1;
+  ssize_t bytes_sent;
+  struct iovec  msg_iov;
+  struct msghdr msg;
+
+  if( info->peer == NULL ) return 1;
 
   RTPEncodePacket( info, session->buflen, session->buffer );
-  bytes_sent = sendto( session->socket, session->buffer, info->total_size, 0,
-                       (struct sockaddr *) &(peer->address.addr), peer->address.size );
+
+  msg_iov.iov_base = session->buffer;
+  msg_iov.iov_len  = info->total_size;
+
+  msg.msg_name       = &(info->peer->address.addr);
+  msg.msg_namelen    = info->peer->address.size;
+  msg.msg_iov        = &msg_iov;
+  msg.msg_iovlen     = 1;
+  msg.msg_control    = NULL;
+  msg.msg_controllen = 0;
+  msg.msg_flags      = 0;
+
+  bytes_sent = sendmsg( session->socket, &msg, 0 );
   if( bytes_sent != info->total_size ) {
     return bytes_sent;
+  } else if( msg.msg_flags != 0 ) {
+    return 1;
   } else {
     return 0;
   }
 }
 
 int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo * info ) {
-  size_t bytes_received;
-  struct RTPPeer peer;
+  ssize_t bytes_received;
+  struct sockaddr_storage msg_name;
+  struct iovec  msg_iov;
+  struct msghdr msg;
 
-  bytes_received = recvfrom( session->socket, session->buffer, session->buflen, 0,
-                             (struct sockaddr *) &(peer.address.addr), &peer.address.size );
+  msg_iov.iov_base = session->buffer;
+  msg_iov.iov_len  = session->buflen;
+
+  msg.msg_name       = &msg_name;
+  msg.msg_namelen    = sizeof(msg_name);
+  msg.msg_iov        = &msg_iov;
+  msg.msg_iovlen     = 1;
+  msg.msg_control    = NULL;
+  msg.msg_controllen = 0;
+  msg.msg_flags      = 0;
+
+  bytes_received = recvmsg( session->socket, &msg, 0 );
+
+  if( msg.msg_flags != 0  ) return 1;
+  if( bytes_received < 12 ) return 1;
+
   RTPDecodePacket( info, bytes_received, session->buffer );
+
+  info->peer = NULL;
   RTPSessionFindPeerBySSRC( session, &(info->peer), info->ssrc );
+  if( info->peer == NULL ) {
+    info->peer = RTPPeerCreate( info->ssrc, msg.msg_namelen, msg.msg_name );
+    RTPSessionAddPeer( session, info->peer );
+    RTPPeerRelease( info->peer );
+  }
   return 0;
 }
 

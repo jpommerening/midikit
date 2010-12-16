@@ -6,7 +6,7 @@ include ../../config.mk
 
 OBJS=$(OBJDIR)/rtp.o
 
-.PHONY: all clean $(LIB)
+.PHONY: all clean
 
 all: $(OBJS)
 

@@ -10,7 +10,7 @@ OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/message.o \
      $(OBJDIR)/timer.o $(OBJDIR)/message_queue.o
 LIB=$(LIBDIR)/libmidikit$(LIB_SUFFIX)
 
-.PHONY: all clean $(LIB)
+.PHONY: all clean
 
 all: $(LIB)
 

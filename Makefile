@@ -4,7 +4,7 @@ SUBDIR=.
 
 include config.mk
 
-.PHONY: all clean midi driver test
+.PHONY: all clean midi midi-clean driver driver-clean test test-clean
 
 default: all
 

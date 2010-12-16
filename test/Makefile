@@ -17,7 +17,7 @@ BIN=test_main
 
 MAIN_C=main.c
 
-.PHONY: all clean $(LIB)
+.PHONY: all clean
 
 all: tests.passed
 
@@ -45,7 +45,7 @@ $(OBJDIR)/message_queue.o: message_queue.c test.h
 $(OBJDIR)/integration.o: integration.c test.h
 $(OBJDIR)/driver_rtp.o: driver_rtp.c test.h
 
-tests.passed: $(BINDIR)/$(BIN)
+tests.passed: $(BINDIR)/$(BIN) $(LIBDIR)/libmidikit$(LIB_SUFFIX) $(LIBDIR)/libmidikit-driver$(LIB_SUFFIX)
 	LD_LIBRARY_PATH=$(LIBDIR) $(BINDIR)/$(BIN) && touch $@
 
 $(MAIN_C): midi.c util.c clock.c message_format.c message.c connector.c device.c driver.c integration.c driver_rtp.c
