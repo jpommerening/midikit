@@ -17,8 +17,8 @@ int MIDIDriverAppleMIDIGetRTPPort( struct MIDIDriverAppleMIDI * driver, unsigned
 int MIDIDriverAppleMIDISetControlPort( struct MIDIDriverAppleMIDI * driver, unsigned short port ); 
 int MIDIDriverAppleMIDIGetControlPort( struct MIDIDriverAppleMIDI * driver, unsigned short * port ); 
 
-int MIDIDriverAppleMIDIAddPeer( struct MIDIDriverAppleMIDI * driver, socklen_t size_t, struct sockaddr * address );
-int MIDIDriverAppleMIDIRemovePeer( struct MIDIDriverAppleMIDI * driver, socklen_t size_t, struct sockaddr * address );
+int MIDIDriverAppleMIDIAddPeer( struct MIDIDriverAppleMIDI * driver, char * hostname, unsigned short port );
+int MIDIDriverAppleMIDIRemovePeer( struct MIDIDriverAppleMIDI * driver, char * hostname, unsigned short port );
 
 int MIDIDriverAppleMIDIGetLatency( struct MIDIDriverAppleMIDI * driver, double seconds );
 

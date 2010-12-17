@@ -1,10 +1,10 @@
 
 PROJECTDIR=../..
-SUBDIR=driver/applemidi
+SUBDIR=driver/osc
 
 include ../../config.mk
 
-OBJS=$(OBJDIR)/applemidi.o
+OBJS=$(OBJDIR)/osc.o
 
 .PHONY: all clean
 
@@ -18,4 +18,4 @@ $(OBJDIR)/%.o:
 	@$(MKDIR_P) $(OBJDIR)
 	$(CC) $(CFLAGS_OBJ) -o $@ $<
 
-$(OBJDIR)/applemidi.o: applemidi.c applemidi.h
+$(OBJDIR)/osc.o: osc.c osc.h
