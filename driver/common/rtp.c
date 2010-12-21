@@ -464,6 +464,7 @@ int RTPSessionGetTimestampRate( struct RTPSession * session, double * rate ) {
 }
 
 int RTPSessionSetSocket( struct RTPSession * session, int socket ) {
+  if( socket == session->socket ) return 0;
   int result = _session_disconnect( session );
   if( result == 0 ) {
     session->socket = socket;
