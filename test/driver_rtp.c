@@ -40,10 +40,10 @@ int test001_rtp( void ) {
   int s;
   ASSERT_NO_ERROR( _rtp_address( &server_address, RTP_SERVER_PORT ),
                    "Could not fill out server address." );
-  ASSERT_NO_ERROR( _rtp_socket( &s, &server_address ),
-                   "Could not create server socket." );
+//  ASSERT_NO_ERROR( _rtp_socket( &s, &server_address ),
+//                   "Could not create server socket." );
 
-  session = RTPSessionCreate( s );
+  session = RTPSessionCreate( sizeof(server_address), &server_address, SOCK_DGRAM );
   ASSERT_NOT_EQUAL( session, NULL, "Could not create RTP session." );
   return 0;
 }
