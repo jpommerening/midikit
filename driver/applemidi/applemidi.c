@@ -29,10 +29,6 @@ static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
   if( driver->control_socket <= 0 ) {
     /* connect the control socket */
   }
-  if( driver->rtp_socket <= 0 ) {
-    /* connect the rtp socket */
-    RTPSessionSetSocket( driver->rtp_session, driver->rtp_socket );
-  }
   return 0;
 }
 
@@ -43,10 +39,6 @@ static int _applemidi_disconnect( struct MIDIDriverAppleMIDI * driver ) {
       return 1;
     }
     driver->control_socket = 0;
-  }
-  if( driver->rtp_socket > 0 ) {
-    /* disconnect the rtp socket */
-    RTPSessionSetSocket( driver->rtp_session, 0 );
   }
   return 0;
 }
@@ -232,6 +224,7 @@ int MIDIDriverAppleMIDIRemovePeer( struct MIDIDriverAppleMIDI * driver, socklen_
 }
 
 int MIDIDriverAppleMIDISetRTPSocket( struct MIDIDriverAppleMIDI * driver, int socket ) {
+  /* get port from socket info */
   return RTPSessionSetSocket( driver->rtp_session, socket );
 }
 
@@ -307,9 +300,7 @@ int MIDIDriverAppleMIDIReceive( struct MIDIDriverAppleMIDI * driver ) {
   /* check both sockets for applemidi signature 0xffff (peek, do not remove)
    * if signature matches, check for message type and respond immediately
    * if signature on RTP port is not 0xffff check for rtp version 0x80
-   * and delegate to RTPSessionReceive(FromPeer?)
-   * received payload is parsed by RTPMIDIPayload format
-   * payload parser calls MIDIDriverAppleMIDIReceiveMessage */
+   * and delegate to RTPMIDISessionReceive which parses the received packet */
   return 1;
 }
 
@@ -327,6 +318,7 @@ int MIDIDriverAppleMIDISend( struct MIDIDriverAppleMIDI * driver ) {
    * if socket would block return 0
    * check timestamp of messages in queue: if the timestamp of the oldest
    * message exceeds a threshold send the whole queue in a single packet
+   * by using RTPMIDISessionSend
    * threshold for realtime messages and note on/off messages is 0 */
   return 1;
 }

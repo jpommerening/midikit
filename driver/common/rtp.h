@@ -23,7 +23,6 @@ struct RTPPacketInfo {
   void * payload;      // payload
 };
 
-
 struct RTPPeer * RTPPeerCreate( unsigned long ssrc, socklen_t size, struct sockaddr * addr );
 void RTPPeerDestroy( struct RTPPeer * peer );
 void RTPPeerRetain( struct RTPPeer * peer );
