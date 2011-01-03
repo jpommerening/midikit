@@ -30,19 +30,24 @@ void RTPPeerRelease( struct RTPPeer * peer );
 
 int RTPPeerGetSSRC( struct RTPPeer * peer, unsigned long * ssrc );
 int RTPPeerGetAddress( struct RTPPeer * peer, socklen_t * size, struct sockaddr ** addr );
-int RTPPeerGetInfo( struct RTPPeer * peer, void * info );
+int RTPPeerSetInfo( struct RTPPeer * peer, void * info );
+int RTPPeerGetInfo( struct RTPPeer * peer, void ** info );
 
-struct RTPSession * RTPSessionCreate( socklen_t size, struct sockaddr * addr, int type );
+struct RTPSession * RTPSessionCreate( int socket );
 void RTPSessionDestroy( struct RTPSession * session );
 void RTPSessionRetain( struct RTPSession * session );
 void RTPSessionRelease( struct RTPSession * session );
 
-int RTPSessionSetSSRC( struct RTPSession * session, unsigned long ssrc );
-int RTPSessionGetSSRC( struct RTPSession * session, unsigned long * ssrc );
-int RTPSessionSetTimestampRate( struct RTPSession * session, double rate );
-int RTPSessionGetTimestampRate( struct RTPSession * session, double * rate );
 int RTPSessionSetSocket( struct RTPSession * session, int socket );
 int RTPSessionGetSocket( struct RTPSession * session, int * socket );
+int RTPSessionSetSSRC( struct RTPSession * session, unsigned long ssrc );
+int RTPSessionGetSSRC( struct RTPSession * session, unsigned long * ssrc );
+int RTPSessionSetTimestampOffset( struct RTPSession * session, unsigned long offset );
+int RTPSessionGetTimestampOffset( struct RTPSession * session, unsigned long * offset );
+int RTPSessionSetTimestampRate( struct RTPSession * session, double rate );
+int RTPSessionGetTimestampRate( struct RTPSession * session, double * rate );
+
+int RTPSessionGetTimestamp( struct RTPSession * session, unsigned long * timestamp );
 
 int RTPSessionAddPeer( struct RTPSession * session, struct RTPPeer * peer );
 int RTPSessionRemovePeer( struct RTPSession * session, struct RTPPeer * peer );

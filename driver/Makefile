@@ -6,7 +6,7 @@ include ../config.mk
 
 LDFLAGS := $(LDFLAGS) -lmidikit
 
-OBJS_COMMON=$(OBJDIR)/common/rtp.o
+OBJS_COMMON=$(OBJDIR)/common/rtp.o $(OBJDIR)/common/rtpmidi.o
 OBJS_APPLEMIDI=$(OBJDIR)/applemidi/applemidi.o
 OBJS_OSC=$(OBJDIR)/osc/osc.o
 
@@ -17,6 +17,7 @@ LIB=$(LIBDIR)/libmidikit-driver$(LIB_SUFFIX)
 all: $(LIB)
 
 clean:
+	rm $(LIB)
 
 common: $(OBJS_COMMON)
 applemidi: $(OBJS_APPLEMIDI)

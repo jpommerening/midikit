@@ -5,7 +5,7 @@
 #include <sys/time.h>
 
 #define SOCKADDR_BUFLEN 32
-#define USEC_PER_SEC 1000000.0
+#define USEC_PER_SEC 1000000
 
 struct RTPHeader {
   unsigned version         : 2; // automatic
@@ -187,7 +187,6 @@ struct RTPAddress {
 struct RTPPeer {
   size_t refs;
   struct RTPAddress address;
-  unsigned long timestamp_diff;
   unsigned long in_timestamp;
   unsigned long out_timestamp;
   unsigned long in_seqnum;
@@ -199,8 +198,6 @@ struct RTPSession {
   size_t refs;
   
   int socket;
-  int domain;
-  int type;
   
   struct RTPAddress self;
   struct RTPPeer *  peers[RTP_MAX_PEERS];
@@ -209,7 +206,8 @@ struct RTPSession {
   size_t buflen;
   void * buffer;
 
-  double timestamp_rate;
+  unsigned long timestamp_offset;
+  double        timestamp_divisor;
 };
 
 /**
@@ -228,7 +226,6 @@ struct RTPPeer * RTPPeerCreate( unsigned long ssrc, socklen_t size, struct socka
   peer->address.ssrc = ssrc;
   peer->address.size = size;
   memcpy( &(peer->address.addr), addr, size );
-  peer->timestamp_diff = 0;
   peer->in_seqnum      = 0;
   peer->in_timestamp   = 0;
   peer->out_seqnum     = 0;
@@ -271,7 +268,7 @@ void RTPPeerRelease( struct RTPPeer * peer ) {
 }
 
 /**
- * Get the synchronization source identifier of a peer.
+ * @brief Get the synchronization source identifier of a peer.
  * @public @memberof RTPPeer
  * @param peer The peer.
  * @param ssrc The synchronization source.
@@ -285,7 +282,7 @@ int RTPPeerGetSSRC( struct RTPPeer * peer, unsigned long * ssrc ) {
 }
 
 /**
- * Obtain the size of the address and a pointer to it's content.
+ * @brief Obtain the size of the address and a pointer to it's content.
  * @public @memberof RTPPeer
  * @param peer The peer.
  * @param size The size.
@@ -300,6 +297,33 @@ int RTPPeerGetAddress( struct RTPPeer * peer, socklen_t * size, struct sockaddr 
   return 0;
 }
 
+/**
+ * @brief Set the internal info pointer.
+ * @public @memberof RTPPeer
+ * @param peer The peer.
+ * @param info The info.
+ * @retval 0 on success.
+ * @retval >0 if the info could not be changed.
+ */
+int RTPPeerSetInfo( struct RTPPeer * peer, void * info ) {
+  peer->info = info;
+  return 0;
+}
+
+/**
+ * @brief Obtain a pointer to the info structure of a peer.
+ * @public @memberof RTPPeer
+ * @param peer The peer.
+ * @param info The info.
+ * @retval 0 on success.
+ * @retval >0 if the info could not be obtained.
+ */
+int RTPPeerGetInfo( struct RTPPeer * peer, void ** info ) {
+  if( info == NULL ) return 1;
+  *info = peer->info;
+  return 0;
+}
+
 #pragma mark Creation and destruction
 /**
  * @name Creation and destruction
@@ -308,7 +332,7 @@ int RTPPeerGetAddress( struct RTPPeer * peer, socklen_t * size, struct sockaddr 
  */
 
 static void _init_addr_with_socket( struct RTPAddress * address, int socket ) {
-  address->ssrc = random();
+  address->ssrc = 0;
   getsockname( socket, (struct sockaddr *) &(address->addr), &(address->size) );
 }
 
@@ -326,46 +350,22 @@ static void _init_addr( struct RTPAddress * address, socklen_t size, struct sock
 
 static unsigned long _session_get_timestamp( struct RTPSession * session ) {
   struct timeval tv;
+  unsigned long  ts;
   gettimeofday( &tv, NULL );
-  return (tv.tv_sec * USEC_PER_SEC + tv.tv_usec) * session->timestamp_rate / USEC_PER_SEC;
+
+  ts = (tv.tv_sec * 1000000 + tv.tv_usec) / session->timestamp_divisor
+     + session->timestamp_offset;
+  return ts;
 }
 
-static int _session_connect( struct RTPSession * session ) {
-  if( session->socket > 0 ) return 0;
-  
-  switch( session->self.addr.ss_family ) {
-    case AF_INET:
-      session->domain = PF_INET;
-      break;
-    case AF_INET6:
-      session->domain = PF_INET6;
-      break;
-    case AF_IPX:
-      session->domain = PF_IPX;
-      break;
-    default:
-      return 1;
+static void _session_randomize_ssrc( struct RTPSession * session ) {
+  unsigned char * ss_addr = &(session->self.addr);
+  unsigned long i, seed = _session_get_timestamp( session );
+  for( i=0; i<session->self.size; i++ ) {
+    seed = (seed * 7) + ss_addr[i];
   }
-  
-  session->socket = socket( session->domain, session->type, 0 );
-  if( session->socket == -1 ) {
-    return 1;
-  }
-  if( bind( session->socket, (struct sockaddr *) &(session->self.addr), session->self.size ) ) {
-    session->socket = -1;
-    return 1;
-  }
-  return 0;
-}
-
-static int _session_disconnect( struct RTPSession * session ) {
-  if( session->socket <= 0 ) return 0;
-  
-  if( close( session->socket ) ) {
-    return 1;
-  }
-  session->socket = 0;
-  return 0;
+  srandom( seed );
+  session->self.ssrc = random();
 }
 
 /**
@@ -378,15 +378,13 @@ static int _session_disconnect( struct RTPSession * session ) {
  * @return a pointer to the created controller structure on success.
  * @return a @c NULL pointer if the controller could not created.
  */
-struct RTPSession * RTPSessionCreate( socklen_t size, struct sockaddr * addr, int type ) {
+struct RTPSession * RTPSessionCreate( int socket ) {
   struct RTPSession * session = malloc( sizeof( struct RTPSession ) );
   int i;
   session->refs   = 1;
-  session->socket = 0;
-  session->domain = 0;
-  session->type   = type;
+  session->socket = socket;
 
-  _init_addr( &(session->self), size, addr );
+  _init_addr_with_socket( &(session->self), socket );
   for( i=0; i<RTP_MAX_PEERS; i++ ) {
     session->peers[i] = NULL;
   }
@@ -397,6 +395,11 @@ struct RTPSession * RTPSessionCreate( socklen_t size, struct sockaddr * addr, in
     session->buflen = 0;
   }
   
+  session->timestamp_offset  = 0;
+  session->timestamp_divisor = 1000000.0 / 44100.0;
+
+  _session_randomize_ssrc( session );
+  
   session->info.peer         = NULL;
   session->info.padding      = 0;
   session->info.extension    = 0;
@@ -406,8 +409,7 @@ struct RTPSession * RTPSessionCreate( socklen_t size, struct sockaddr * addr, in
   session->info.ssrc         = session->self.ssrc;
   session->info.payload_size = 0;
   session->info.payload      = NULL;
-  
-  session->timestamp_rate    = 44100.0;
+
   return session;
 }
 
@@ -419,7 +421,6 @@ struct RTPSession * RTPSessionCreate( socklen_t size, struct sockaddr * addr, in
  */
 void RTPSessionDestroy( struct RTPSession * session ) {
   int i;
-  _session_disconnect( session );
   for( i=0; i<RTP_MAX_PEERS; i++ ) {
     if( session->peers[i] != NULL ) {
       RTPPeerRelease( session->peers[i] );
@@ -463,32 +464,43 @@ int RTPSessionGetSSRC( struct RTPSession * session, unsigned long * ssrc ) {
   return 0;
 }
 
+int RTPSessionSetTimestampOffset( struct RTPSession * session, unsigned long offset ) {
+  session->timestamp_offset = offset;
+  return 0;
+}
+
+int RTPSessionGetTimestampOffset( struct RTPSession * session, unsigned long * offset ) {
+  if( offset == NULL ) return 1;
+  *offset = session->timestamp_offset;
+  return 0;
+}
+
 int RTPSessionSetTimestampRate( struct RTPSession * session, double rate ) {
-  session->timestamp_rate = rate;
+  session->timestamp_divisor = 1000000.0 / rate;
   return 0;
 }
 
 int RTPSessionGetTimestampRate( struct RTPSession * session, double * rate ) {
   if( rate == NULL ) return 1;
-  *rate = session->timestamp_rate;
+  *rate = 1000000.0 / session->timestamp_divisor;
   return 0;
 }
 
 int RTPSessionSetSocket( struct RTPSession * session, int socket ) {
   if( socket == session->socket ) return 0;
-  int result = _session_disconnect( session );
-  if( result == 0 ) {
-    session->socket = socket;
-  }
-  return result;
+  session->socket = socket;
+  return 0;
 }
 
 int RTPSessionGetSocket( struct RTPSession * session, int * socket ) {
-  int result = _session_connect( session );
-  if( result == 0 ) {
-    *socket = session->socket;
-  }
-  return result;
+  if( socket == NULL ) return 1;
+  *socket = session->socket;
+  return 0;
+}
+
+int RTPSessionGetTimestamp( struct RTPSession * session, unsigned long * timestamp ) {
+  *timestamp = _session_get_timestamp( session );
+  return 0;
 }
 
 /**
@@ -736,7 +748,7 @@ int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * in
 
   info->ssrc            = session->self.ssrc;
   info->sequence_number = info->peer->out_seqnum + 1;
-  info->timestamp       = _session_get_timestamp( session ) + info->peer->timestamp_diff;
+  info->timestamp       = _session_get_timestamp( session );
 
   RTPEncodePacket( info, session->buflen, session->buffer );
 
@@ -751,7 +763,6 @@ int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * in
   msg.msg_controllen = 0;
   msg.msg_flags      = 0;
 
-  _session_connect( session );
   bytes_sent = sendmsg( session->socket, &msg, 0 );
   
   if( bytes_sent != info->total_size ) {
@@ -788,7 +799,6 @@ int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo *
   msg.msg_controllen = 0;
   msg.msg_flags      = 0;
 
-  _session_connect( session );
   bytes_received = recvmsg( session->socket, &msg, 0 );
 
   if( bytes_received == -1 ) return -1;

@@ -8,6 +8,11 @@ struct RTPMIDIHeaderInfo {
   int messages;
 };
 
+struct RTPMIDIPeerInfo {
+  struct RTPMIDIJournal * receive_journal[8];
+  struct RTPMIDIJournal * send_journal[8];
+};
+
 /**
  * @brief Send and receive @c MIDIMessage objects via an @c RTPSession.
  * This class describes a payload format to code MIDI messages as

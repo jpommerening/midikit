@@ -37,13 +37,18 @@ static int _rtp_socket( int * s, struct sockaddr_in * address ) {
  * Test that RTP sessions can be created and set up.
  */
 int test001_rtp( void ) {
+  int s;
+  unsigned long ssrc;
   ASSERT_NO_ERROR( _rtp_address( &server_address, RTP_SERVER_PORT ),
                    "Could not fill out server address." );
-//  ASSERT_NO_ERROR( _rtp_socket( &s, &server_address ),
-//                   "Could not create server socket." );
+  ASSERT_NO_ERROR( _rtp_socket( &s, &server_address ),
+                   "Could not create server socket." );
 
-  session = RTPSessionCreate( sizeof(server_address), &server_address, SOCK_DGRAM );
+  session = RTPSessionCreate( s );
   ASSERT_NOT_EQUAL( session, NULL, "Could not create RTP session." );
+
+  RTPSessionGetSSRC( session, &ssrc );
+  printf( "SSRC: 0x%lx\n", ssrc );
   return 0;
 }
 
