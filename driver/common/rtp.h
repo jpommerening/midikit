@@ -37,6 +37,8 @@ void RTPSessionDestroy( struct RTPSession * session );
 void RTPSessionRetain( struct RTPSession * session );
 void RTPSessionRelease( struct RTPSession * session );
 
+int RTPSessionSetSSRC( struct RTPSession * session, unsigned long ssrc );
+int RTPSessionGetSSRC( struct RTPSession * session, unsigned long * ssrc );
 int RTPSessionSetTimestampRate( struct RTPSession * session, double rate );
 int RTPSessionGetTimestampRate( struct RTPSession * session, double * rate );
 int RTPSessionSetSocket( struct RTPSession * session, int socket );
@@ -49,6 +51,8 @@ int RTPSessionFindPeerBySSRC( struct RTPSession * session, struct RTPPeer ** pee
 int RTPSessionFindPeerByAddress( struct RTPSession * session, struct RTPPeer ** peer,
                                  socklen_t size, struct sockaddr * addr );
 
+int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * info );
+int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo * info );
 int RTPSessionSendToPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload, struct RTPPacketInfo * info );
 int RTPSessionReceiveFromPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload, struct RTPPacketInfo * info );
 int RTPSessionSend( struct RTPSession * session, size_t size, void * payload, struct RTPPacketInfo * info );

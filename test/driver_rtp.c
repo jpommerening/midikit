@@ -37,7 +37,6 @@ static int _rtp_socket( int * s, struct sockaddr_in * address ) {
  * Test that RTP sessions can be created and set up.
  */
 int test001_rtp( void ) {
-  int s;
   ASSERT_NO_ERROR( _rtp_address( &server_address, RTP_SERVER_PORT ),
                    "Could not fill out server address." );
 //  ASSERT_NO_ERROR( _rtp_socket( &s, &server_address ),

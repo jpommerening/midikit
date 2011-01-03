@@ -21,8 +21,8 @@ int MIDIMessageFormatSet( struct MIDIMessageFormat * format, struct MIDIMessageD
 int MIDIMessageFormatGet( struct MIDIMessageFormat * format, struct MIDIMessageData * data,
                           MIDIProperty property, size_t size, void * value );
 int MIDIMessageFormatEncode( struct MIDIMessageFormat * format, struct MIDIMessageData * data,
-                             size_t size, void * buffer );
+                             size_t size, void * buffer, size_t * written );
 int MIDIMessageFormatDecode( struct MIDIMessageFormat * format, struct MIDIMessageData * data,
-                             size_t size, void * buffer );
+                             size_t size, void * buffer, size_t * read );
 
 #endif

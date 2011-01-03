@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5922184012D0A137001FC0AB /* coremidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 5922183D12D0A137001FC0AB /* coremidi.c */; };
+		5922184112D0A137001FC0AB /* coremidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 5922183E12D0A137001FC0AB /* coremidi.h */; };
+		5922184512D0A1D6001FC0AB /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5922184412D0A1D6001FC0AB /* CoreMIDI.framework */; };
+		5922184712D0AEF8001FC0AB /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5922184612D0AEF8001FC0AB /* CoreFoundation.framework */; };
 		592307B91293209F0067DE03 /* clock.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307AB1293209F0067DE03 /* clock.c */; };
 		592307BA1293209F0067DE03 /* clock.h in Headers */ = {isa = PBXBuildFile; fileRef = 592307AC1293209F0067DE03 /* clock.h */; };
 		592307BB1293209F0067DE03 /* connector.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307AD1293209F0067DE03 /* connector.c */; };
@@ -29,6 +33,10 @@
 		5924AA5412932186004F9C67 /* message_format.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307CC129320B40067DE03 /* message_format.c */; };
 		5924AA5512932186004F9C67 /* message.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307CD129320B40067DE03 /* message.c */; };
 		5924AA5612932186004F9C67 /* midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307CE129320B40067DE03 /* midi.c */; };
+		59452C8812C2CA08002031F2 /* osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 59452C8512C2CA08002031F2 /* osc.c */; };
+		59452C8912C2CA08002031F2 /* osc.h in Headers */ = {isa = PBXBuildFile; fileRef = 59452C8612C2CA08002031F2 /* osc.h */; };
+		59452C8D12C2CA23002031F2 /* rtpmidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 59452C8B12C2CA23002031F2 /* rtpmidi.c */; };
+		59452C8E12C2CA23002031F2 /* rtpmidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 59452C8C12C2CA23002031F2 /* rtpmidi.h */; };
 		59460C3412932833001C2C13 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 59460C311293282E001C2C13 /* main.c */; };
 		59460C3712932B61001C2C13 /* libMIDIKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 592307A112931F520067DE03 /* libMIDIKit.dylib */; };
 		59A048B112A95E16001B597E /* applemidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048AA12A95E16001B597E /* applemidi.h */; };
@@ -83,6 +91,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		5922183D12D0A137001FC0AB /* coremidi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = coremidi.c; sourceTree = "<group>"; };
+		5922183E12D0A137001FC0AB /* coremidi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coremidi.h; sourceTree = "<group>"; };
+		5922184412D0A1D6001FC0AB /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = System/Library/Frameworks/CoreMIDI.framework; sourceTree = SDKROOT; };
+		5922184612D0AEF8001FC0AB /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		592307A112931F520067DE03 /* libMIDIKit.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libMIDIKit.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		592307AB1293209F0067DE03 /* clock.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = clock.c; sourceTree = "<group>"; };
 		592307AC1293209F0067DE03 /* clock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = clock.h; sourceTree = "<group>"; };
@@ -110,6 +122,10 @@
 		592307DE129320E40067DE03 /* test_main */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_main; sourceTree = BUILT_PRODUCTS_DIR; };
 		592307E0129320E40067DE03 /* test_main.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = test_main.1; sourceTree = "<group>"; };
 		5924AA59129321D2004F9C67 /* generate_main.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = generate_main.sh; sourceTree = "<group>"; };
+		59452C8512C2CA08002031F2 /* osc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = osc.c; sourceTree = "<group>"; };
+		59452C8612C2CA08002031F2 /* osc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = osc.h; sourceTree = "<group>"; };
+		59452C8B12C2CA23002031F2 /* rtpmidi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rtpmidi.c; sourceTree = "<group>"; };
+		59452C8C12C2CA23002031F2 /* rtpmidi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rtpmidi.h; sourceTree = "<group>"; };
 		59460C311293282E001C2C13 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		59A048AA12A95E16001B597E /* applemidi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = applemidi.h; sourceTree = "<group>"; };
 		59A048AC12A95E16001B597E /* rtp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rtp.h; sourceTree = "<group>"; };
@@ -138,6 +154,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5922184712D0AEF8001FC0AB /* CoreFoundation.framework in Frameworks */,
+				5922184512D0A1D6001FC0AB /* CoreMIDI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -152,9 +170,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5922183C12D0A137001FC0AB /* coremidi */ = {
+			isa = PBXGroup;
+			children = (
+				5922183D12D0A137001FC0AB /* coremidi.c */,
+				5922183E12D0A137001FC0AB /* coremidi.h */,
+			);
+			path = coremidi;
+			sourceTree = "<group>";
+		};
 		5923079512931F520067DE03 = {
 			isa = PBXGroup;
 			children = (
+				5922184612D0AEF8001FC0AB /* CoreFoundation.framework */,
+				5922184412D0A1D6001FC0AB /* CoreMIDI.framework */,
 				5923079C12931F520067DE03 /* Source */,
 				592307A212931F520067DE03 /* Products */,
 				592307D9129320E40067DE03 /* Documentation */,
@@ -237,7 +266,9 @@
 			children = (
 				59A048A912A95E16001B597E /* applemidi */,
 				59A048AB12A95E16001B597E /* common */,
+				5922183C12D0A137001FC0AB /* coremidi */,
 				59A048AD12A95E16001B597E /* rtpmidi */,
+				59452C8312C2CA08002031F2 /* osc */,
 			);
 			path = driver;
 			sourceTree = "<group>";
@@ -249,6 +280,15 @@
 			);
 			name = Documentation;
 			path = documentation;
+			sourceTree = "<group>";
+		};
+		59452C8312C2CA08002031F2 /* osc */ = {
+			isa = PBXGroup;
+			children = (
+				59452C8512C2CA08002031F2 /* osc.c */,
+				59452C8612C2CA08002031F2 /* osc.h */,
+			);
+			path = osc;
 			sourceTree = "<group>";
 		};
 		59A048A912A95E16001B597E /* applemidi */ = {
@@ -265,6 +305,8 @@
 			children = (
 				59DE6B3212AB85BD00DCFEAF /* rtp.c */,
 				59A048AC12A95E16001B597E /* rtp.h */,
+				59452C8B12C2CA23002031F2 /* rtpmidi.c */,
+				59452C8C12C2CA23002031F2 /* rtpmidi.h */,
 			);
 			path = common;
 			sourceTree = "<group>";
@@ -301,6 +343,9 @@
 				59A048BC12A95E56001B597E /* util.h in Headers */,
 				59A048C112A96873001B597E /* message_queue.h in Headers */,
 				59DE6B3B12ABCBD100DCFEAF /* cfintegration.h in Headers */,
+				59452C8912C2CA08002031F2 /* osc.h in Headers */,
+				59452C8E12C2CA23002031F2 /* rtpmidi.h in Headers */,
+				5922184112D0A137001FC0AB /* coremidi.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -425,6 +470,9 @@
 				59DE6B3612AB8C3700DCFEAF /* message_queue.c in Sources */,
 				59DE6B3A12ABCBD100DCFEAF /* cfintegration.c in Sources */,
 				59DE6B3D12B01C0D00DCFEAF /* applemidi.c in Sources */,
+				59452C8812C2CA08002031F2 /* osc.c in Sources */,
+				59452C8D12C2CA23002031F2 /* rtpmidi.c in Sources */,
+				5922184012D0A137001FC0AB /* coremidi.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

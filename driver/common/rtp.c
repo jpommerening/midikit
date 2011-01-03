@@ -452,6 +452,17 @@ void RTPSessionRelease( struct RTPSession * session ) {
   }
 }
 
+int RTPSessionSetSSRC( struct RTPSession * session, unsigned long ssrc ) {
+  session->self.ssrc = ssrc;
+  return 0;
+}
+
+int RTPSessionGetSSRC( struct RTPSession * session, unsigned long * ssrc ) {
+  if( ssrc == NULL ) return 1;
+  *ssrc = session->self.ssrc;
+  return 0;
+}
+
 int RTPSessionSetTimestampRate( struct RTPSession * session, double rate ) {
   session->timestamp_rate = rate;
   return 0;
@@ -708,12 +719,24 @@ static int RTPDecodePacket( struct RTPPacketInfo * info, size_t size, void * dat
   return 0;
 }
 
+/**
+ * @brief Send an RTP packet.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param info The packet info.
+ * @retval 0 On success.
+ * @retval >0 If the message could not be sent.
+ */
 int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * info ) {
   ssize_t bytes_sent;
   struct iovec  msg_iov;
   struct msghdr msg;
 
   if( info->peer == NULL ) return 1;
+
+  info->ssrc            = session->self.ssrc;
+  info->sequence_number = info->peer->out_seqnum + 1;
+  info->timestamp       = _session_get_timestamp( session ) + info->peer->timestamp_diff;
 
   RTPEncodePacket( info, session->buflen, session->buffer );
 
@@ -730,6 +753,7 @@ int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * in
 
   _session_connect( session );
   bytes_sent = sendmsg( session->socket, &msg, 0 );
+  
   if( bytes_sent != info->total_size ) {
     return bytes_sent;
   } else if( msg.msg_flags != 0 ) {
@@ -739,6 +763,14 @@ int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * in
   }
 }
 
+/**
+ * @brief Receive an RTP packet.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param info The packet info.
+ * @retval 0 On success.
+ * @retval >0 If the message could not be received.
+ */
 int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo * info ) {
   ssize_t bytes_received;
   struct sockaddr_storage msg_name;
@@ -759,8 +791,9 @@ int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo *
   _session_connect( session );
   bytes_received = recvmsg( session->socket, &msg, 0 );
 
-  if( msg.msg_flags != 0  ) return 1;
-  if( bytes_received < 12 ) return 1;
+  if( bytes_received == -1 ) return -1;
+  if( msg.msg_flags != 0  )  return 1;
+  if( bytes_received < 12 )  return 1;
 
   RTPDecodePacket( info, bytes_received, session->buffer );
 
@@ -774,71 +807,92 @@ int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo *
   return 0;
 }
 
+/**
+ * @brief Send an RTP packet.
+ * Shorthand for initializing the packet info structure.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param info The packet info.
+ * @retval 0 On success.
+ * @retval >0 If the message could not be sent.
+ */
 int RTPSessionSendToPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload,
                           struct RTPPacketInfo * info ) {
-  void * delegate = NULL;
-  if( delegate != NULL ) {
-    // delegate->preparePacket( peer, size, payload, info )
-  } else {
-    info->peer            = peer;
-    info->ssrc            = session->self.ssrc;
-    info->payload_size    = size;
-    info->payload         = payload;
-    info->sequence_number = peer->out_seqnum + 1;
-    info->timestamp       = _session_get_timestamp( session ) + peer->timestamp_diff;
-  }
-  RTPSessionSendPacket( session, info );
+  int result;
+  info->peer          = peer;
+  info->payload_size  = size;
+  info->payload       = payload;
+  result = RTPSessionSendPacket( session, info );
   peer->out_seqnum    = info->sequence_number;
   peer->out_timestamp = info->timestamp;
-  return 0;
+  return result;
 }
 
+/**
+ * @brief Receive an RTP packet.
+ * Shorthand for initializing the packet info structure.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param info The packet info.
+ * @retval 0 On success.
+ * @retval >0 If the message could not be received.
+ */
 int RTPSessionReceiveFromPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload,
                                struct RTPPacketInfo * info ) {
-  void * delegate = NULL;
-  if( delegate != NULL ) {
-    // delegate->processPacket( peer, size, payload, info )
-  }
+  int result;
+  info->peer         = NULL;
+  info->payload_size = 0;
+  info->payload      = NULL;
+  result = RTPSessionReceivePacket( session, info );
   peer->in_seqnum    = info->sequence_number;
   peer->in_timestamp = info->timestamp;
-  return 0;
+  return result;
 }
 
+/**
+ * @brief Send an RTP packet.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param info The packet info.
+ * @retval 0 On success.
+ * @retval >0 If the message could not be sent.
+ */
 int RTPSessionSend( struct RTPSession * session, size_t size, void * payload,
                     struct RTPPacketInfo * info ) {
-  int i;
+  int i, result = 0;
   if( info == NULL ) {
     info = &(session->info);
   }
   if( info->peer == NULL ) {
     for( i=0; i<RTP_MAX_PEERS; i++ ) {
       if( session->peers[i] != NULL ) {
-        RTPSessionSendToPeer( session, session->peers[i], size, payload, info );
+        result += RTPSessionSendToPeer( session, session->peers[i], size, payload, info );
       }
     }
   } else {
-    RTPSessionSendToPeer( session, info->peer, size, payload, info );
+    result = RTPSessionSendToPeer( session, info->peer, size, payload, info );
   }
-  
-  return 0;
+  return result;
 }
 
+/**
+ * @brief Receive an RTP packet.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param info The packet info.
+ * @retval 0 On success.
+ * @retval >0 If the message could not be received.
+ */
 int RTPSessionReceive( struct RTPSession * session, size_t size, void * payload,
                        struct RTPPacketInfo * info ) {
+  int result;
   if( info == NULL ) {
     info = &(session->info);
   }
-  // info must be cleaned up!
-  info->payload_size = 0;
-  info->payload = NULL;
-  info->peer = NULL;
-  RTPSessionReceivePacket( session, info );
-  if( info->peer != NULL ) {
-    RTPSessionReceiveFromPeer( session, info->peer, info->payload_size, info->payload, info );
-  }
+  result = RTPSessionReceiveFromPeer( session, info->peer, info->payload_size, info->payload, info );
   if( size >= info->payload_size && payload != NULL ) {
     memcpy( payload, info->payload, info->payload_size );
     info->payload = payload;
   }
-  return 0;
+  return result;
 }

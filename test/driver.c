@@ -18,7 +18,7 @@ static int _send( void * implementation, struct MIDIMessage * message ) {
     _buffer = malloc( size );
   }
   ASSERT_NOT_EQUAL( _buffer, NULL, "Could not allocate message buffer." );
-  ASSERT_NO_ERROR( MIDIMessageEncode( message, size, _buffer ), "Could not encode message." );
+  ASSERT_NO_ERROR( MIDIMessageEncode( message, size, _buffer, NULL ), "Could not encode message." );
   for( i=0; i<size; i++ ) {
     if( i%16 == 15 || i==size-1 ) {
       printf( "%02x\n", _buffer[i] );

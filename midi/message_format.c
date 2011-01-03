@@ -27,8 +27,8 @@ struct MIDIMessageFormat {
   int (*size)( struct MIDIMessageData * data, size_t * size );
   int (*set)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
   int (*get)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
-  int (*encode)( struct MIDIMessageData * data, size_t size, void * buffer );
-  int (*decode)( struct MIDIMessageData * data, size_t size, void * buffer );
+  int (*encode)( struct MIDIMessageData * data, size_t size, void * buffer, size_t * written );
+  int (*decode)( struct MIDIMessageData * data, size_t size, void * buffer, size_t * read );
 };
 
 #define VOID_BYTE( buffer, n ) ((uint8_t*)buffer)[n]
@@ -41,55 +41,61 @@ struct MIDIMessageFormat {
  * @{
  */
 
-static int _encode_one_byte( struct MIDIMessageData * data, size_t size, void * buffer ) {
+static int _encode_one_byte( struct MIDIMessageData * data, size_t size, void * buffer, size_t * written ) {
   if( data == NULL || buffer == NULL ) return 1;
   if( size < 1 ) return 1;
   VOID_BYTE(buffer,0) = data->bytes[0];
+  if( written != NULL ) *written = 1;
   return 0;
 }
 
-static int _decode_one_byte( struct MIDIMessageData * data, size_t size, void * buffer ) {
+static int _decode_one_byte( struct MIDIMessageData * data, size_t size, void * buffer, size_t * read ) {
   if( data == NULL || buffer == NULL ) return 1;
   if( size < 1 ) return 1;
   data->bytes[0] = VOID_BYTE(buffer,0);
+  if( read != NULL ) *read = 1;
   return 0;
 }
 
-static int _encode_two_bytes( struct MIDIMessageData * data, size_t size, void * buffer ) {
+static int _encode_two_bytes( struct MIDIMessageData * data, size_t size, void * buffer, size_t * written ) {
   if( data == NULL || buffer == NULL ) return 1;
   if( size < 2 ) return 1;
   VOID_BYTE(buffer,0) = data->bytes[0];
   VOID_BYTE(buffer,1) = data->bytes[1];
+  if( written != NULL ) *written = 2;
   return 0;
 }
 
-static int _decode_two_bytes( struct MIDIMessageData * data, size_t size, void * buffer ) {
+static int _decode_two_bytes( struct MIDIMessageData * data, size_t size, void * buffer, size_t * read ) {
   if( data == NULL || buffer == NULL ) return 1;
   if( size < 2 ) return 1;
   data->bytes[0] = VOID_BYTE(buffer,0);
   data->bytes[1] = VOID_BYTE(buffer,1);
+  if( read != NULL ) *read = 2;
   return 0;
 }
 
-static int _encode_three_bytes( struct MIDIMessageData * data, size_t size, void * buffer ) {
+static int _encode_three_bytes( struct MIDIMessageData * data, size_t size, void * buffer, size_t * written ) {
   if( data == NULL || buffer == NULL ) return 1;
   if( size < 3 ) return 1;
   VOID_BYTE(buffer,0) = data->bytes[0];
   VOID_BYTE(buffer,1) = data->bytes[1];
   VOID_BYTE(buffer,2) = data->bytes[2];
+  if( written != NULL ) *written = 3;
   return 0;
 }
 
-static int _decode_three_bytes( struct MIDIMessageData * data, size_t size, void * buffer ) {
+static int _decode_three_bytes( struct MIDIMessageData * data, size_t size, void * buffer, size_t * read ) {
   if( data == NULL || buffer == NULL ) return 1;
   if( size < 3 ) return 1;
   data->bytes[0] = VOID_BYTE(buffer,0);
   data->bytes[1] = VOID_BYTE(buffer,1);
   data->bytes[2] = VOID_BYTE(buffer,2);
+  if( read != NULL ) *read = 3;
   return 0;
 }
 
-static int _encode_system_exclusive( struct MIDIMessageData * data, size_t size, void * buffer ) {
+static int _encode_system_exclusive( struct MIDIMessageData * data, size_t size, void * buffer, size_t * written ) {
   if( data == NULL || buffer == NULL ) return 1;
   if( data->bytes[2] == 0 ) {
     if( size < data->size+2 ) return 1;
@@ -97,15 +103,17 @@ static int _encode_system_exclusive( struct MIDIMessageData * data, size_t size,
     VOID_BYTE(buffer,1) = data->bytes[1];
     if( data->size > 0 && data->data != NULL )
       memcpy( buffer+2, data->data, data->size );
+    if( written != NULL ) *written = data->size + 2;
   } else {
     if( size < data->size ) return 1;
     if( data->size > 0 && data->data != NULL )
       memcpy( buffer, data->data, data->size );
+    if( written != NULL ) *written = data->size;
   }
   return 0;  
 }
 
-static int _decode_system_exclusive( struct MIDIMessageData * data, size_t size, void * buffer ) {
+static int _decode_system_exclusive( struct MIDIMessageData * data, size_t size, void * buffer, size_t * read ) {
   if( data == NULL || buffer == NULL ) return 1;
   data->bytes[0] = VOID_BYTE(buffer,0);
   data->bytes[1] = VOID_BYTE(buffer,1);
@@ -114,6 +122,7 @@ static int _decode_system_exclusive( struct MIDIMessageData * data, size_t size,
   data->data = malloc( size-2 );
   memcpy( data->data, (buffer+2), size-2 );
   data->size = size-2;
+  if( read != NULL ) *read = size;
   return 0;
 }
 
@@ -1080,9 +1089,9 @@ int MIDIMessageFormatGet( struct MIDIMessageFormat * format, struct MIDIMessageD
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
-int MIDIMessageFormatEncode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer ) {
+int MIDIMessageFormatEncode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer, size_t * written ) {
   if( format == NULL || format->encode == NULL ) return 1;
-  return (format->encode)( data, size, buffer );
+  return (format->encode)( data, size, buffer, written );
 }
 
 /**
@@ -1096,8 +1105,8 @@ int MIDIMessageFormatEncode( struct MIDIMessageFormat * format, struct MIDIMessa
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
-int MIDIMessageFormatDecode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer ) {
+int MIDIMessageFormatDecode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer, size_t * read ) {
   if( format == NULL || format->decode == NULL ) return 1;
-  return (format->decode)( data, size, buffer );
+  return (format->decode)( data, size, buffer, read );
 }
 

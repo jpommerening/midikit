@@ -13,7 +13,7 @@ int test001_message( void ) {
    ASSERT( MIDIMessageSet( message, MIDI_CHANNEL,  sizeof(MIDIChannel),  &values[0] ) == 0, "Could not set channel." );
    ASSERT( MIDIMessageSet( message, MIDI_KEY,      sizeof(MIDIKey),      &values[1] ) == 0, "Could not set key." );
    ASSERT( MIDIMessageSet( message, MIDI_VELOCITY, sizeof(MIDIVelocity), &values[2] ) == 0, "Could not set velocity." );
-   ASSERT( MIDIMessageEncode( message, 8, &buffer[0] ) == 0, "Could not read MIDI data from message." );
+   ASSERT( MIDIMessageEncode( message, 8, &buffer[0], NULL ) == 0, "Could not read MIDI data from message." );
    ASSERT_EQUAL( buffer[0], 0x80, "Read wrong status / channel byte!" );
    ASSERT_EQUAL( buffer[1], 60,   "Read wrong key byte!" );
    ASSERT_EQUAL( buffer[2], 127,  "Read wrong velocity byte!" );

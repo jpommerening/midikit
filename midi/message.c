@@ -192,8 +192,8 @@ int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t 
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
-int MIDIMessageEncode( struct MIDIMessage * message, size_t size, unsigned char * buffer ) {
-  return MIDIMessageFormatEncode( message->format, &(message->data), size, buffer );
+int MIDIMessageEncode( struct MIDIMessage * message, size_t size, unsigned char * buffer, size_t * written ) {
+  return MIDIMessageFormatEncode( message->format, &(message->data), size, buffer, written );
 }
 
 /**
@@ -206,11 +206,11 @@ int MIDIMessageEncode( struct MIDIMessage * message, size_t size, unsigned char 
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
-int MIDIMessageDecode( struct MIDIMessage * message, size_t size, unsigned char * buffer ) {
+int MIDIMessageDecode( struct MIDIMessage * message, size_t size, unsigned char * buffer, size_t * read ) {
   if( size == 0 || buffer == NULL ) return 1;
   if( message->data.data != NULL && message->data.bytes[3] == 1 ) free( message->data.data );
   message->format = MIDIMessageFormatDetect( buffer );
-  return MIDIMessageFormatDecode( message->format, &(message->data), size, buffer );
+  return MIDIMessageFormatDecode( message->format, &(message->data), size, buffer, read );
 }
 
 /** @} */

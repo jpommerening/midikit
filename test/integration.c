@@ -117,7 +117,7 @@ static int _send( void * implementation, struct MIDIMessage * message ) {
   size_t size, i;
   uint8_t buffer[32];
   MIDIMessageGetSize( message, &size );
-  MIDIMessageEncode( message, sizeof(buffer), &(buffer[0]) );
+  MIDIMessageEncode( message, sizeof(buffer), &(buffer[0]), NULL );
   for( i=0; i<size; i++ ) {
     if( i%16 == 15 || i==size-1 ) {
       printf( "%02x\n", buffer[i] );

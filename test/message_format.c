@@ -17,7 +17,7 @@ int test001_message_format( void ) {
   
   format = MIDIMessageFormatDetect( &buffer[0] );
   ASSERT_NOT_EQUAL( format, NULL, "Could not detect message format of note off buffer." );
-  ASSERT_NO_ERROR( MIDIMessageFormatDecode( format, message, sizeof(buffer), &buffer[0] ), "Could not decode note off buffer." );
+  ASSERT_NO_ERROR( MIDIMessageFormatDecode( format, message, sizeof(buffer), &buffer[0], NULL ), "Could not decode note off buffer." );
   ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_STATUS, sizeof(MIDIStatus), &status ), "Could not get message status." );
   ASSERT_EQUAL( status, MIDI_STATUS_NOTE_OFF, "Stored wrong status." );
   ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_CHANNEL, sizeof(MIDIChannel), &channel ) , "Could not get message channel." );
@@ -47,7 +47,7 @@ int test002_message_format( void ) {
   
   format = MIDIMessageFormatDetect( &buffer[0] );
   ASSERT_NOT_EQUAL( format, NULL, "Could not detect message format of pitch wheel change buffer." );
-  ASSERT_NO_ERROR( MIDIMessageFormatDecode( format, message, sizeof(buffer), &buffer[0] ), "Could not decode pitch wheel change buffer." );
+  ASSERT_NO_ERROR( MIDIMessageFormatDecode( format, message, sizeof(buffer), &buffer[0], NULL ), "Could not decode pitch wheel change buffer." );
   ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_STATUS, sizeof(MIDIStatus), &status ), "Could not get message status." );
   ASSERT_EQUAL( status, MIDI_STATUS_PITCH_WHEEL_CHANGE, "Stored wrong status." );
   ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_CHANNEL, sizeof(MIDIChannel), &channel ) , "Could not get message channel." );
@@ -79,7 +79,7 @@ int test003_message_format( void ) {
   
   format = MIDIMessageFormatDetect( &buffer[0] );
   ASSERT_NOT_EQUAL( format, NULL, "Could not detect message format of system exclusive buffer." );
-  ASSERT_NO_ERROR( MIDIMessageFormatDecode( format, message, sizeof(buffer), &buffer[0] ), "Could not decode system exclusive buffer." );
+  ASSERT_NO_ERROR( MIDIMessageFormatDecode( format, message, sizeof(buffer), &buffer[0], NULL ), "Could not decode system exclusive buffer." );
   ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_STATUS, sizeof(MIDIStatus), &status ), "Could not get message status." );
   ASSERT_EQUAL( status, MIDI_STATUS_SYSTEM_EXCLUSIVE, "Stored wrong status." );
   ASSERT_NO_ERROR( MIDIMessageFormatGet( format, message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &manufacturer_id ) , "Could not get message manufacturer id." );

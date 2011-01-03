@@ -1,4 +1,12 @@
 #include "rtpmidi.h"
+#include "midi/util.h"
+
+struct RTPMIDIHeaderInfo {
+  unsigned char journal;
+  unsigned char zero;
+  unsigned char phantom;
+  int messages;
+};
 
 /**
  * @brief Send and receive @c MIDIMessage objects via an @c RTPSession.
@@ -10,7 +18,7 @@ struct RTPMIDISession {
   size_t refs;
   size_t size;
   struct MIDIMessage ** message_buffer;
-  struct RTPSession * rtp_session;
+  struct RTPSession   * rtp_session;
 };
 
 #pragma mark Creation and destruction
@@ -33,9 +41,10 @@ struct RTPMIDISession * RTPMIDISessionCreate( struct RTPSession * rtp_session ) 
   if( session == NULL ) return NULL;
 
   session->refs = 1;
-  session->size = 0;
-  session->message_buffer = NULL;
-  session->rtp_session = rtp_session;
+  session->size = 16;
+  session->message_buffer = malloc( sizeof( struct MIDIMessage * ) * session->size );
+  if( session->message_buffer == NULL ) session->size = 0;
+  session->rtp_session    = rtp_session;
   RTPSessionRetain( rtp_session );
   return session;
 }
@@ -98,10 +107,11 @@ int RTPMIDISessionTrunkateReceiveJournal( struct RTPMIDISession * session, struc
 /**
  * @brief Send MIDI messages over an RTPSession.
  * Broadcast the messages to all connected peers. Store the number of sent messages
- * in @c count, if the @info argument was specified it will be populated with the
+ * in @c count, if the @c info argument was specified it will be populated with the
  * packet info of the last sent packet.
  * The peer's control structures will be updated with the required journalling
  * information.
+ * @public @memberof RTPMIDISession
  * @param session The session.
  * @param size The number of valid message pointers pointed to by @c messages.
  * @param messages A pointer to a list of @c size message pointers.
@@ -112,17 +122,35 @@ int RTPMIDISessionTrunkateReceiveJournal( struct RTPMIDISession * session, struc
  */
 int RTPMIDISessionSend( struct RTPMIDISession * session, size_t size, struct MIDIMessage ** messages,
                         size_t * count, struct RTPPacketInfo * info ) {
+  int result;
+  size_t m;
+  struct RTPMIDIHeaderInfo minfo;
+  MIDIStatus status;
+
   /* use RTPSessionSendPacket() */
+  
+  /* _rtpmidi_encode_header( info->payload_size, info->payload, &minfo ); */
+  for( m=0; m<size; m++ ) {
+    MIDIMessageGetStatus( messages[m], &status );
+    if( status == MIDI_STATUS_SYSTEM_EXCLUSIVE ) {
+      /* MIDIMessageEncode( messages[m], <#size_t bytes#>, <#unsigned char *buffer#>); */
+    } else {
+      /* MIDIMessageEncode( messages[m], <#size_t bytes#>, <#unsigned char *buffer#>); */
+    }
+  }
+  result = RTPSessionSendPacket( session->rtp_session, info );
+
   return 0;
 }
 
 /**
  * @brief Receive MIDI messages over an RTPSession.
  * Receive messages from any connected peer. Store the number of received messages
- * in @c count, if the @info argument was specified it will be populated with the
+ * in @c count, if the @c info argument was specified it will be populated with the
  * packet info of the last received packet.
  * If lost packets are detected the required information is recovered from the
  * journal.
+ * @public @memberof RTPMIDISession
  * @param session The session.
  * @param size The number of allocated entries pointed to by @c messages.
  * @param messages A pointer to a list of @c size message pointers.
@@ -133,8 +161,25 @@ int RTPMIDISessionSend( struct RTPMIDISession * session, size_t size, struct MID
  */
 int RTPMIDISessionReceive( struct RTPMIDISession * session, size_t size, struct MIDIMessage ** messages,
                            size_t * count, struct RTPPacketInfo * info ) {
-  /* use RTPSessionReceivePacket()
-   * - clear the internal packet buffer
+  int result;
+  size_t m;
+  struct RTPMIDIHeaderInfo minfo;
+  
+  /* use RTPSessionReceivePacket() */
+  result = RTPSessionReceivePacket( session->rtp_session, info );
+  /* _rtpmidi_decode_header( info->payload_size, info->payload, &minfo ); */
+  if( minfo.phantom ) {
+  }
+  if( ! minfo.zero ) {
+    /* MIDIUtilReadVarLen( info->payload, <#size_t bytes#>, <#MIDIVarLen *value#>, <#size_t *read#>); */
+  }
+  /* MIDIMessageEncode( messages[0], <#size_t bytes#>, info->payload ); */
+  for( m=0; m<minfo.messages; m++ ) {
+    /* MIDIUtilReadVarLen( info->payload, <#size_t bytes#>, <#MIDIVarLen *value#>, <#size_t *read#>);
+    MIDIMessageEncode( messages[0], <#size_t bytes#>, info->payload ); */
+  }
+  
+  /* - clear the internal packet buffer
    * - repeat as long as the socket holds packets:
    *   - if the packet is not currupted sort it into the internal packet buffer
    *     using it's sequence number (first sent, first dispatched)
