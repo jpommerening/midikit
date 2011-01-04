@@ -8,7 +8,7 @@
 struct MIDIDriverAppleMIDI;
 extern struct MIDIDriverDelegate MIDIDriverDelegateAppleMIDI;
 
-struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate();
+struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned short port );
 void MIDIDriverAppleMIDIDestroy( struct MIDIDriverAppleMIDI * driver );
 void MIDIDriverAppleMIDIRetain( struct MIDIDriverAppleMIDI * driver );
 void MIDIDriverAppleMIDIRelease( struct MIDIDriverAppleMIDI * driver );

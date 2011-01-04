@@ -11,6 +11,8 @@
 		5922184112D0A137001FC0AB /* coremidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 5922183E12D0A137001FC0AB /* coremidi.h */; };
 		5922184512D0A1D6001FC0AB /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5922184412D0A1D6001FC0AB /* CoreMIDI.framework */; };
 		5922184712D0AEF8001FC0AB /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5922184612D0AEF8001FC0AB /* CoreFoundation.framework */; };
+		5922185212D252DA001FC0AB /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 5922185112D252DA001FC0AB /* main.c */; };
+		5922186212D25335001FC0AB /* libMIDIKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 592307A112931F520067DE03 /* libMIDIKit.dylib */; };
 		592307B91293209F0067DE03 /* clock.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307AB1293209F0067DE03 /* clock.c */; };
 		592307BA1293209F0067DE03 /* clock.h in Headers */ = {isa = PBXBuildFile; fileRef = 592307AC1293209F0067DE03 /* clock.h */; };
 		592307BB1293209F0067DE03 /* connector.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307AD1293209F0067DE03 /* connector.c */; };
@@ -62,6 +64,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		5922186312D2547D001FC0AB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5923079712931F520067DE03 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 592307A012931F520067DE03 /* MIDIKit */;
+			remoteInfo = MIDIKit;
+		};
 		5924AA5A1293229A004F9C67 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5923079712931F520067DE03 /* Project object */;
@@ -79,6 +88,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		5922184C12D252DA001FC0AB /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		592307DC129320E40067DE03 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -95,6 +113,9 @@
 		5922183E12D0A137001FC0AB /* coremidi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coremidi.h; sourceTree = "<group>"; };
 		5922184412D0A1D6001FC0AB /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = System/Library/Frameworks/CoreMIDI.framework; sourceTree = SDKROOT; };
 		5922184612D0AEF8001FC0AB /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		5922184E12D252DA001FC0AB /* appltest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = appltest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5922185012D252DA001FC0AB /* appltest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; name = appltest.1; path = ../appltest.1; sourceTree = "<group>"; };
+		5922185112D252DA001FC0AB /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = main.c; path = Source/main.c; sourceTree = "<group>"; };
 		592307A112931F520067DE03 /* libMIDIKit.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libMIDIKit.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		592307AB1293209F0067DE03 /* clock.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = clock.c; sourceTree = "<group>"; };
 		592307AC1293209F0067DE03 /* clock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = clock.h; sourceTree = "<group>"; };
@@ -150,6 +171,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		5922184B12D252DA001FC0AB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5922186212D25335001FC0AB /* libMIDIKit.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5923079E12931F520067DE03 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -182,6 +211,7 @@
 		5923079512931F520067DE03 = {
 			isa = PBXGroup;
 			children = (
+				592307A112931F520067DE03 /* libMIDIKit.dylib */,
 				5922184612D0AEF8001FC0AB /* CoreFoundation.framework */,
 				5922184412D0A1D6001FC0AB /* CoreMIDI.framework */,
 				5923079C12931F520067DE03 /* Source */,
@@ -196,6 +226,7 @@
 				592307AA12931F7E0067DE03 /* driver */,
 				592307A912931F760067DE03 /* test */,
 				592307A812931F6C0067DE03 /* midi */,
+				5922185112D252DA001FC0AB /* main.c */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -203,8 +234,8 @@
 		592307A212931F520067DE03 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				592307A112931F520067DE03 /* libMIDIKit.dylib */,
 				592307DE129320E40067DE03 /* test_main */,
+				5922184E12D252DA001FC0AB /* appltest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -277,6 +308,7 @@
 			isa = PBXGroup;
 			children = (
 				592307E0129320E40067DE03 /* test_main.1 */,
+				5922185012D252DA001FC0AB /* appltest.1 */,
 			);
 			name = Documentation;
 			path = documentation;
@@ -369,6 +401,24 @@
 /* End PBXLegacyTarget section */
 
 /* Begin PBXNativeTarget section */
+		5922184D12D252DA001FC0AB /* appltest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5922185512D252DA001FC0AB /* Build configuration list for PBXNativeTarget "appltest" */;
+			buildPhases = (
+				5922184A12D252DA001FC0AB /* Sources */,
+				5922184B12D252DA001FC0AB /* Frameworks */,
+				5922184C12D252DA001FC0AB /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5922186412D2547D001FC0AB /* PBXTargetDependency */,
+			);
+			name = appltest;
+			productName = appltest;
+			productReference = 5922184E12D252DA001FC0AB /* appltest */;
+			productType = "com.apple.product-type.tool";
+		};
 		592307A012931F520067DE03 /* MIDIKit */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 592307A512931F520067DE03 /* Build configuration list for PBXNativeTarget "MIDIKit" */;
@@ -429,6 +479,7 @@
 				592307A012931F520067DE03 /* MIDIKit */,
 				592307DD129320E40067DE03 /* test_main */,
 				59A7CDD912932641006F70F5 /* main_c */,
+				5922184D12D252DA001FC0AB /* appltest */,
 			);
 		};
 /* End PBXProject section */
@@ -450,6 +501,14 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		5922184A12D252DA001FC0AB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5922185212D252DA001FC0AB /* main.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5923079D12931F520067DE03 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -498,6 +557,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		5922186412D2547D001FC0AB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 592307A012931F520067DE03 /* MIDIKit */;
+			targetProxy = 5922186312D2547D001FC0AB /* PBXContainerItemProxy */;
+		};
 		5924AA5B1293229A004F9C67 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 592307A012931F520067DE03 /* MIDIKit */;
@@ -511,6 +575,187 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		5922185312D252DA001FC0AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		5922185412D252DA001FC0AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+		5922185612D252DA001FC0AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		5922185712D252DA001FC0AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		5922185812D252DA001FC0AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				PRODUCT_NAME = appltest;
+			};
+			name = Debug;
+		};
+		5922185912D252DA001FC0AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				PRODUCT_NAME = appltest;
+			};
+			name = Release;
+		};
+		5922185A12D252DA001FC0AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				PRODUCT_NAME = appltest;
+			};
+			name = Debug;
+		};
+		5922185B12D252DA001FC0AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				PRODUCT_NAME = appltest;
+			};
+			name = Release;
+		};
+		5922185C12D252DA001FC0AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				PRODUCT_NAME = appltest;
+			};
+			name = Debug;
+		};
+		5922185D12D252DA001FC0AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				PRODUCT_NAME = appltest;
+			};
+			name = Release;
+		};
+		5922185E12D252DA001FC0AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				PRODUCT_NAME = appltest;
+			};
+			name = Debug;
+		};
+		5922185F12D252DA001FC0AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				PRODUCT_NAME = appltest;
+			};
+			name = Release;
+		};
+		5922186012D252DA001FC0AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				PRODUCT_NAME = appltest;
+			};
+			name = Debug;
+		};
+		5922186112D252DA001FC0AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
+				);
+				PRODUCT_NAME = appltest;
+			};
+			name = Release;
+		};
 		592307A312931F520067DE03 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -774,6 +1019,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		5922185512D252DA001FC0AB /* Build configuration list for PBXNativeTarget "appltest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5922185612D252DA001FC0AB /* Debug */,
+				5922185712D252DA001FC0AB /* Release */,
+				5922185812D252DA001FC0AB /* Debug */,
+				5922185912D252DA001FC0AB /* Release */,
+				5922185A12D252DA001FC0AB /* Debug */,
+				5922185B12D252DA001FC0AB /* Release */,
+				5922185C12D252DA001FC0AB /* Debug */,
+				5922185D12D252DA001FC0AB /* Release */,
+				5922185E12D252DA001FC0AB /* Debug */,
+				5922185F12D252DA001FC0AB /* Release */,
+				5922186012D252DA001FC0AB /* Debug */,
+				5922186112D252DA001FC0AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		5923079A12931F520067DE03 /* Build configuration list for PBXProject "MIDIKit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -787,6 +1051,8 @@
 				59D7EAFB129325E500AEE77F /* Release */,
 				59A7CDDA12932641006F70F5 /* Debug */,
 				59A7CDDB12932641006F70F5 /* Release */,
+				5922185312D252DA001FC0AB /* Debug */,
+				5922185412D252DA001FC0AB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
