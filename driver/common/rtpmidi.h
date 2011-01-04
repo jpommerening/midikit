@@ -14,6 +14,8 @@ void RTPMIDISessionRelease( struct RTPMIDISession * session );
 int RTPMIDISessionTrunkateSendJournal( struct RTPMIDISession * session, struct RTPPeer * peer, unsigned long seqnum );
 int RTPMIDISessionTrunkateReceiveJournal( struct RTPMIDISession * session, struct RTPPeer * peer, unsigned long seqnum );
 
+int RTPMIDIPeerSetInfo( struct RTPPeer * peer, void * info );
+int RTPMIDIPeerGetInfo( struct RTPPeer * peer, void ** info );
 
 int RTPMIDISessionSend( struct RTPMIDISession * session, size_t size, struct MIDIMessage ** messages,
                         size_t * count, struct RTPPacketInfo * info );

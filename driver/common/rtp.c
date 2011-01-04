@@ -348,9 +348,9 @@ static void _init_addr( struct RTPAddress * address, socklen_t size, struct sock
   memcpy( &(address->addr), addr, size );
 }
 
-static unsigned long _session_get_timestamp( struct RTPSession * session ) {
+static unsigned long long _session_get_timestamp( struct RTPSession * session ) {
   struct timeval tv;
-  unsigned long  ts;
+  unsigned long long ts;
   gettimeofday( &tv, NULL );
 
   ts = (tv.tv_sec * 1000000 + tv.tv_usec) / session->timestamp_divisor
@@ -453,59 +453,123 @@ void RTPSessionRelease( struct RTPSession * session ) {
   }
 }
 
+/**
+ * @brief Set the SSRC used by this session.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param ssrc The synchronization source.
+ * @retval 0 on success.
+ */
 int RTPSessionSetSSRC( struct RTPSession * session, unsigned long ssrc ) {
   session->self.ssrc = ssrc;
   return 0;
 }
 
+/**
+ * @brief Get the SSRC used by this session.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param ssrc The synchronization source.
+ * @retval 0 on success.
+ */
 int RTPSessionGetSSRC( struct RTPSession * session, unsigned long * ssrc ) {
   if( ssrc == NULL ) return 1;
   *ssrc = session->self.ssrc;
   return 0;
 }
 
+/**
+ * @brief Set the timestamp offset used by this session.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param offset The timestamp offset measured in RTP ticks.
+ * @retval 0 on success.
+ */
 int RTPSessionSetTimestampOffset( struct RTPSession * session, unsigned long offset ) {
   session->timestamp_offset = offset;
   return 0;
 }
 
+/**
+ * @brief Get the timestamp offset used by this session.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param offset The timestamp offset measured in RTP ticks.
+ * @retval 0 on success.
+ */
 int RTPSessionGetTimestampOffset( struct RTPSession * session, unsigned long * offset ) {
   if( offset == NULL ) return 1;
   *offset = session->timestamp_offset;
   return 0;
 }
 
+/**
+ * @brief Set the timestamp rate used by this session.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param rate The timestamp rate (timestamp ticks per second)
+ * @retval 0 on success.
+ */
 int RTPSessionSetTimestampRate( struct RTPSession * session, double rate ) {
   session->timestamp_divisor = 1000000.0 / rate;
   return 0;
 }
 
+/**
+ * @brief Get the timestamp rate used by this session.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param rate The timestamp rate (timestamp ticks per second)
+ * @retval 0 on success.
+ */
 int RTPSessionGetTimestampRate( struct RTPSession * session, double * rate ) {
   if( rate == NULL ) return 1;
   *rate = 1000000.0 / session->timestamp_divisor;
   return 0;
 }
 
+/**
+ * @brief Set the socket used to communicate with other clients.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param socket The socket.
+ * @retval 0 on success.
+ */
 int RTPSessionSetSocket( struct RTPSession * session, int socket ) {
   if( socket == session->socket ) return 0;
   session->socket = socket;
   return 0;
 }
 
+/**
+ * @brief Get the socket used to communicate with other clients.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param socket The socket.
+ * @retval 0 on success.
+ */
 int RTPSessionGetSocket( struct RTPSession * session, int * socket ) {
   if( socket == NULL ) return 1;
   *socket = session->socket;
   return 0;
 }
 
-int RTPSessionGetTimestamp( struct RTPSession * session, unsigned long * timestamp ) {
+/**
+ * @brief Get the current RTP timestamp.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param timestamp The timestamp in RTP ticks.
+ * @retval 0 on success.
+ */
+int RTPSessionGetTimestamp( struct RTPSession * session, unsigned long long * timestamp ) {
   *timestamp = _session_get_timestamp( session );
   return 0;
 }
 
 /**
- * Add an RTPPeer to the session. The peer will be included
- * when data is sent via RTPSessionSendPayload.
+ * @brief Add an RTPPeer to the session.
+ * Lookup the peer using the (pseudo) hash-table, add it to the list and retain it.
+ * The peer will be included when data is sent via RTPSessionSendPayload.
  * @public @memberof RTPSession
  * @param session The session.
  * @param peer The peer to add.
@@ -513,10 +577,12 @@ int RTPSessionGetTimestamp( struct RTPSession * session, unsigned long * timesta
  * @retval >0 if the peer could not be added.
  */
 int RTPSessionAddPeer( struct RTPSession * session, struct RTPPeer * peer ) {
-  int i;
+  int i, off, p;
+  off = peer->address.ssrc;
   for( i=0; i < RTP_MAX_PEERS; i++ ) {
-    if( session->peers[i] == NULL ) {
-      session->peers[i] = peer;
+    p = (i+off)%RTP_MAX_PEERS;
+    if( session->peers[p] == NULL ) {
+      session->peers[p] = peer;
       RTPPeerRetain( peer );
       return 0;
     }
@@ -525,7 +591,8 @@ int RTPSessionAddPeer( struct RTPSession * session, struct RTPPeer * peer ) {
 }
 
 /**
- * Remove an RTPPeer from the session.
+ * @brief Remove an RTPPeer from the session.
+ * Lookup the peer using the (pseudo) hash-table, remove it from the list and release it.
  * @public @memberof RTPSession
  * @param session The session.
  * @param peer The peer to remove.
@@ -533,8 +600,10 @@ int RTPSessionAddPeer( struct RTPSession * session, struct RTPPeer * peer ) {
  * @retval >0 if the peer could not be removed.
  */
 int RTPSessionRemovePeer( struct RTPSession * session, struct RTPPeer * peer ) {
-  int i;
+  int i, off, p;
+  off = peer->address.ssrc;
   for( i=0; i < RTP_MAX_PEERS; i++ ) {
+    p = (i+off)%RTP_MAX_PEERS;
     if( session->peers[i] == peer ) {
       session->peers[i] = NULL;
       RTPPeerRelease( peer );
@@ -542,6 +611,41 @@ int RTPSessionRemovePeer( struct RTPSession * session, struct RTPPeer * peer ) {
     }
   }
   return 1;
+}
+
+/**
+ * @brief Advance the pointer to the next peer.
+ * Given a @c NULL pointer the first peer will be returned. When the
+ * last peer was reached a @c NULL pointer will be returned.
+ * @public @memberof RTPSession
+ * @param session The session.
+ * @param peer The peer.
+ * @retval 0 on success.
+ * @retval >0 if the given peer does not exist.
+ */
+int RTPSessionNextPeer( struct RTPSession * session, struct RTPPeer ** peer ) {
+  int i;
+  if( peer == NULL ) return 1;
+  if( *peer == NULL ) {
+    i=-1;
+  } else {
+    for( i=0; i < RTP_MAX_PEERS; i++ ) {
+      if( session->peers[i] == *peer ) {
+        break;
+      }
+    }
+    if( i == RTP_MAX_PEERS ) return 1;
+  }
+
+  do {
+     i++;
+  } while( i < RTP_MAX_PEERS && session->peers[i] == NULL );
+  if( i == RTP_MAX_PEERS ) {
+    *peer = NULL;
+  } else {
+    *peer = session->peers[i];
+  }
+  return 0;
 }
 
 /**

@@ -71,6 +71,12 @@ int test002_rtp( void ) {
   ASSERT_NO_ERROR( RTPSessionFindPeerByAddress( session, &p, sizeof(struct sockaddr_in), (void*) &client_address ),
                    "Could find peer by address." );
   ASSERT_EQUAL( peer, p, "Lookup by address returned wrong peer." );
+  p=NULL;
+  ASSERT_NO_ERROR( RTPSessionNextPeer( session, &p ), "Could not get first peer." );
+  ASSERT_EQUAL( peer, p, "First peer returned wrong peer." );
+  ASSERT_NO_ERROR( RTPSessionNextPeer( session, &p ), "Could not get next peer." );
+  ASSERT_EQUAL( NULL, p, "First peer returned wrong peer." );
+  
   ASSERT_NO_ERROR( RTPSessionRemovePeer( session, peer ), "Could not remove peer." );
   ASSERT_ERROR( RTPSessionFindPeerBySSRC( session, &p, RTP_CLIENT_SSRC ), "Peer was not removed." );
   ASSERT_ERROR( RTPSessionFindPeerByAddress( session, &p, sizeof(struct sockaddr_in), (void*) &client_address ),

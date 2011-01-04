@@ -47,10 +47,11 @@ int RTPSessionGetTimestampOffset( struct RTPSession * session, unsigned long * o
 int RTPSessionSetTimestampRate( struct RTPSession * session, double rate );
 int RTPSessionGetTimestampRate( struct RTPSession * session, double * rate );
 
-int RTPSessionGetTimestamp( struct RTPSession * session, unsigned long * timestamp );
+int RTPSessionGetTimestamp( struct RTPSession * session, unsigned long long * timestamp );
 
 int RTPSessionAddPeer( struct RTPSession * session, struct RTPPeer * peer );
 int RTPSessionRemovePeer( struct RTPSession * session, struct RTPPeer * peer );
+int RTPSessionNextPeer( struct RTPSession * session, struct RTPPeer ** peer );
 int RTPSessionFindPeerBySSRC( struct RTPSession * session, struct RTPPeer ** peer,
                               unsigned long ssrc );
 int RTPSessionFindPeerByAddress( struct RTPSession * session, struct RTPPeer ** peer,

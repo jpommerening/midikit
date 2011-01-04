@@ -9,8 +9,9 @@ struct RTPMIDIHeaderInfo {
 };
 
 struct RTPMIDIPeerInfo {
-  struct RTPMIDIJournal * receive_journal[8];
-  struct RTPMIDIJournal * send_journal[8];
+  struct RTPMIDIJournal * receive_journal;
+  struct RTPMIDIJournal * send_journal;
+  void * info;
 };
 
 /**
@@ -106,6 +107,35 @@ int RTPMIDISessionTrunkateSendJournal( struct RTPMIDISession * session, struct R
 }
 
 int RTPMIDISessionTrunkateReceiveJournal( struct RTPMIDISession * session, struct RTPPeer * peer, unsigned long seqnum ) {
+  return 0;
+}
+
+static void * _rtpmidi_peer_info_create() {
+  struct RTPMIDIPeerInfo * info = malloc( sizeof( struct RTPMIDIPeerInfo ) );
+  info->send_journal = NULL;
+  info->receive_journal = NULL;
+  info->info = NULL;
+  return info;
+}
+
+int RTPMIDIPeerSetInfo( struct RTPPeer * peer, void * info ) {
+  struct RTPMIDIPeerInfo * info_ = NULL;
+  RTPPeerGetInfo( peer, &info_ );
+  if( info_ == NULL ) {
+    info_ = _rtpmidi_peer_info_create();
+  }
+  info_->info = info;
+  return 0;
+}
+
+int RTPMIDIPeerGetInfo( struct RTPPeer * peer, void ** info ) {
+  struct RTPMIDIPeerInfo * info_ = NULL;
+  RTPPeerGetInfo( peer, &info_ );
+  if( info_ == NULL ) {
+    *info = NULL;
+  } else {
+    *info = info_->info;
+  }
   return 0;
 }
 
