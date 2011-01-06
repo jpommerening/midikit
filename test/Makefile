@@ -11,7 +11,7 @@ OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/clock.o \
      $(OBJDIR)/message_format.o $(OBJDIR)/message.o \
      $(OBJDIR)/connector.o $(OBJDIR)/device.o $(OBJDIR)/driver.o \
      $(OBJDIR)/message_queue.o \
-     $(OBJDIR)/integration.o \
+     $(OBJDIR)/integration.o $(OBJDIR)/runloop.o \
      $(OBJDIR)/driver_rtp.o $(OBJDIR)/driver_applemidi.o
 BIN=test_main
 
@@ -19,7 +19,7 @@ MAIN_C=main.c
 
 .PHONY: all clean
 
-all: tests.passed
+all: tests.passed demo
 
 clean:
 	rm -f $(OBJS)
@@ -33,6 +33,9 @@ $(OBJDIR)/%.o:
 $(BINDIR)/$(BIN): $(MAIN_C) $(OBJS)
 	$(CC) $(LDFLAGS_BIN) -o $@ $^
 
+$(BINDIR)/demo: demo.c
+	$(CC) $(LDFLAGS_BIN) -o $@ $^
+
 $(OBJDIR)/midi.o: midi.c test.h
 $(OBJDIR)/util.o: util.c test.h
 $(OBJDIR)/clock.o: clock.c test.h
@@ -43,11 +46,12 @@ $(OBJDIR)/device.o: device.c test.h
 $(OBJDIR)/driver.o: driver.c test.h
 $(OBJDIR)/message_queue.o: message_queue.c test.h
 $(OBJDIR)/integration.o: integration.c test.h
+$(OBJDIR)/runloop.o: runloop.c test.h
 $(OBJDIR)/driver_rtp.o: driver_rtp.c test.h
 $(OBJDIR)/driver_applemidi.o: driver_applemidi.c test.h
 
 tests.passed: $(BINDIR)/$(BIN) $(LIBDIR)/libmidikit$(LIB_SUFFIX) $(LIBDIR)/libmidikit-driver$(LIB_SUFFIX)
 	LD_LIBRARY_PATH=$(LIBDIR) $(BINDIR)/$(BIN) && touch $@
 
-$(MAIN_C): midi.c util.c clock.c message_format.c message.c connector.c device.c driver.c integration.c driver_rtp.c driver_applemidi.c
+$(MAIN_C): midi.c util.c clock.c message_format.c message.c connector.c device.c driver.c integration.c runloop.c driver_rtp.c driver_applemidi.c
 	./generate_main.sh -o $(MAIN_C) $^

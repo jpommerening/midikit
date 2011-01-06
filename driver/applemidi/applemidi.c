@@ -722,30 +722,16 @@ int MIDIDriverAppleMIDIRemovePeer( struct MIDIDriverAppleMIDI * driver, char * a
   return result;
 }
 
-/**
- * @brief Receive from any peer.
- * This should be called whenever there is new data to be received on a socket.
- * @public @memberof MIDIDriverAppleMIDI
- * @param driver The driver.
- * @retval 0 on success.
- * @retval >0 if the packet could not be processed.
- */
-int MIDIDriverAppleMIDIReceive( struct MIDIDriverAppleMIDI * driver ) {
-  int fd, result = 0;
-  fd_set fds;
-  static struct timeval tv = { 0, 0 };
+static int _applemidi_read_fds( void * drv, int nfds, fd_set * readfds ) {
+  struct MIDIDriverAppleMIDI * driver = drv;
   struct AppleMIDICommand command;
-  
-  /* check for available data on sockets (select()) */
-  FD_ZERO(&fds);
-  FD_SET(driver->control_socket, &fds);
-  FD_SET(driver->rtp_socket, &fds);
-  
-  fd = driver->control_socket > driver->rtp_socket ? ( driver->control_socket + 1 )
-                                                   : ( driver->rtp_socket + 1 );  
-  select( fd, &fds, NULL, NULL, &tv );
-  
-  if( FD_ISSET( driver->control_socket, &fds ) ) {
+  int fd, result = 0;
+
+  if( nfds <= 0 ) return 0;
+
+  /* printf( "check fds & read data.\n" ); */
+
+  if( FD_ISSET( driver->control_socket, readfds ) ) {
     fd = driver->control_socket;
     if( _test_applemidi( fd ) ) {
       if( _applemidi_recv_command( driver, fd, &command ) == 0 ) {
@@ -754,7 +740,7 @@ int MIDIDriverAppleMIDIReceive( struct MIDIDriverAppleMIDI * driver ) {
     }
   }
   
-  if( FD_ISSET( driver->rtp_socket, &fds ) ) {
+  if( FD_ISSET( driver->rtp_socket, readfds ) ) {
     fd = driver->rtp_socket;
     if( _test_applemidi( fd ) ) {
       if( _applemidi_recv_command( driver, fd, &command ) == 0 ) {
@@ -768,6 +754,68 @@ int MIDIDriverAppleMIDIReceive( struct MIDIDriverAppleMIDI * driver ) {
   return result;
 }
 
+static int _applemidi_write_fds( void * drv, int nfds, fd_set * writefds ) {
+  struct MIDIDriverAppleMIDI * driver = drv;
+  int fd, result = 0;
+
+  /* printf( "check fds & send data.\n" ); */
+
+  if( FD_ISSET( driver->rtp_socket, writefds ) ) {
+    fd = driver->rtp_socket;
+  } else if( FD_ISSET( driver->control_socket, writefds ) ) {
+    fd = driver->control_socket;
+  } else {
+    return 0;
+  }
+
+  return result;
+}
+
+static int _applemidi_idle_timeout( void * drv, struct timespec * ts ) {
+  struct MIDIDriverAppleMIDI * driver = drv;
+  size_t length;
+  MIDIMessageQueueGetLength( driver->in_queue, &length );
+
+  printf( "idle timeout.\n" );
+
+  /* check for messages in dispatch (incoming) queue:
+   *   if message needs to be dispatched (timestamp >= now+latency)
+   *   call MIDIDriverAppleMIDIReceiveMessage
+   * send receiver feedback
+   * if the last synchronization happened a certain time ago, synchronize again */
+  return 0;
+}
+
+static int _applemidi_init_fds( struct MIDIDriverAppleMIDI * driver, fd_set * fds ) {
+  /* check for available data on sockets (select()) */
+  FD_ZERO( fds );
+  FD_SET( driver->control_socket, fds );
+  FD_SET( driver->rtp_socket, fds );
+  
+  if( driver->control_socket > driver->rtp_socket ) {
+    return driver->control_socket + 1;
+  } else {
+    return driver->rtp_socket + 1;
+  }
+}
+
+/**
+ * @brief Receive from any peer.
+ * This should be called whenever there is new data to be received on a socket.
+ * @public @memberof MIDIDriverAppleMIDI
+ * @param driver The driver.
+ * @retval 0 on success.
+ * @retval >0 if the packet could not be processed.
+ */
+int MIDIDriverAppleMIDIReceive( struct MIDIDriverAppleMIDI * driver ) {
+  int nfds;
+  fd_set fds;
+  static struct timeval tv = { 0, 0 };
+  nfds = _applemidi_init_fds( driver, &fds );
+  select( nfds, &fds, NULL, NULL, &tv );
+  return _applemidi_read_fds( driver, nfds, &fds );
+}
+
 /**
  * @brief Send queued messages to all connected peers.
  * This should be called whenever new messages are added to the queue and whenever the
@@ -778,41 +826,12 @@ int MIDIDriverAppleMIDIReceive( struct MIDIDriverAppleMIDI * driver ) {
  * @retval >0 if packets could not be sent, or any other operation failed.
  */
 int MIDIDriverAppleMIDISend( struct MIDIDriverAppleMIDI * driver ) {
-  int fd, i;
-  size_t length;
+  int nfds;
   fd_set fds;
   static struct timeval tv = { 0, 0 };
-  struct MIDIMessage * msg_list[8];
-
-  MIDIMessageQueueGetLength( driver->out_queue, &length );
-  
-  if( length == 0 ) return 0;
-  
-  /* check if sockets can accept data (select()) */
-  FD_ZERO(&fds);
-  FD_SET(driver->control_socket, &fds);
-  FD_SET(driver->rtp_socket, &fds);
-
-  select( 2, NULL, &fds, NULL, &tv );
-  
-  if( FD_ISSET( driver->rtp_socket, &fds ) ) {
-    fd = driver->rtp_socket;
-  } else if( FD_ISSET( driver->control_socket, &fds ) ) {
-    fd = driver->control_socket;
-  } else {
-    return 0;
-  }
-
-  for( i=0; i<8 && i<length; i++ ) {
-    MIDIMessageQueuePop( driver->out_queue, &msg_list[i] );
-  }
-  
-  RTPMIDISessionSend( driver->rtpmidi_session, i, &msg_list[0], &length, NULL );
-  while( length < i ) {
-    i -= length;
-    RTPMIDISessionSend( driver->rtpmidi_session, i, &msg_list[length], &length, NULL );
-  }
-  return 0;
+  nfds = _applemidi_init_fds( driver, &fds );
+  select( nfds, NULL, &fds, NULL, &tv );
+  return _applemidi_write_fds( driver, nfds, &fds );
 }
 
 /**
@@ -825,13 +844,37 @@ int MIDIDriverAppleMIDISend( struct MIDIDriverAppleMIDI * driver ) {
  * @retval >0 if packets could not be sent, or any other operation failed.
  */
 int MIDIDriverAppleMIDIIdle( struct MIDIDriverAppleMIDI * driver ) {
-  size_t length;
-  MIDIMessageQueueGetLength( driver->in_queue, &length );
+  static struct timespec ts = { 0, 0 };
+  return _applemidi_idle_timeout( driver, &ts );
+}
 
-  /* check for messages in dispatch (incoming) queue:
-   *   if message needs to be dispatched (timestamp >= now+latency)
-   *   call MIDIDriverAppleMIDIReceiveMessage
-   * send receiver feedback
-   * if the last synchronization happened a certain time ago, synchronize again */
-  return 1;
+/**
+ * @brief Create a runloop source.
+ * Fill a preallocated runloop source with the correct data.
+ * @public @memberof MIDIDriverAppleMIDI
+ * @param driver The driver.
+ * @param source The runloop source.
+ * @retval 0 on success.
+ * @retval >0 if the runloop source could not be created.
+ */
+int MIDIDriverAppleMIDICreateRunloopSource( struct MIDIDriverAppleMIDI * driver, struct MIDIRunloopSource * source ) {
+  FD_ZERO( &(source->readfds) );
+  FD_ZERO( &(source->writefds) );
+  FD_SET( driver->control_socket, &(source->readfds) );
+  FD_SET( driver->rtp_socket,     &(source->readfds) );
+  /*FD_SET( driver->control_socket, &(source->writefds) );*/
+  /*FD_SET( driver->rtp_socket,     &(source->writefds) );*/
+  if( driver->control_socket > driver->rtp_socket ) {
+    source->nfds = driver->control_socket + 1;
+  } else {
+    source->nfds = driver->rtp_socket + 1;
+  }
+  source->timeout.tv_sec  = 0;    // 0 sec
+  source->timeout.tv_nsec = 5000; // 5 ms
+  source->info = driver;
+
+  source->read  = &_applemidi_read_fds;
+  source->write = NULL; /*&_applemidi_write_fds;*/
+  source->idle  = &_applemidi_idle_timeout;
+  return 0;
 }

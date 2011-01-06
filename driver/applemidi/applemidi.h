@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include "midi/driver.h"
 #include "midi/message.h"
+#include "midi/util.h"
 
 struct MIDIDriverAppleMIDI;
 extern struct MIDIDriverDelegate MIDIDriverDelegateAppleMIDI;
@@ -37,5 +38,7 @@ int MIDIDriverAppleMIDISendMessage( struct MIDIDriverAppleMIDI * driver, struct 
 int MIDIDriverAppleMIDIReceive( struct MIDIDriverAppleMIDI * driver );
 int MIDIDriverAppleMIDISend( struct MIDIDriverAppleMIDI * driver );
 int MIDIDriverAppleMIDIIdle( struct MIDIDriverAppleMIDI * driver );
+
+int MIDIDriverAppleMIDICreateRunloopSource( struct MIDIDriverAppleMIDI * driver, struct MIDIRunloopSource * source );
 
 #endif
