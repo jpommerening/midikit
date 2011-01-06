@@ -349,11 +349,11 @@ static void _init_addr( struct RTPAddress * address, socklen_t size, struct sock
 }
 
 static unsigned long long _session_get_timestamp( struct RTPSession * session ) {
-  struct timeval tv;
+  struct timeval tv = { 0, 0 };
   unsigned long long ts;
   gettimeofday( &tv, NULL );
 
-  ts = (tv.tv_sec * 1000000 + tv.tv_usec) / session->timestamp_divisor
+  ts = (1000000.0 * tv.tv_sec + tv.tv_usec) / session->timestamp_divisor
      + session->timestamp_offset;
   return ts;
 }
@@ -578,7 +578,7 @@ int RTPSessionGetTimestamp( struct RTPSession * session, unsigned long long * ti
  */
 int RTPSessionAddPeer( struct RTPSession * session, struct RTPPeer * peer ) {
   int i, off, p;
-  off = peer->address.ssrc;
+  off = peer->address.ssrc % RTP_MAX_PEERS;
   for( i=0; i < RTP_MAX_PEERS; i++ ) {
     p = (i+off)%RTP_MAX_PEERS;
     if( session->peers[p] == NULL ) {
@@ -601,11 +601,11 @@ int RTPSessionAddPeer( struct RTPSession * session, struct RTPPeer * peer ) {
  */
 int RTPSessionRemovePeer( struct RTPSession * session, struct RTPPeer * peer ) {
   int i, off, p;
-  off = peer->address.ssrc;
+  off = peer->address.ssrc % RTP_MAX_PEERS;
   for( i=0; i < RTP_MAX_PEERS; i++ ) {
     p = (i+off)%RTP_MAX_PEERS;
-    if( session->peers[i] == peer ) {
-      session->peers[i] = NULL;
+    if( session->peers[p] == peer ) {
+      session->peers[p] = NULL;
       RTPPeerRelease( peer );
       return 0;
     }
@@ -659,13 +659,13 @@ int RTPSessionNextPeer( struct RTPSession * session, struct RTPPeer ** peer ) {
  */
 int RTPSessionFindPeerBySSRC( struct RTPSession * session, struct RTPPeer ** peer,
                               unsigned long ssrc ) {
-  int i;
-  unsigned long s = 0;
+  int i, off, p;
+  off = ssrc % RTP_MAX_PEERS;
   for( i=0; i < RTP_MAX_PEERS; i++ ) {
-    if( session->peers[i] != NULL ) {
-      RTPPeerGetSSRC( session->peers[i], &s );
-      if( s == ssrc ) {
-        *peer = session->peers[i];
+    p = (i+off)%RTP_MAX_PEERS;
+    if( session->peers[p] != NULL ) {
+      if( session->peers[p]->address.ssrc == ssrc ) {
+        *peer = session->peers[p];
         return 0;
       }
     }
