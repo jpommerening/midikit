@@ -39,6 +39,6 @@ int MIDIDriverAppleMIDIReceive( struct MIDIDriverAppleMIDI * driver );
 int MIDIDriverAppleMIDISend( struct MIDIDriverAppleMIDI * driver );
 int MIDIDriverAppleMIDIIdle( struct MIDIDriverAppleMIDI * driver );
 
-int MIDIDriverAppleMIDICreateRunloopSource( struct MIDIDriverAppleMIDI * driver, struct MIDIRunloopSource * source );
+int MIDIDriverAppleMIDIGetRunloopSource( struct MIDIDriverAppleMIDI * driver, struct MIDIRunloopSource ** source );
 
 #endif

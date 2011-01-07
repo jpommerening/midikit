@@ -359,7 +359,7 @@ static unsigned long long _session_get_timestamp( struct RTPSession * session ) 
 }
 
 static void _session_randomize_ssrc( struct RTPSession * session ) {
-  unsigned char * ss_addr = &(session->self.addr);
+  unsigned char * ss_addr = (unsigned char *) &(session->self.addr);
   unsigned long i, seed = _session_get_timestamp( session );
   for( i=0; i<session->self.size; i++ ) {
     seed = (seed * 7) + ss_addr[i];

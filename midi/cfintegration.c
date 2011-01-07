@@ -3,7 +3,7 @@
 #include "driver.h"
 
 CFRunLoopSourceRef MIDIDriverCreateRunloopSource( struct MIDIDriver * driver ) {
-  
+  return NULL;
 }
 
 #endif

@@ -4,9 +4,9 @@
 #include "driver/common/rtp.h"
 
 #define RTP_ADDRESS "127.0.0.1"
-#define RTP_SERVER_PORT 5004
-#define RTP_CLIENT_PORT 5005
+#define RTP_CLIENT_PORT 5204
 #define RTP_CLIENT_SSRC 123456789
+#define RTP_SERVER_PORT 5104
 
 static struct RTPSession * session = NULL;
 
@@ -154,7 +154,7 @@ int test004_rtp( void ) {
   sendto( s, &send_buffer[0], sizeof(send_buffer), 0,
           (struct sockaddr *) &server_address, sizeof(server_address) );
   ASSERT_NO_ERROR( RTPSessionReceive( session, sizeof(recv_buffer), &recv_buffer[0], &info ),
-                   "Could not send payload to peer." );
+                   "Could not receive payload from peer." );
 
   ASSERT_EQUAL( info.payload_size, 4, "Received message of unexpected size." );
   ASSERT_EQUAL( info.padding, 4, "Message has unexpected padding." );

@@ -5,6 +5,7 @@
 
 struct MIDIKeyboard {
   size_t refs;
+  struct MIDIRunloopSource runloop_source;
   struct MIDIRunloop * runloop;
 };
 
@@ -24,9 +25,33 @@ static int _keyboard_read_fds( void * kbd, int nfds, fd_set * fds ) {
   return 0;
 }
 
+static int _keyboard_timeout( void * kbd, struct timespec * ts ) {
+  printf( "kbd timeout %i.%06i s\n", (int) ts->tv_sec, (int) ts->tv_nsec );
+  return 0;
+}
+
+int _keyboard_init_runloop_source( struct MIDIKeyboard * keyboard ) {
+  struct MIDIRunloopSource * source = &(keyboard->runloop_source);
+  
+  source->nfds = 1; // stdin + 1
+  FD_ZERO( &(source->readfds) );
+  FD_ZERO( &(source->writefds) );
+  FD_SET( 0, &(source->readfds) ); // stdin
+  source->timeout.tv_sec = 5;
+  source->timeout.tv_nsec = 0;
+  source->remain.tv_sec = 5;
+  source->remain.tv_nsec = 0;
+  source->read = &_keyboard_read_fds;
+  source->write = NULL;
+  source->idle = &_keyboard_timeout;
+  source->info = keyboard;
+  return 0;
+}
+
 struct MIDIKeyboard * MIDIKeyboardCreate() {
   struct MIDIKeyboard * keyboard = malloc( sizeof( struct MIDIKeyboard ) );
   keyboard->refs = 1;
+  _keyboard_init_runloop_source( keyboard );
   return keyboard;
 }
 
@@ -39,25 +64,17 @@ int MIDIKeyboardSetRunloop( struct MIDIKeyboard * keyboard, struct MIDIRunloop *
   return 0;
 }
 
-int MIDIKeyboardCreateRunloopSource( struct MIDIKeyboard * keyboard, struct MIDIRunloopSource * source ) {
-  source->nfds = 1; // stdin + 1
-  FD_ZERO( &(source->readfds) );
-  FD_ZERO( &(source->writefds) );
-  FD_SET( 0, &(source->readfds) ); // stdin
-  source->timeout.tv_sec = 0;
-  source->timeout.tv_nsec = 0;
-  source->read = &_keyboard_read_fds;
-  source->write = NULL;
-  source->idle = NULL;
-  source->info = keyboard;
+int MIDIKeyboardGetRunloopSource( struct MIDIKeyboard * keyboard, struct MIDIRunloopSource ** source ) {
+  if( source == NULL ) return 1;
+  *source = &(keyboard->runloop_source);
   return 0;
 }
 
 int main( int argc, char *argv[] ) {
   struct MIDIKeyboard * keyboard;
   struct MIDIDriverAppleMIDI * applemidi;
-  struct MIDIRunloopSource keyboard_rls;
-  struct MIDIRunloopSource driver_rls;
+  struct MIDIRunloopSource * keyboard_rls;
+  struct MIDIRunloopSource * driver_rls;
   struct MIDIRunloop * runloop;
 
   int i;
@@ -102,13 +119,13 @@ int main( int argc, char *argv[] ) {
     MIDIDriverAppleMIDIAcceptFromAny( applemidi );
   }
 
-  MIDIKeyboardCreateRunloopSource( keyboard, &keyboard_rls );
-  MIDIDriverAppleMIDICreateRunloopSource( applemidi, &driver_rls );
+  MIDIKeyboardGetRunloopSource( keyboard, &keyboard_rls );
+  MIDIDriverAppleMIDIGetRunloopSource( applemidi, &driver_rls );
 
   MIDIKeyboardSetRunloop( keyboard, runloop );
 
-  MIDIRunloopAddSource( runloop, &keyboard_rls );
-  MIDIRunloopAddSource( runloop, &driver_rls );
+  MIDIRunloopAddSource( runloop, keyboard_rls );
+  MIDIRunloopAddSource( runloop, driver_rls );
 
   MIDIRunloopStart( runloop );
 

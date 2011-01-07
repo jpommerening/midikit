@@ -12,7 +12,7 @@
 #define CLIENT_RTP_PORT CLIENT_CONTROL_PORT + 1
 
 #define SERVER_ADDRESS CLIENT_ADDRESS
-#define SERVER_CONTROL_PORT 5004
+#define SERVER_CONTROL_PORT 5204
 #define SERVER_RTP_PORT SERVER_CONTROL_PORT + 1
 
 static struct MIDIDriverAppleMIDI * driver = NULL;
@@ -129,7 +129,7 @@ int test001_applemidi( void ) {
           (struct sockaddr *) &server_addr, sizeof(server_addr) );
 
   ASSERT_NO_ERROR( MIDIDriverAppleMIDIReceive( driver ), "Could not receive accepted invitation on control port." );
-
+  
   /* the driver should now have sent an invitation on the rtp port */
   ASSERT( _check_socket_in( client_rtp_socket ), "Expected message on client control socket." );
   recv( client_rtp_socket, &(buf[0]), sizeof(buf), 0 );
@@ -167,36 +167,33 @@ int test002_applemidi( void ) {
  * Test that the AppleMIDI driver can be used as a runloop source.
  */
 int test003_applemidi( void ) {
-  struct MIDIRunloopSource source;
+  struct MIDIRunloopSource * source;
   struct MIDIRunloop * runloop;
   unsigned char buf[36];
 
   runloop = MIDIRunloopCreate();
   ASSERT_NOT_EQUAL( runloop, NULL, "Could not create runloop." );
-  ASSERT_NO_ERROR( MIDIDriverAppleMIDICreateRunloopSource( driver, &source ), "Could not create runloop source." );
-  source.nfds  = 0;
-  source.read  = NULL;
-  source.write = NULL;
-  ASSERT_NO_ERROR( MIDIRunloopAddSource( runloop, &source ), "Could not add source to runloop." );
+  ASSERT_NO_ERROR( MIDIDriverAppleMIDIGetRunloopSource( driver, &source ), "Could not create runloop source." );
+  ASSERT_NO_ERROR( MIDIRunloopAddSource( runloop, source ), "Could not add source to runloop." );
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
-  ASSERT_NO_ERROR( MIDIRunloopRemoveSource( runloop, &source ), "Could not remove source from runloop." );
+  ASSERT_NO_ERROR( MIDIRunloopRemoveSource( runloop, source ), "Could not remove source from runloop." );
 
   /* answer sync request */
   _fillin_sync( &(buf[0]), 1 );
   ASSERT_EQUAL( 36, sendto( client_rtp_socket, &(buf[0]), 36, 0,
                 (struct sockaddr *) &server_addr, sizeof(server_addr) ), "Could not send sync." );
  
-  ASSERT_NO_ERROR( MIDIDriverAppleMIDICreateRunloopSource( driver, &source ), "Could not recreate runloop source." );
-  ASSERT_NO_ERROR( MIDIRunloopAddSource( runloop, &source ), "Could not add source to runloop." );
+  ASSERT_NO_ERROR( MIDIDriverAppleMIDIGetRunloopSource( driver, &source ), "Could not recreate runloop source." );
+  ASSERT_NO_ERROR( MIDIRunloopAddSource( runloop, source ), "Could not add source to runloop." );
 
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
-  source.write = NULL;
+  source->write = NULL;
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
-  source.read = NULL;
-  source.nfds = 0;
+  source->read = NULL;
+  source->nfds = 0;
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
-  source.idle = NULL;
+  source->idle = NULL;
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
 
   MIDIRunloopRelease( runloop );

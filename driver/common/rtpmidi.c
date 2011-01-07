@@ -118,9 +118,17 @@ static void * _rtpmidi_peer_info_create() {
   return info;
 }
 
+/**
+ * @brief Set the pointer of the internal info-structure.
+ * @relates RTPMIDISession
+ * @param peer The peer.
+ * @param info A pointer to the info-structure.
+ * @retval 0 on success.
+ * @retval >0 if the info-structure could not be set.
+ */
 int RTPMIDIPeerSetInfo( struct RTPPeer * peer, void * info ) {
   struct RTPMIDIPeerInfo * info_ = NULL;
-  RTPPeerGetInfo( peer, &info_ );
+  RTPPeerGetInfo( peer, (void **) &info_ );
   if( info_ == NULL ) {
     info_ = _rtpmidi_peer_info_create();
   }
@@ -128,9 +136,17 @@ int RTPMIDIPeerSetInfo( struct RTPPeer * peer, void * info ) {
   return 0;
 }
 
+/**
+ * @brief Get a pointer to the info sub-structure.
+ * @relates RTPMIDISession
+ * @param peer The peer.
+ * @param info A pointer to the info-structure.
+ * @retval 0 on success.
+ * @retval >0 if the info-structure could not be obtained.
+ */
 int RTPMIDIPeerGetInfo( struct RTPPeer * peer, void ** info ) {
   struct RTPMIDIPeerInfo * info_ = NULL;
-  RTPPeerGetInfo( peer, &info_ );
+  RTPPeerGetInfo( peer, (void **) &info_ );
   if( info_ == NULL ) {
     *info = NULL;
   } else {

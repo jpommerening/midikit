@@ -64,6 +64,8 @@ struct MIDIDriverAppleMIDI {
   unsigned char  sync;
   unsigned long  token;
   char name[32];
+  
+  struct MIDIRunloopSource runloop_source;
 
   struct RTPPeer * peer;
   struct RTPSession * rtp_session;
@@ -76,6 +78,30 @@ struct MIDIDriverAppleMIDI {
 struct MIDIDriverDelegate MIDIDriverDelegateAppleMIDI = {
   NULL
 };
+
+int _init_runloop_source( struct MIDIDriverAppleMIDI * driver ) {
+  struct MIDIRunloopSource * source = &(driver->runloop_source);
+
+  FD_ZERO( &(source->readfds) );
+  FD_ZERO( &(source->writefds) );
+  FD_SET( driver->control_socket, &(source->readfds) );
+  FD_SET( driver->rtp_socket,     &(source->readfds) );
+  /*FD_SET( driver->control_socket, &(source->writefds) );*/
+  /*FD_SET( driver->rtp_socket,     &(source->writefds) );*/
+  if( driver->control_socket > driver->rtp_socket ) {
+    source->nfds = driver->control_socket + 1;
+  } else {
+    source->nfds = driver->rtp_socket + 1;
+  }
+  source->timeout.tv_sec  = 0;    // 0 sec
+  source->timeout.tv_nsec = 5000; // 5 ms
+  source->info = driver;
+
+  source->read  = NULL;
+  source->write = NULL;
+  source->idle  = NULL;
+  return 0;
+}
 
 static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
   struct sockaddr_in addr;
@@ -176,6 +202,8 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned sh
   RTPSessionGetTimestamp( driver->rtp_session, &ts );
   driver->token = ts;
   
+  _init_runloop_source( driver );
+
   return driver;
 }
 
@@ -912,32 +940,15 @@ int MIDIDriverAppleMIDIIdle( struct MIDIDriverAppleMIDI * driver ) {
 }
 
 /**
- * @brief Create a runloop source.
- * Fill a preallocated runloop source with the correct data.
+ * @brief Get a pointer to the driver's runloop source.
  * @public @memberof MIDIDriverAppleMIDI
  * @param driver The driver.
  * @param source The runloop source.
  * @retval 0 on success.
  * @retval >0 if the runloop source could not be created.
  */
-int MIDIDriverAppleMIDICreateRunloopSource( struct MIDIDriverAppleMIDI * driver, struct MIDIRunloopSource * source ) {
-  FD_ZERO( &(source->readfds) );
-  FD_ZERO( &(source->writefds) );
-  FD_SET( driver->control_socket, &(source->readfds) );
-  FD_SET( driver->rtp_socket,     &(source->readfds) );
-  /*FD_SET( driver->control_socket, &(source->writefds) );*/
-  /*FD_SET( driver->rtp_socket,     &(source->writefds) );*/
-  if( driver->control_socket > driver->rtp_socket ) {
-    source->nfds = driver->control_socket + 1;
-  } else {
-    source->nfds = driver->rtp_socket + 1;
-  }
-  source->timeout.tv_sec  = 0;    // 0 sec
-  source->timeout.tv_nsec = 5000; // 5 ms
-  source->info = driver;
-
-  source->read  = &_applemidi_read_fds;
-  source->write = NULL; /*&_applemidi_write_fds;*/
-  source->idle  = &_applemidi_idle_timeout;
+int MIDIDriverAppleMIDIGetRunloopSource( struct MIDIDriverAppleMIDI * driver, struct MIDIRunloopSource ** source ) {
+  if( source == NULL ) return 1;
+  *source = &(driver->runloop_source);
   return 0;
 }
