@@ -101,7 +101,26 @@ static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
   return result;
 }
 
+static int _applemidi_endsession( struct MIDIDriverAppleMIDI *, int, socklen_t, struct sockaddr * );
+
+static int _applemidi_disconnect_peer( struct MIDIDriverAppleMIDI * driver, struct RTPPeer * peer ) {
+  struct sockaddr * addr;
+  socklen_t size;
+  if( RTPPeerGetAddress( peer, &size, &addr ) ) {
+    return 1;
+  }
+  return RTPSessionRemovePeer( driver->rtp_session, peer )
+       + _applemidi_endsession( driver, driver->control_socket, size, addr );
+}
+
 static int _applemidi_disconnect( struct MIDIDriverAppleMIDI * driver, int fd ) {
+  struct RTPPeer * peer = NULL;
+  RTPSessionNextPeer( driver->rtp_session, &peer );
+  while( peer != NULL ) {
+    _applemidi_disconnect_peer( driver, peer );
+    peer = NULL; /* peer was removed, find the new first */
+    RTPSessionNextPeer( driver->rtp_session, &peer );
+  }
   if( fd == driver->control_socket || fd == 0 ) {
     if( driver->control_socket > 0 ) {
       if( close( driver->control_socket ) ) {
@@ -119,6 +138,7 @@ static int _applemidi_disconnect( struct MIDIDriverAppleMIDI * driver, int fd ) 
       driver->rtp_socket = 0;
     }
   }
+
   return 0;
 }
 
@@ -810,7 +830,7 @@ static int _applemidi_idle_timeout( void * drv, struct timespec * ts ) {
   socklen_t size;
   MIDIMessageQueueGetLength( driver->in_queue, &length );
 
-  printf( "idle timeout.\n" );
+  /* printf( "idle timeout.\n" ); */
 
   if( driver->sync == 0 ) {
     /* no sync packets active. start new sync */

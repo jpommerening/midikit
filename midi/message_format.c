@@ -27,8 +27,8 @@ struct MIDIMessageFormat {
   int (*size)( struct MIDIMessageData * data, size_t * size );
   int (*set)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
   int (*get)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
-  int (*encode)( struct MIDIMessageData * data, size_t size, void * buffer, size_t * written );
-  int (*decode)( struct MIDIMessageData * data, size_t size, void * buffer, size_t * read );
+  int (*encode)( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * written );
+  int (*decode)( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * read );
 };
 
 #define VOID_BYTE( buffer, n ) ((uint8_t*)buffer)[n]
@@ -41,61 +41,122 @@ struct MIDIMessageFormat {
  * @{
  */
 
-static int _encode_one_byte( struct MIDIMessageData * data, size_t size, void * buffer, size_t * written ) {
+static int _check_encode_running_status( unsigned char byte, MIDIRunningStatus * status ) {
+  if( status == NULL ) return 0;
+  if( byte >= 0x80 && byte <= 0xef ) {
+    if( byte == *status ) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+  return 0;
+}
+
+static int _check_decode_running_status( unsigned char byte, MIDIRunningStatus * status ) {
+  if( status == NULL ) return 0;
+  if( byte < 0x80 )    return 1;
+  return 0;
+}
+
+
+static int _update_running_status( struct MIDIMessageData * data, MIDIRunningStatus * status ) {
+  if( status == NULL ) return 0;
+  if( data->bytes[0] >= 0x80 && data->bytes[0] <= 0xef ) {
+    *status = data->bytes[0];
+  } else if( data->bytes[0] >= 0xf0 && data->bytes[0] <= 0xf7 ) {
+    *status = 0;
+  } else if( data->bytes[0] >= 0xf8 && data->bytes[0] <= 0xff ) {
+    /* real time message */
+  } else {
+    return 1;
+  }
+  return 0;
+}
+
+static int _encode_one_byte( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * written ) {
   if( data == NULL || buffer == NULL ) return 1;
   if( size < 1 ) return 1;
   VOID_BYTE(buffer,0) = data->bytes[0];
   if( written != NULL ) *written = 1;
-  return 0;
+  return _update_running_status( data, status );
 }
 
-static int _decode_one_byte( struct MIDIMessageData * data, size_t size, void * buffer, size_t * read ) {
+static int _decode_one_byte( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * read ) {
   if( data == NULL || buffer == NULL ) return 1;
   if( size < 1 ) return 1;
   data->bytes[0] = VOID_BYTE(buffer,0);
   if( read != NULL ) *read = 1;
-  return 0;
+  return _update_running_status( data, status );
 }
 
-static int _encode_two_bytes( struct MIDIMessageData * data, size_t size, void * buffer, size_t * written ) {
+static int _encode_two_bytes( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * written ) {
   if( data == NULL || buffer == NULL ) return 1;
-  if( size < 2 ) return 1;
-  VOID_BYTE(buffer,0) = data->bytes[0];
-  VOID_BYTE(buffer,1) = data->bytes[1];
-  if( written != NULL ) *written = 2;
+  if( _check_encode_running_status( data->bytes[0], status ) ) {
+    if( size < 1 ) return 1;
+    VOID_BYTE(buffer,0) = data->bytes[1];
+    if( written != NULL ) *written = 1;
+  } else if( _update_running_status( data, status ) == 0 ) {
+    if( size < 2 ) return 1;
+    VOID_BYTE(buffer,0) = data->bytes[0];
+    VOID_BYTE(buffer,1) = data->bytes[1];
+    if( written != NULL ) *written = 2;
+  }
   return 0;
 }
 
-static int _decode_two_bytes( struct MIDIMessageData * data, size_t size, void * buffer, size_t * read ) {
+static int _decode_two_bytes( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * read ) {
   if( data == NULL || buffer == NULL ) return 1;
-  if( size < 2 ) return 1;
-  data->bytes[0] = VOID_BYTE(buffer,0);
-  data->bytes[1] = VOID_BYTE(buffer,1);
-  if( read != NULL ) *read = 2;
+  if( _check_decode_running_status( VOID_BYTE(buffer,0), status ) ) {
+    if( size < 1 ) return 1;
+    data->bytes[0] = *status;
+    data->bytes[1] = VOID_BYTE(buffer,0);
+    if( read != NULL ) *read = 1;
+  } else if( _update_running_status( data, status ) == 0 ) {
+    if( size < 2 ) return 1;
+    data->bytes[0] = VOID_BYTE(buffer,0);
+    data->bytes[1] = VOID_BYTE(buffer,1);
+    if( read != NULL ) *read = 2;
+  }
   return 0;
 }
 
-static int _encode_three_bytes( struct MIDIMessageData * data, size_t size, void * buffer, size_t * written ) {
+static int _encode_three_bytes( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * written ) {
   if( data == NULL || buffer == NULL ) return 1;
-  if( size < 3 ) return 1;
-  VOID_BYTE(buffer,0) = data->bytes[0];
-  VOID_BYTE(buffer,1) = data->bytes[1];
-  VOID_BYTE(buffer,2) = data->bytes[2];
-  if( written != NULL ) *written = 3;
+  if( _check_encode_running_status( data->bytes[0], status ) ) {
+    if( size < 2 ) return 1;
+    VOID_BYTE(buffer,0) = data->bytes[1];
+    VOID_BYTE(buffer,1) = data->bytes[2];
+    if( written != NULL ) *written = 2;
+  } else if( _update_running_status( data, status ) == 0) {
+    if( size < 3 ) return 1;
+    VOID_BYTE(buffer,0) = data->bytes[0];
+    VOID_BYTE(buffer,1) = data->bytes[1];
+    VOID_BYTE(buffer,2) = data->bytes[2];
+    if( written != NULL ) *written = 3;
+  }
   return 0;
 }
 
-static int _decode_three_bytes( struct MIDIMessageData * data, size_t size, void * buffer, size_t * read ) {
+static int _decode_three_bytes( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * read ) {
   if( data == NULL || buffer == NULL ) return 1;
-  if( size < 3 ) return 1;
-  data->bytes[0] = VOID_BYTE(buffer,0);
-  data->bytes[1] = VOID_BYTE(buffer,1);
-  data->bytes[2] = VOID_BYTE(buffer,2);
-  if( read != NULL ) *read = 3;
+  if( _check_decode_running_status( VOID_BYTE(buffer,0), status ) ) {
+    if( size < 2 ) return 1;
+    data->bytes[0] = *status;
+    data->bytes[1] = VOID_BYTE(buffer,0);
+    data->bytes[2] = VOID_BYTE(buffer,1);
+    if( read != NULL ) *read = 2;
+  } else if( _update_running_status( data, status ) == 0 ) {
+    if( size < 3 ) return 1;
+    data->bytes[0] = VOID_BYTE(buffer,0);
+    data->bytes[1] = VOID_BYTE(buffer,1);
+    data->bytes[2] = VOID_BYTE(buffer,2);
+    if( read != NULL ) *read = 3;
+  }
   return 0;
 }
 
-static int _encode_system_exclusive( struct MIDIMessageData * data, size_t size, void * buffer, size_t * written ) {
+static int _encode_system_exclusive( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * written ) {
   if( data == NULL || buffer == NULL ) return 1;
   if( data->bytes[2] == 0 ) {
     if( size < data->size+2 ) return 1;
@@ -110,10 +171,10 @@ static int _encode_system_exclusive( struct MIDIMessageData * data, size_t size,
       memcpy( buffer, data->data, data->size );
     if( written != NULL ) *written = data->size;
   }
-  return 0;  
+  return _update_running_status( data, status );
 }
 
-static int _decode_system_exclusive( struct MIDIMessageData * data, size_t size, void * buffer, size_t * read ) {
+static int _decode_system_exclusive( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * read ) {
   if( data == NULL || buffer == NULL ) return 1;
   data->bytes[0] = VOID_BYTE(buffer,0);
   data->bytes[1] = VOID_BYTE(buffer,1);
@@ -123,7 +184,7 @@ static int _decode_system_exclusive( struct MIDIMessageData * data, size_t size,
   memcpy( data->data, (buffer+2), size-2 );
   data->size = size-2;
   if( read != NULL ) *read = size;
-  return 0;
+  return _update_running_status( data, status );
 }
 
 /**
@@ -1079,6 +1140,40 @@ int MIDIMessageFormatGet( struct MIDIMessageFormat * format, struct MIDIMessageD
 }
 
 /**
+ * @brief Encode messages with running status byte.
+ * Encode message data objects into a buffer.
+ * @public @memberof MIDIMessageFormat
+ * @param format   The message format.
+ * @param data     The message data object to read from.
+ * @param status   The running status inherited from previous messages.
+ * @param size     The size of the memory pointed to by @c buffer.
+ * @param buffer   The buffer to encode the message into.
+ * @retval 0 on success.
+ * @retval 1 if the message could not be encoded.
+ */
+int MIDIMessageFormatEncodeRunningStatus( struct MIDIMessageFormat * format, struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * written ) {
+  if( format == NULL || format->encode == NULL ) return 1;
+  return (format->encode)( data, status, size, buffer, written );
+}
+
+/**
+ * @brief Decode messages with running status byte.
+ * Decode message data objects from a buffer.
+ * @public @memberof MIDIMessageFormat
+ * @param format   The message format.
+ * @param data     The message data object to read from.
+ * @param status   The running status inherited from previous messages.
+ * @param size     The size of the memory pointed to by @c buffer.
+ * @param buffer   The buffer to decode the message from.
+ * @retval 0 on success.
+ * @retval 1 if the message could not be encoded.
+ */
+int MIDIMessageFormatDecodeRunningStatus( struct MIDIMessageFormat * format, struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * read ) {
+  if( format == NULL || format->decode == NULL ) return 1;
+  return (format->decode)( data, status, size, buffer, read );
+}
+
+/**
  * @brief Encode messages.
  * Encode message data objects into a buffer.
  * @public @memberof MIDIMessageFormat
@@ -1090,8 +1185,7 @@ int MIDIMessageFormatGet( struct MIDIMessageFormat * format, struct MIDIMessageD
  * @retval 1 if the message could not be encoded.
  */
 int MIDIMessageFormatEncode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer, size_t * written ) {
-  if( format == NULL || format->encode == NULL ) return 1;
-  return (format->encode)( data, size, buffer, written );
+  return MIDIMessageFormatEncodeRunningStatus( format, data, NULL, size, buffer, written );
 }
 
 /**
@@ -1106,7 +1200,6 @@ int MIDIMessageFormatEncode( struct MIDIMessageFormat * format, struct MIDIMessa
  * @retval 1 if the message could not be encoded.
  */
 int MIDIMessageFormatDecode( struct MIDIMessageFormat * format, struct MIDIMessageData * data, size_t size, void * buffer, size_t * read ) {
-  if( format == NULL || format->decode == NULL ) return 1;
-  return (format->decode)( data, size, buffer, read );
+  return MIDIMessageFormatDecodeRunningStatus( format, data, NULL, size, buffer, read );
 }
 

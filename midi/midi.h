@@ -280,6 +280,7 @@ typedef double    MIDISamplingRate;
 typedef long long MIDITimestamp;
 
 typedef unsigned char  MIDIStatus;
+typedef unsigned char  MIDIRunningStatus;
 typedef char           MIDIChannel;
 typedef char           MIDIKey;
 typedef char           MIDIVelocity;

@@ -6,42 +6,42 @@
  * produce the expected bitstream.
  */
 int test001_message( void ) {
-   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_NOTE_OFF );
-   unsigned char buffer[8] = { 0 };
-   MIDIValue values[3] = { MIDI_CHANNEL_1, 60, 127 };
-   ASSERT( message != NULL, "Could not create note off message." );
-   ASSERT( MIDIMessageSet( message, MIDI_CHANNEL,  sizeof(MIDIChannel),  &values[0] ) == 0, "Could not set channel." );
-   ASSERT( MIDIMessageSet( message, MIDI_KEY,      sizeof(MIDIKey),      &values[1] ) == 0, "Could not set key." );
-   ASSERT( MIDIMessageSet( message, MIDI_VELOCITY, sizeof(MIDIVelocity), &values[2] ) == 0, "Could not set velocity." );
-   ASSERT( MIDIMessageEncode( message, 8, &buffer[0], NULL ) == 0, "Could not read MIDI data from message." );
-   ASSERT_EQUAL( buffer[0], 0x80, "Read wrong status / channel byte!" );
-   ASSERT_EQUAL( buffer[1], 60,   "Read wrong key byte!" );
-   ASSERT_EQUAL( buffer[2], 127,  "Read wrong velocity byte!" );
-   ASSERT_EQUAL( buffer[3], 0,    "Trailing data in message!" );
-   MIDIMessageRelease( message );
-   return 0;
+  struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_NOTE_OFF );
+  unsigned char buffer[8] = { 0 };
+  MIDIValue values[3] = { MIDI_CHANNEL_1, 60, 127 };
+  ASSERT( message != NULL, "Could not create note off message." );
+  ASSERT( MIDIMessageSet( message, MIDI_CHANNEL,  sizeof(MIDIChannel),  &values[0] ) == 0, "Could not set channel." );
+  ASSERT( MIDIMessageSet( message, MIDI_KEY,      sizeof(MIDIKey),      &values[1] ) == 0, "Could not set key." );
+  ASSERT( MIDIMessageSet( message, MIDI_VELOCITY, sizeof(MIDIVelocity), &values[2] ) == 0, "Could not set velocity." );
+  ASSERT( MIDIMessageEncode( message, 8, &buffer[0], NULL ) == 0, "Could not read MIDI data from message." );
+  ASSERT_EQUAL( buffer[0], 0x80, "Read wrong status / channel byte!" );
+  ASSERT_EQUAL( buffer[1], 60,   "Read wrong key byte!" );
+  ASSERT_EQUAL( buffer[2], 127,  "Read wrong velocity byte!" );
+  ASSERT_EQUAL( buffer[3], 0,    "Trailing data in message!" );
+  MIDIMessageRelease( message );
+  return 0;
 }
 
 /**
  * Test that MIDI messages can not be created with an invalid status.
  */
 int test002_message( void ) {
-   struct MIDIMessage * message = MIDIMessageCreate( 0x81 );
-   ASSERT( message == NULL, "Can create MIDI message with invalid status." );
-   return 0;
+  struct MIDIMessage * message = MIDIMessageCreate( 0x81 );
+  ASSERT( message == NULL, "Can create MIDI message with invalid status." );
+  return 0;
 }
 
 /**
  * Test that the MIDI channel number can not exceed 15 (zero based.)
  */
 int test003_message( void ) {
-   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
-   MIDIValue values[3] = { MIDI_CHANNEL_16, 16 };
-   ASSERT_NOT_EQUAL( message, NULL, "Could not create note on message." );
-   ASSERT( MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIChannel), &values[0] ) == 0, "Could not set channel number 16." );
-   ASSERT( MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIChannel), &values[1] ) != 0, "Can set invalid channel number." );
-   MIDIMessageRelease( message );
-   return 0;
+  struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
+  MIDIValue values[3] = { MIDI_CHANNEL_16, 16 };
+  ASSERT_NOT_EQUAL( message, NULL, "Could not create note on message." );
+  ASSERT( MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIChannel), &values[0] ) == 0, "Could not set channel number 16." );
+  ASSERT( MIDIMessageSet( message, MIDI_CHANNEL, sizeof(MIDIChannel), &values[1] ) != 0, "Can set invalid channel number." );
+  MIDIMessageRelease( message );
+  return 0;
 }
 
 /**
@@ -49,19 +49,19 @@ int test003_message( void ) {
  * future use or intended to end the system exclusive message.
  */
 int test004_message( void ) {
-   struct MIDIMessage * message;
+  struct MIDIMessage * message;
 
-   message = MIDIMessageCreate( MIDI_STATUS_UNDEFINED0 );
-   ASSERT_EQUAL( message, NULL, "Can create MIDI message with undefined (reserved 0) status." );
-   message = MIDIMessageCreate( MIDI_STATUS_UNDEFINED1 );
-   ASSERT_EQUAL( message, NULL, "Can create MIDI message with undefined (reserved 1) status." );
-   message = MIDIMessageCreate( MIDI_STATUS_UNDEFINED2 );
-   ASSERT_EQUAL( message, NULL, "Can create MIDI message with undefined (reserved 2) status." );
-   message = MIDIMessageCreate( MIDI_STATUS_UNDEFINED3 );
-   ASSERT_EQUAL( message, NULL, "Can create MIDI message with undefined (reserved 3) status." );
-   message = MIDIMessageCreate( MIDI_STATUS_END_OF_EXCLUSIVE );
-   ASSERT_EQUAL( message, NULL, "Can create MIDI message with end of exclusive status." );
-   return 0;
+  message = MIDIMessageCreate( MIDI_STATUS_UNDEFINED0 );
+  ASSERT_EQUAL( message, NULL, "Can create MIDI message with undefined (reserved 0) status." );
+  message = MIDIMessageCreate( MIDI_STATUS_UNDEFINED1 );
+  ASSERT_EQUAL( message, NULL, "Can create MIDI message with undefined (reserved 1) status." );
+  message = MIDIMessageCreate( MIDI_STATUS_UNDEFINED2 );
+  ASSERT_EQUAL( message, NULL, "Can create MIDI message with undefined (reserved 2) status." );
+  message = MIDIMessageCreate( MIDI_STATUS_UNDEFINED3 );
+  ASSERT_EQUAL( message, NULL, "Can create MIDI message with undefined (reserved 3) status." );
+  message = MIDIMessageCreate( MIDI_STATUS_END_OF_EXCLUSIVE );
+  ASSERT_EQUAL( message, NULL, "Can create MIDI message with end of exclusive status." );
+  return 0;
 }
 
 /**
@@ -69,24 +69,58 @@ int test004_message( void ) {
  * produce the expected bitstream.
  */
 int test005_message( void ) {
-   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_SYSTEM_EXCLUSIVE );
-   unsigned char buffer[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
-   unsigned char * result = &buffer[0];
-   MIDIValue values[2] = { 123, 234 };
+  struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_SYSTEM_EXCLUSIVE );
+  unsigned char buffer[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+  unsigned char * result = &buffer[0];
+  MIDIValue values[2] = { 123, 234 };
 
-   ASSERT( message != NULL, "Could not create system exclusive message." );
-   ASSERT( MIDIMessageSet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &values[0] ) == 0, "Could not set manufacturer id." );
-   ASSERT( MIDIMessageSet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &values[1] ) != 0, "Can set invalid manufacturer id." );
-   ASSERT( MIDIMessageSet( message, MIDI_SYSEX_DATA, sizeof(void*), &result ) == 0, "Could not set system exclusive data." );
-   ASSERT( MIDIMessageGet( message, MIDI_SYSEX_DATA, sizeof(void*), &result ) == 0, "Could not get system exclusive data." );
-   ASSERT_EQUAL( buffer[0], result[0], "Sysex-data was not stored properly." );
-   ASSERT_EQUAL( buffer[1], result[1], "Sysex-data was not stored properly." );
-   ASSERT_EQUAL( buffer[2], result[2], "Sysex-data was not stored properly." );
-   ASSERT_EQUAL( buffer[3], result[3], "Sysex-data was not stored properly." );
-   ASSERT_EQUAL( buffer[4], result[4], "Sysex-data was not stored properly." );
-   ASSERT_EQUAL( buffer[5], result[5], "Sysex-data was not stored properly." );
-   ASSERT_EQUAL( buffer[6], result[6], "Sysex-data was not stored properly." );
-   ASSERT_EQUAL( buffer[7], result[7], "Sysex-data was not stored properly." );
-   MIDIMessageRelease( message );
-   return 0;
+  ASSERT( message != NULL, "Could not create system exclusive message." );
+  ASSERT( MIDIMessageSet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &values[0] ) == 0, "Could not set manufacturer id." );
+  ASSERT( MIDIMessageSet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &values[1] ) != 0, "Can set invalid manufacturer id." );
+  ASSERT( MIDIMessageSet( message, MIDI_SYSEX_DATA, sizeof(void*), &result ) == 0, "Could not set system exclusive data." );
+  ASSERT( MIDIMessageGet( message, MIDI_SYSEX_DATA, sizeof(void*), &result ) == 0, "Could not get system exclusive data." );
+  ASSERT_EQUAL( buffer[0], result[0], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( buffer[1], result[1], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( buffer[2], result[2], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( buffer[3], result[3], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( buffer[4], result[4], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( buffer[5], result[5], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( buffer[6], result[6], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( buffer[7], result[7], "Sysex-data was not stored properly." );
+  MIDIMessageRelease( message );
+  return 0;
+}
+
+/**
+ * Test that running status coding works properly.
+ */
+int test006_message( void ) {
+  struct MIDIMessageList messages[6];
+  unsigned char buffer[32] = { 0 };
+  size_t bytes = 0;
+
+  messages[0].next = &(messages[1]);
+  messages[1].next = &(messages[2]);
+  messages[2].next = &(messages[3]);
+  messages[3].next = &(messages[4]);
+  messages[4].next = &(messages[5]);
+  messages[5].next = NULL;
+
+  messages[0].message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
+  messages[1].message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
+  messages[2].message = MIDIMessageCreate( MIDI_STATUS_NOTE_OFF );
+  messages[3].message = MIDIMessageCreate( MIDI_STATUS_RESET );
+  messages[4].message = MIDIMessageCreate( MIDI_STATUS_NOTE_OFF );
+  messages[5].message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
+
+  ASSERT_NO_ERROR( MIDIMessageEncodeList( &(messages[0]), sizeof(buffer), &(buffer[0]), &bytes ),
+                   "Could not encode message list." );
+
+  MIDIMessageRelease( messages[0].message );
+  MIDIMessageRelease( messages[1].message );
+  MIDIMessageRelease( messages[2].message );
+  MIDIMessageRelease( messages[3].message );
+  MIDIMessageRelease( messages[4].message );
+  MIDIMessageRelease( messages[5].message );
+  return 0;
 }

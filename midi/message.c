@@ -193,7 +193,12 @@ int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t 
  * @retval 1 if the message could not be encoded.
  */
 int MIDIMessageEncode( struct MIDIMessage * message, size_t size, unsigned char * buffer, size_t * written ) {
+  if( size == 0 || buffer == NULL ) return 1;
   return MIDIMessageFormatEncode( message->format, &(message->data), size, buffer, written );
+}
+
+static void _check_release_data( struct MIDIMessage * message ) {
+  if( message->data.data != NULL && message->data.bytes[3] == 1 ) free( message->data.data );
 }
 
 /**
@@ -208,9 +213,73 @@ int MIDIMessageEncode( struct MIDIMessage * message, size_t size, unsigned char 
  */
 int MIDIMessageDecode( struct MIDIMessage * message, size_t size, unsigned char * buffer, size_t * read ) {
   if( size == 0 || buffer == NULL ) return 1;
-  if( message->data.data != NULL && message->data.bytes[3] == 1 ) free( message->data.data );
+  _check_release_data( message );
   message->format = MIDIMessageFormatDetect( buffer );
+  if( message->format == NULL ) return 1;
   return MIDIMessageFormatDecode( message->format, &(message->data), size, buffer, read );
+}
+
+/**
+ * @brief Encode multiple messages at one.
+ * Encode multiple message objects into a buffer and use running status coding.
+ * @public @memberof MIDIMessage
+ * @param messages The list of messages.
+ * @param size     The size of the memory pointed to by @c buffer.
+ * @param buffer   The buffer to encode the message into.
+ * @retval 0 on success.
+ * @retval 1 if the message could not be encoded.
+ */
+int MIDIMessageEncodeList( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * written ) {
+  struct MIDIMessage * message;
+  MIDIRunningStatus status = 0;
+  size_t p = 0, w = 0, s = size;
+  int result = 0;
+
+  while( messages != NULL && result == 0) {
+    if( messages->message != NULL ) {
+      result = MIDIMessageFormatEncodeRunningStatus( message->format, &message->data, &status, s, buffer+p, &w );
+      p += w;
+      s -= w;
+    }
+    messages = messages->next;
+  }
+  *written = p;
+  return result;
+}
+
+/**
+ * @brief Decode multiple messages at once.
+ * Decode multiple message objects from a buffer and use running status coding.
+ * @public @memberof MIDIMessageFormat
+ * @param messages The list of messages.
+ * @param size     The size of the memory pointed to by @c buffer.
+ * @param buffer   The buffer to decode the message from.
+ * @retval 0 on success.
+ * @retval 1 if the message could not be encoded.
+ */
+int MIDIMessageDecodeList( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * read ) {
+  struct MIDIMessage * message;
+  MIDIRunningStatus status = 0;
+  size_t p = 0, r = 0, s = size;
+  int result = 0;
+
+  while( messages != NULL && result == 0) {
+    if( messages->message != NULL ) {
+      _check_release_data( message );
+      message->format = MIDIMessageFormatDetect( buffer+p );
+      if( message->format == NULL ) message->format = MIDIMessageFormatForStatus( status );
+      if( message->format == NULL ) {
+        result = 1;
+      } else {
+        result = MIDIMessageFormatDecodeRunningStatus( message->format, &message->data, &status, s, buffer+p, &r );
+        p += r;
+        s -= r;
+      }
+    }
+    messages = messages->next;
+  }
+  *read = p;
+  return result;
 }
 
 /** @} */

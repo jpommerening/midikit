@@ -255,7 +255,6 @@ static int _runloop_master_idle( void * rl, struct timespec * ts ) {
       runloop->master.write = &_runloop_master_write;
     }
   }
-  printf( "master idle\n" );
   return result;
 }
 
@@ -330,7 +329,7 @@ int MIDIRunloopAddSource( struct MIDIRunloop * runloop, struct MIDIRunloopSource
   if( source->write != NULL ) {
     runloop->master.write = &_runloop_master_write;
   }
-  printf( "master timeout %lu sec + %lu nsec\nnfds: %i\n", runloop->master.timeout.tv_sec, runloop->master.timeout.tv_nsec, runloop->master.nfds );
+  /*printf( "master timeout %lu sec + %lu nsec\nnfds: %i\n", runloop->master.timeout.tv_sec, runloop->master.timeout.tv_nsec, runloop->master.nfds );*/
   return 0;
 }
 

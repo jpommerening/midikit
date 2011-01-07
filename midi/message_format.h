@@ -20,6 +20,10 @@ int MIDIMessageFormatSet( struct MIDIMessageFormat * format, struct MIDIMessageD
                           MIDIProperty property, size_t size, void * value );
 int MIDIMessageFormatGet( struct MIDIMessageFormat * format, struct MIDIMessageData * data,
                           MIDIProperty property, size_t size, void * value );
+int MIDIMessageFormatEncodeRunningStatus( struct MIDIMessageFormat * format, struct MIDIMessageData * data,
+                                          MIDIStatus * status, size_t size, void * buffer, size_t * written );
+int MIDIMessageFormatDecodeRunningStatus( struct MIDIMessageFormat * format, struct MIDIMessageData * data,
+                                          MIDIStatus * status, size_t size, void * buffer, size_t * read );
 int MIDIMessageFormatEncode( struct MIDIMessageFormat * format, struct MIDIMessageData * data,
                              size_t size, void * buffer, size_t * written );
 int MIDIMessageFormatDecode( struct MIDIMessageFormat * format, struct MIDIMessageData * data,

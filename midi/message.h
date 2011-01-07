@@ -24,7 +24,10 @@ int MIDIMessageGetSize( struct MIDIMessage * message, size_t * size );
 int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
 int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value );
 
-int MIDIMessageEncode( struct MIDIMessage * message, size_t bytes, unsigned char * buffer, size_t * written );
-int MIDIMessageDecode( struct MIDIMessage * message, size_t bytes, unsigned char * buffer, size_t * read );
+int MIDIMessageEncode( struct MIDIMessage * message, size_t size, unsigned char * buffer, size_t * written );
+int MIDIMessageDecode( struct MIDIMessage * message, size_t size, unsigned char * buffer, size_t * read );
+
+int MIDIMessageEncodeList( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * written );
+int MIDIMessageDecodeList( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * read );
 
 #endif
