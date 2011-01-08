@@ -42,7 +42,7 @@ struct MIDIMessageFormat {
  */
 
 static int _check_encode_running_status( unsigned char byte, MIDIRunningStatus * status ) {
-  if( status == NULL ) return 0;
+  if( status == NULL || *status == 0 ) return 0;
   if( byte >= 0x80 && byte <= 0xef ) {
     if( byte == *status ) {
       return 1;
@@ -54,8 +54,8 @@ static int _check_encode_running_status( unsigned char byte, MIDIRunningStatus *
 }
 
 static int _check_decode_running_status( unsigned char byte, MIDIRunningStatus * status ) {
-  if( status == NULL ) return 0;
-  if( byte < 0x80 )    return 1;
+  if( status == NULL || *status == 0 ) return 0;
+  if( byte < 0x80 ) return 1;
   return 0;
 }
 
@@ -112,13 +112,13 @@ static int _decode_two_bytes( struct MIDIMessageData * data, MIDIRunningStatus *
     data->bytes[0] = *status;
     data->bytes[1] = VOID_BYTE(buffer,0);
     if( read != NULL ) *read = 1;
-  } else if( _update_running_status( data, status ) == 0 ) {
+  } else {
     if( size < 2 ) return 1;
     data->bytes[0] = VOID_BYTE(buffer,0);
     data->bytes[1] = VOID_BYTE(buffer,1);
     if( read != NULL ) *read = 2;
   }
-  return 0;
+  return _update_running_status( data, status );
 }
 
 static int _encode_three_bytes( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * written ) {
@@ -146,14 +146,14 @@ static int _decode_three_bytes( struct MIDIMessageData * data, MIDIRunningStatus
     data->bytes[1] = VOID_BYTE(buffer,0);
     data->bytes[2] = VOID_BYTE(buffer,1);
     if( read != NULL ) *read = 2;
-  } else if( _update_running_status( data, status ) == 0 ) {
+  } else {
     if( size < 3 ) return 1;
     data->bytes[0] = VOID_BYTE(buffer,0);
     data->bytes[1] = VOID_BYTE(buffer,1);
     data->bytes[2] = VOID_BYTE(buffer,2);
     if( read != NULL ) *read = 3;
   }
-  return 0;
+  return _update_running_status( data, status );
 }
 
 static int _encode_system_exclusive( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * written ) {
@@ -1044,6 +1044,25 @@ struct MIDIMessageFormat * MIDIMessageFormatDetect( void * buffer ) {
     }
   }
   return NULL;
+}
+
+/**
+ * @brief Detect the format of message stored in a buffer.
+ * Determine the message format used in a stream of bytes but check for running status as well.
+ * @public @memberof MIDIMessageFormat
+ * @param buffer The message as it would appear on a MIDI cable.
+ * @param status The running status to use if the buffer does not contain a status byte.
+ * @return a pointer to the correct message format if the format could be detected.
+ * @return a NULL pointer if the format could not be detected.
+ */
+struct MIDIMessageFormat * MIDIMessageFormatDetectRunningStatus( void * buffer, MIDIRunningStatus * status ) {
+  if( VOID_BYTE(buffer, 0) & 0x80 ) {
+    return MIDIMessageFormatDetect( buffer );
+  } else if( status != NULL && *status != 0 ) {
+    return MIDIMessageFormatDetect( status );
+  } else {
+    return NULL;
+  }
 }
 
 /**

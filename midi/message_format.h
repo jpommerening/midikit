@@ -12,6 +12,7 @@ struct MIDIMessageData {
 };
 
 struct MIDIMessageFormat * MIDIMessageFormatDetect( void * buffer );
+struct MIDIMessageFormat * MIDIMessageFormatDetectRunningStatus( void * buffer, MIDIRunningStatus * status );
 struct MIDIMessageFormat * MIDIMessageFormatForStatus( MIDIStatus status );
 int MIDIMessageFormatTest( struct MIDIMessageFormat * format, void * buffer );
 int MIDIMessageFormatGetSize( struct MIDIMessageFormat * format, struct MIDIMessageData * data,

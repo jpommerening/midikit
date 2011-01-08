@@ -27,6 +27,11 @@ int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t 
 int MIDIMessageEncode( struct MIDIMessage * message, size_t size, unsigned char * buffer, size_t * written );
 int MIDIMessageDecode( struct MIDIMessage * message, size_t size, unsigned char * buffer, size_t * read );
 
+int MIDIMessageEncodeRunningStatus( struct MIDIMessage * message, MIDIRunningStatus * status,
+                                    size_t size, unsigned char * buffer, size_t * written );
+int MIDIMessageDecodeRunningStatus( struct MIDIMessage * message, MIDIRunningStatus * status,
+                                    size_t size, unsigned char * buffer, size_t * read );
+
 int MIDIMessageEncodeList( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * written );
 int MIDIMessageDecodeList( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * read );
 

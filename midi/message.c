@@ -183,6 +183,21 @@ int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t 
 }
 
 /**
+ * @brief Release auxiliary data.
+ * Check if the message has auxiliary data (variable length sysex data) and release it if
+ * necessary.
+ * @private @memberof MIDIMessage
+ * @param message The message.
+ */
+static void _check_release_data( struct MIDIMessage * message ) {
+  if( message->data.data != NULL && message->data.bytes[3] == 1 ) {
+    free( message->data.data );
+    message->data.data = NULL;
+  }
+}
+
+
+/**
  * @brief Encode messages.
  * Encode message objects into a buffer.
  * @public @memberof MIDIMessage
@@ -195,10 +210,6 @@ int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t 
 int MIDIMessageEncode( struct MIDIMessage * message, size_t size, unsigned char * buffer, size_t * written ) {
   if( size == 0 || buffer == NULL ) return 1;
   return MIDIMessageFormatEncode( message->format, &(message->data), size, buffer, written );
-}
-
-static void _check_release_data( struct MIDIMessage * message ) {
-  if( message->data.data != NULL && message->data.bytes[3] == 1 ) free( message->data.data );
 }
 
 /**
@@ -220,6 +231,44 @@ int MIDIMessageDecode( struct MIDIMessage * message, size_t size, unsigned char 
 }
 
 /**
+ * @brief Encode messages with running status.
+ * Encode message objects into a buffer. Use the running status and update it if necessary.
+ * @public @memberof MIDIMessageFormat
+ * @param message  The message.
+ * @param status   A pointer to the running status.
+ * @param size     The size of the memory pointed to by @c buffer.
+ * @param buffer   The buffer to decode the message from.
+ * @retval 0 on success.
+ * @retval 1 if the message could not be encoded.
+ */
+int MIDIMessageEncodeRunningStatus( struct MIDIMessage * message, MIDIRunningStatus * status,
+                                    size_t size, unsigned char * buffer, size_t * written ) {
+  if( size == 0 || buffer == NULL ) return 1;
+  return MIDIMessageFormatEncodeRunningStatus( message->format, &(message->data), status, size, buffer, written );
+}
+                                    
+/**
+ * @brief Decode messages with running status.
+ * Decode message objects from a buffer. Use the running status and update it if necessary.
+ * @public @memberof MIDIMessageFormat
+ * @param message  The message.
+ * @param status   A pointer to the running status.
+ * @param size     The size of the memory pointed to by @c buffer.
+ * @param buffer   The buffer to decode the message from.
+ * @retval 0 on success.
+ * @retval 1 if the message could not be encoded.
+ */
+int MIDIMessageDecodeRunningStatus( struct MIDIMessage * message, MIDIRunningStatus * status,
+                                    size_t size, unsigned char * buffer, size_t * read ) {
+  if( size == 0 || buffer == NULL ) return 1;
+  _check_release_data( message );
+  message->format = MIDIMessageFormatDetectRunningStatus( buffer, status );
+  if( message->format == NULL ) return 1;
+  return MIDIMessageFormatDecodeRunningStatus( message->format, &(message->data), status, size, buffer, read );
+}
+
+
+/**
  * @brief Encode multiple messages at one.
  * Encode multiple message objects into a buffer and use running status coding.
  * @public @memberof MIDIMessage
@@ -236,14 +285,15 @@ int MIDIMessageEncodeList( struct MIDIMessageList * messages, size_t size, unsig
   int result = 0;
 
   while( messages != NULL && result == 0) {
-    if( messages->message != NULL ) {
-      result = MIDIMessageFormatEncodeRunningStatus( message->format, &message->data, &status, s, buffer+p, &w );
+    message = messages->message;
+    if( message != NULL ) {
+      result = MIDIMessageFormatEncodeRunningStatus( message->format, &(message->data), &status, s, buffer+p, &w );
       p += w;
       s -= w;
     }
     messages = messages->next;
   }
-  *written = p;
+  if( written != NULL ) *written = p;
   return result;
 }
 
@@ -264,21 +314,21 @@ int MIDIMessageDecodeList( struct MIDIMessageList * messages, size_t size, unsig
   int result = 0;
 
   while( messages != NULL && result == 0) {
-    if( messages->message != NULL ) {
+    message = messages->message;
+    if( message != NULL ) {
       _check_release_data( message );
-      message->format = MIDIMessageFormatDetect( buffer+p );
-      if( message->format == NULL ) message->format = MIDIMessageFormatForStatus( status );
+      message->format = MIDIMessageFormatDetectRunningStatus( buffer+p, &status );
       if( message->format == NULL ) {
         result = 1;
       } else {
-        result = MIDIMessageFormatDecodeRunningStatus( message->format, &message->data, &status, s, buffer+p, &r );
+        result = MIDIMessageFormatDecodeRunningStatus( message->format, &(message->data), &status, s, buffer+p, &r );
         p += r;
         s -= r;
       }
     }
     messages = messages->next;
   }
-  *read = p;
+  if( read != NULL ) *read = p;
   return result;
 }
 

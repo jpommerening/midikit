@@ -1,3 +1,4 @@
+#include <string.h>
 #include "test.h"
 #include "midi/message.h"
 
@@ -95,26 +96,137 @@ int test005_message( void ) {
  * Test that running status coding works properly.
  */
 int test006_message( void ) {
-  struct MIDIMessageList messages[6];
+  struct MIDIMessageList messages[12];
+  MIDIChannel  chan[2] = { MIDI_CHANNEL_8, MIDI_CHANNEL_7 };
+  MIDIKey      keys[2] = { 63, 54 };
+  MIDIVelocity vels[5] = { 127, 76, 64, 30, 70 };
+
+  MIDIStatus   status;
+  MIDIChannel  channel;
+  MIDIKey      key;
+  MIDIVelocity velocity;
+  
   unsigned char buffer[32] = { 0 };
+  unsigned char expect[32] = {
+    /* note on with status byte */
+    0x90 + chan[0],
+    keys[0], vels[0],
+    /* next note on, running status byte */
+    keys[1], vels[1],
+    /* note off with status byte */
+    0x80 + chan[0],
+    keys[0], vels[2],
+    /* reset, real time message, does not affect running status */
+    0xff,
+    /* note off, running status byte */
+    keys[1], vels[3],
+    /* note off with status byte, because of different channel */
+    0x80 + chan[1],
+    keys[0], vels[4],
+    0
+  };
   size_t bytes = 0;
 
-  messages[0].next = &(messages[1]);
-  messages[1].next = &(messages[2]);
-  messages[2].next = &(messages[3]);
-  messages[3].next = &(messages[4]);
-  messages[4].next = &(messages[5]);
-  messages[5].next = NULL;
-
+  messages[0].next  = &(messages[1]);
+  messages[1].next  = &(messages[2]);
+  messages[2].next  = &(messages[3]);
+  messages[3].next  = &(messages[4]);
+  messages[4].next  = &(messages[5]);
+  messages[5].next  = NULL;
+  messages[6].next  = &(messages[7]);
+  messages[7].next  = &(messages[8]);
+  messages[8].next  = &(messages[9]);
+  messages[9].next  = &(messages[10]);
+  messages[10].next = &(messages[11]);
+  messages[11].next = NULL;
+  
   messages[0].message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
   messages[1].message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
   messages[2].message = MIDIMessageCreate( MIDI_STATUS_NOTE_OFF );
   messages[3].message = MIDIMessageCreate( MIDI_STATUS_RESET );
   messages[4].message = MIDIMessageCreate( MIDI_STATUS_NOTE_OFF );
-  messages[5].message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
+  messages[5].message = MIDIMessageCreate( MIDI_STATUS_NOTE_OFF );
+  
+  messages[6].message  = MIDIMessageCreate( MIDI_STATUS_CHANNEL_PRESSURE );
+  messages[7].message  = MIDIMessageCreate( MIDI_STATUS_PITCH_WHEEL_CHANGE );
+  messages[8].message  = MIDIMessageCreate( MIDI_STATUS_ACTIVE_SENSING );
+  messages[9].message  = MIDIMessageCreate( MIDI_STATUS_CONTROL_CHANGE );
+  messages[10].message = MIDIMessageCreate( MIDI_STATUS_START );
+  messages[11].message = MIDIMessageCreate( MIDI_STATUS_STOP );
+  
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[0].message, MIDI_CHANNEL, sizeof(MIDIChannel), &(chan[0]) ),
+                   "Could not set channel of message 0." );
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[0].message, MIDI_KEY, sizeof(MIDIKey), &(keys[0]) ),
+                   "Could not set key of message 0." );
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[0].message, MIDI_VELOCITY, sizeof(MIDIVelocity), &(vels[0]) ),
+                   "Could not set velocity of message 0." );
 
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[1].message, MIDI_CHANNEL, sizeof(MIDIChannel), &(chan[0]) ),
+                   "Could not set channel of message 1." );
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[1].message, MIDI_KEY, sizeof(MIDIKey), &(keys[1]) ),
+                   "Could not set key of message 1." );
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[1].message, MIDI_VELOCITY, sizeof(MIDIVelocity), &(vels[1]) ),
+                   "Could not set velocity of message 1." );
+
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[2].message, MIDI_CHANNEL, sizeof(MIDIChannel), &(chan[0]) ),
+                   "Could not set channel of message 2." );
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[2].message, MIDI_KEY, sizeof(MIDIKey), &(keys[0]) ),
+                   "Could not set key of message 2." );
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[2].message, MIDI_VELOCITY, sizeof(MIDIVelocity), &(vels[2]) ),
+                   "Could not set velocity of message 2." );
+
+  /* Reset message is real-time, has no properties. */
+
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[4].message, MIDI_CHANNEL, sizeof(MIDIChannel), &(chan[0]) ),
+                   "Could not set channel of message 4." );
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[4].message, MIDI_KEY, sizeof(MIDIKey), &(keys[1]) ),
+                   "Could not set key of message 4." );
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[4].message, MIDI_VELOCITY, sizeof(MIDIVelocity), &(vels[3]) ),
+                   "Could not set velocity of message 4." );
+
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[5].message, MIDI_CHANNEL, sizeof(MIDIChannel), &(chan[1]) ),
+                   "Could not set channel of message 5." );
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[5].message, MIDI_KEY, sizeof(MIDIKey), &(keys[0]) ),
+                   "Could not set key of message 5." );
+  ASSERT_NO_ERROR( MIDIMessageSet( messages[5].message, MIDI_VELOCITY, sizeof(MIDIVelocity), &(vels[4]) ),
+                   "Could not set velocity of message 5." );
+                   
   ASSERT_NO_ERROR( MIDIMessageEncodeList( &(messages[0]), sizeof(buffer), &(buffer[0]), &bytes ),
                    "Could not encode message list." );
+
+  ASSERT_EQUAL( bytes, 14, "Wrote unexpected number of bytes." );
+  ASSERT_EQUAL( memcmp( buffer, expect, 32 ), 0, "Encoded message has unexpected format." );
+  
+  ASSERT_NO_ERROR( MIDIMessageDecodeList( &(messages[6]), sizeof(expect), &(expect[0]), &bytes ),
+                  "Could not decode message list." );
+
+  ASSERT_NO_ERROR( MIDIMessageGet( messages[6].message, MIDI_STATUS, sizeof(MIDIStatus), &status ),
+                   "Could not get status of out message 0." );
+  ASSERT_NO_ERROR( MIDIMessageGet( messages[6].message, MIDI_CHANNEL, sizeof(MIDIChannel), &channel ),
+                   "Could not get channel of out message 0." );
+  ASSERT_NO_ERROR( MIDIMessageGet( messages[6].message, MIDI_KEY, sizeof(MIDIKey), &key ),
+                   "Could not get key of out message 0." );
+  ASSERT_NO_ERROR( MIDIMessageGet( messages[6].message, MIDI_VELOCITY, sizeof(MIDIVelocity), &velocity ),
+                   "Could not get velocity of out message 0." );
+
+  ASSERT_EQUAL( status,   MIDI_STATUS_NOTE_ON, "Message 0 has wrong status." );
+  ASSERT_EQUAL( channel,  MIDI_CHANNEL_8, "Message 0 has wrong channel." );
+  ASSERT_EQUAL( key,      keys[0], "Message 0 has wrong key." );
+  ASSERT_EQUAL( velocity, vels[0], "Message 0 has wrong velocity." );
+  
+  ASSERT_NO_ERROR( MIDIMessageGet( messages[7].message, MIDI_STATUS, sizeof(MIDIStatus), &status ),
+                   "Could not get status of out message 1." );
+  ASSERT_NO_ERROR( MIDIMessageGet( messages[7].message, MIDI_CHANNEL, sizeof(MIDIChannel), &channel ),
+                   "Could not get channel of out message 1." );
+  ASSERT_NO_ERROR( MIDIMessageGet( messages[7].message, MIDI_KEY, sizeof(MIDIKey), &key ),
+                   "Could not get key of out message 1." );
+  ASSERT_NO_ERROR( MIDIMessageGet( messages[7].message, MIDI_VELOCITY, sizeof(MIDIVelocity), &velocity ),
+                   "Could not get velocity of out message 1." );
+
+  ASSERT_EQUAL( status,   MIDI_STATUS_NOTE_ON, "Message 1 has wrong status." );
+  ASSERT_EQUAL( channel,  MIDI_CHANNEL_8, "Message 1 has wrong channel." );
+  ASSERT_EQUAL( key,      keys[1], "Message 1 has wrong key." );
+  ASSERT_EQUAL( velocity, vels[1], "Message 1 has wrong velocity." );
 
   MIDIMessageRelease( messages[0].message );
   MIDIMessageRelease( messages[1].message );
@@ -122,5 +234,12 @@ int test006_message( void ) {
   MIDIMessageRelease( messages[3].message );
   MIDIMessageRelease( messages[4].message );
   MIDIMessageRelease( messages[5].message );
+  
+  MIDIMessageRelease( messages[6].message );
+  MIDIMessageRelease( messages[7].message );
+  MIDIMessageRelease( messages[8].message );
+  MIDIMessageRelease( messages[9].message );
+  MIDIMessageRelease( messages[10].message );
+  MIDIMessageRelease( messages[11].message );
   return 0;
 }
