@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include "message_queue.h"
-#include "message.h"
 
 /**
  * Queue for MIDI message objects.
@@ -142,7 +141,11 @@ int MIDIMessageQueuePush( struct MIDIMessageQueue * queue, struct MIDIMessage * 
  */
 int MIDIMessageQueuePeek( struct MIDIMessageQueue * queue, struct MIDIMessage ** message ) {
   if( message == NULL ) return 1;
-  *message = queue->first->message;
+  if( queue->first != NULL ) {
+    *message = queue->first->message;
+  } else {
+    *message = NULL;
+  }
   return 0;
 }
 
@@ -162,6 +165,7 @@ int MIDIMessageQueuePop( struct MIDIMessageQueue * queue, struct MIDIMessage ** 
     *message     = item->message;
     queue->first = item->next;
     queue->length--;
+    free( item );
   } else {
     *message = NULL;
   }

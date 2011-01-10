@@ -119,6 +119,22 @@ static void _timespec_sub( struct timespec * lhs, struct timespec * rhs ) {
  /*printf( "=> %ld.%06lds\n", lhs->tv_sec, lhs->tv_nsec );*/
 }
 
+static void _timespec_get( struct timespec * ts ) {
+  struct timeval  tv = { 0, 0 };
+  gettimeofday( &tv, NULL );
+  ts->tv_sec  = tv.tv_sec;
+  ts->tv_nsec = tv.tv_usec * 1000;
+}
+
+static void _timespec_elapsed( struct timespec * ts ) {
+  struct timeval  tv = { 0, 0 };
+  struct timespec td = { ts->tv_sec, ts->tv_nsec };
+  gettimeofday( &tv, NULL );
+  ts->tv_sec  = tv.tv_sec;
+  ts->tv_nsec = tv.tv_usec * 1000;
+  _timespec_sub( ts, &td );
+}
+
 static int _source_reset_remain( struct MIDIRunloopSource * source ) {
   source->remain.tv_sec  = source->timeout.tv_sec;
   source->remain.tv_nsec = source->timeout.tv_nsec;
@@ -126,7 +142,7 @@ static int _source_reset_remain( struct MIDIRunloopSource * source ) {
 }
 
 int MIDIRunloopSourceWait( struct MIDIRunloopSource * source ) {
-  int result = 0;
+  int result = 0, idle = 1;
   struct timeval  tv = { 0, 0 };
   struct timespec ts = { 0, 0 };
   fd_set readfds;
@@ -139,24 +155,23 @@ int MIDIRunloopSourceWait( struct MIDIRunloopSource * source ) {
 
     _cpy_fds( &readfds, &(source->readfds), source->nfds );
     _cpy_fds( &writefds, &(source->writefds), source->nfds );
-
+    _timespec_get( &ts );
     result = select( source->nfds, &readfds, &writefds, NULL, &tv );
     if( result > 0 ) {
-      source->remain.tv_sec  = source->timeout.tv_sec;
-      source->remain.tv_nsec = source->timeout.tv_nsec;
       result = 0;
       if( source->read != NULL && _check_fds( &readfds, source->nfds ) ) {
+        idle = 0;
         result += (source->read)( source->info, source->nfds, &readfds );
       }
       if( source->write != NULL && _check_fds( &writefds, source->nfds ) ) {
+        idle = 0;
         result += (source->write)( source->info, source->nfds, &writefds );
       }
-      return result;
-    } else if( result == 0 && source->idle != NULL ) {
+    }
+    if( idle && source->idle != NULL ) {
+      _timespec_elapsed( &ts );
       _source_reset_remain( source );
-      ts.tv_sec  = source->timeout.tv_sec;
-      ts.tv_nsec = source->timeout.tv_nsec;
-      return (source->idle)( source->info, &ts );
+      result += (source->idle)( source->info, &ts );
     }
   } else if( source->timeout.tv_sec > 0 || source->timeout.tv_nsec > 0 ) {
     /* nanosleep */
@@ -166,10 +181,10 @@ int MIDIRunloopSourceWait( struct MIDIRunloopSource * source ) {
       ts.tv_nsec = source->timeout.tv_nsec;
       _timespec_sub( &ts, &(source->remain) );
       _source_reset_remain( source );
-      return (source->idle)( source->info, &ts );
+      result += (source->idle)( source->info, &ts );
     }
   }
-  return 0;
+  return result;
 }
 
 struct MIDIRunloop {
@@ -180,19 +195,13 @@ struct MIDIRunloop {
   struct MIDIRunloopSource * sources[MAX_RUNLOOP_SOURCES];
 };
 
-static int _runloop_get_elapsed_time( struct MIDIRunloop * runloop, struct timespec * ts ) {
-  struct timeval  tv = { 0, 0 };
-  struct timespec df = { runloop->ts.tv_sec, runloop->ts.tv_nsec };
-  gettimeofday( &tv, NULL );
-  runloop->ts.tv_sec  = tv.tv_sec;
-  runloop->ts.tv_nsec = tv.tv_usec * 1000;
+static void _runloop_get_elapsed_time( struct MIDIRunloop * runloop, struct timespec * ts ) {
   if( ts != NULL ) {
     ts->tv_sec  = runloop->ts.tv_sec;
     ts->tv_nsec = runloop->ts.tv_nsec;
-    _timespec_sub( ts, &df );
-    /* printf( "elapsed: %i.%06i sec\n", (int) ts->tv_sec, (int) ts->tv_nsec ); */
+    _timespec_elapsed( ts );
   }
-  return 0;
+  _timespec_get( &(runloop->ts) );
 }
 
 static int _source_check_idle( struct MIDIRunloopSource * source, struct timespec * ts ) {
@@ -213,7 +222,7 @@ static int _runloop_master_read( void * rl, int nfds, fd_set * readfds ) {
   struct MIDIRunloop * runloop = rl;
   struct MIDIRunloopSource * source;
   struct timespec ts = { 0, 0 };
-  
+
   /* update internal idle timer(s) */
   _runloop_get_elapsed_time( runloop, &ts );
   
@@ -365,15 +374,13 @@ int MIDIRunloopAddSource( struct MIDIRunloop * runloop, struct MIDIRunloopSource
       runloop->master.nfds = source->nfds;
     }
   }
-  if( source->idle != NULL ) {
-    runloop->master.idle = &_runloop_master_idle;
-  }
   if( source->read != NULL ) {
     runloop->master.read = &_runloop_master_read;
   }
   if( source->write != NULL ) {
     runloop->master.write = &_runloop_master_write;
   }
+  runloop->master.idle = &_runloop_master_idle;
   /*printf( "master timeout %lu sec + %lu nsec\nnfds: %i\n", runloop->master.timeout.tv_sec, runloop->master.timeout.tv_nsec, runloop->master.nfds );*/
   return 0;
 }

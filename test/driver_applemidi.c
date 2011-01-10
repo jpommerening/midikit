@@ -180,7 +180,7 @@ int test003_applemidi( void ) {
 
   /* answer sync request */
   _fillin_sync( &(buf[0]), 1 );
-  ASSERT_EQUAL( 36, sendto( client_rtp_socket, &(buf[0]), 36, 0,
+  ASSERT_EQUAL( 36, sendto( client_rtp_socket, &(buf[0]), sizeof(buf), 0,
                 (struct sockaddr *) &server_addr, sizeof(server_addr) ), "Could not send sync." );
  
   ASSERT_NO_ERROR( MIDIDriverAppleMIDIGetRunloopSource( driver, &source ), "Could not recreate runloop source." );
@@ -188,15 +188,52 @@ int test003_applemidi( void ) {
 
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
-  source->write = NULL;
+  ASSERT_EQUAL( 36, recv( client_rtp_socket, &(buf[0]), sizeof(buf), 0), "Did not receive synchronization answer." );
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
-  source->read = NULL;
-  source->nfds = 0;
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
-  source->idle = NULL;
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
 
   MIDIRunloopRelease( runloop );
+  return 0;
+}
+
+/**
+ * Test that RTP MIDI messages can be sent.
+ */
+int test004_applemidi( void ) {
+  struct MIDIMessage * messages[3];
+  unsigned char buf[128];
+  MIDIChannel  channel = MIDI_CHANNEL_1;
+  MIDIKey      key = 66;
+  MIDIVelocity velocity = 104;
+  MIDIPressure pressure = 120;
+
+  messages[0] = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
+  messages[1] = MIDIMessageCreate( MIDI_STATUS_POLYPHONIC_KEY_PRESSURE );
+  messages[2] = MIDIMessageCreate( MIDI_STATUS_NOTE_OFF );
+  MIDIMessageSet( messages[0], MIDI_CHANNEL, sizeof(MIDIChannel), &channel );
+  MIDIMessageSet( messages[1], MIDI_CHANNEL, sizeof(MIDIChannel), &channel );
+  MIDIMessageSet( messages[2], MIDI_CHANNEL, sizeof(MIDIChannel), &channel );
+  MIDIMessageSet( messages[0], MIDI_KEY, sizeof(MIDIKey), &key );
+  MIDIMessageSet( messages[1], MIDI_KEY, sizeof(MIDIKey), &key );
+  MIDIMessageSet( messages[2], MIDI_KEY, sizeof(MIDIKey), &key );
+  MIDIMessageSet( messages[0], MIDI_VELOCITY, sizeof(MIDIVelocity), &velocity );
+  MIDIMessageSet( messages[1], MIDI_PRESSURE, sizeof(MIDIPressure), &pressure );
+  MIDIMessageSet( messages[2], MIDI_VELOCITY, sizeof(MIDIVelocity), &velocity );
+
+  ASSERT_NO_ERROR( MIDIDriverAppleMIDISendMessage( driver, messages[0] ), "Could not queue midi message 0." );
+  ASSERT_NO_ERROR( MIDIDriverAppleMIDISendMessage( driver, messages[1] ), "Could not queue midi message 1." );
+  ASSERT_NO_ERROR( MIDIDriverAppleMIDISendMessage( driver, messages[2] ), "Could not queue midi message 2." );
+  ASSERT_NO_ERROR( MIDIDriverAppleMIDISend( driver ), "Could not send queued messages." );
+
+  ASSERT_GREATER( recv( client_rtp_socket, &(buf[0]), sizeof(buf), 0 ), 0,
+                  "Could not received RTP MIDI packet from AppleMIDI driver." );
+
+  printf( "%02x %02x %02x %02x\n", buf[0], buf[1], buf[2], buf[3] );
+
+  MIDIMessageRelease( messages[0] );
+  MIDIMessageRelease( messages[1] );
+  MIDIMessageRelease( messages[2] );
   return 0;
 }
 

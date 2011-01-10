@@ -1,6 +1,7 @@
 #ifndef MIDIKIT_MIDI_MESSAGE_QUEUE_H
 #define MIDIKIT_MIDI_MESSAGE_QUEUE_H
 #include "midi.h"
+#include "message.h"
 
 struct MIDIMessage;
 struct MIDIMessageQueue;

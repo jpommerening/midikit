@@ -25,6 +25,7 @@ struct RTPMIDISession {
   size_t size;
   struct MIDIMessage ** message_buffer;
   struct RTPSession   * rtp_session;
+  struct RTPPacketInfo  rtp_info;
 };
 
 #pragma mark Creation and destruction
@@ -203,6 +204,12 @@ static int _rtpmidi_decode_header( struct RTPMIDIHeaderInfo * info, size_t size,
   return 0;
 }
 
+static int _list_length( struct MIDIMessageList * messages ) {
+  int i;
+  for( i=0; messages != NULL; i++ ) { messages = messages->next; }
+  return i;
+}
+
 /**
  * @brief Send MIDI messages over an RTPSession.
  * Broadcast the messages to all connected peers. Store the number of sent messages
@@ -222,22 +229,37 @@ static int _rtpmidi_decode_header( struct RTPMIDIHeaderInfo * info, size_t size,
 int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList * messages,
                         struct RTPPacketInfo * info ) {
   int m, result;
-  size_t size, written;
-  void * buffer;
+  size_t size = 200, written = 0;
+  void * buffer = malloc( 200 ); /* fix me, use global buffer */
+  unsigned char * buf;
   struct RTPMIDIHeaderInfo minfo;
   MIDIRunningStatus status;
   MIDITimestamp     timestamp;
   MIDIVarLen        time_diff;
 
+  if( info == NULL ) {
+    info = &(session->rtp_info);
+  }
+
+  MIDIMessageGetTimestamp( messages->message, &timestamp );
+
+  info->padding         = 0;
+  info->extension       = 0;
+  info->csrc_count      = 0;
+  info->marker          = 0;
+  info->payload_type    = 96;
+  info->sequence_number = 0; /* filled out by rtp */
+  info->timestamp       = timestamp;
+  info->payload_size    = 0;
+  info->payload         = buffer;
+
   minfo.journal = 0;
   minfo.phantom = 0;
   minfo.zero = 1;
-  minfo.messages = 0;
+  minfo.messages = _list_length( messages );
   
-  MIDIMessageGetTimestamp( messages->message, &timestamp );
-  info->timestamp = timestamp;
-
   _rtpmidi_encode_header( &minfo, size, buffer, &written );
+  _advance_buffer( &size, &buffer, written );
   for( m=0; (m<minfo.messages) && (size>0) && (messages!=NULL) && (messages->message!=NULL); m++ ) {
     MIDIMessageGetTimestamp( messages->message, &timestamp );
     time_diff = timestamp - info->timestamp;
@@ -249,9 +271,16 @@ int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList 
     _advance_buffer( &size, &buffer, written );
     messages = messages->next;
   }
-  result = RTPSessionSendPacket( session->rtp_session, info );
+  info->payload_size = buffer - info->payload;
 
-  return 0;
+  result = RTPSessionSend( session->rtp_session, info->payload_size, info->payload, info );
+
+  for( m=0; m<info->payload_size; m+=8 ) {
+    buf = info->payload + m;
+    printf( "%02x %02x %02x %02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7] );
+  }
+  free( info->payload ); /* fix me, use global buffer */
+  return result;
 }
 
 
