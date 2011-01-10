@@ -827,7 +827,7 @@ static int _applemidi_read_fds( void * drv, int nfds, fd_set * readfds ) {
         result += _applemidi_respond( driver, fd, &command );
       }
     } else {
-      result += RTPMIDISessionReceive( driver->rtpmidi_session, 0, NULL, NULL, NULL );
+      result += RTPMIDISessionReceive( driver->rtpmidi_session, NULL, NULL );
     }
   }
   

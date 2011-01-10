@@ -30,13 +30,15 @@ struct MIDIMessage {
  */
 struct MIDIMessage * MIDIMessageCreate( MIDIStatus status ) {
   struct MIDIMessage * message;
-  struct MIDIMessageFormat * format;
+  struct MIDIMessageFormat * format = NULL;
   MIDITimestamp timestamp = 0;
   int i;
 
-  format = MIDIMessageFormatForStatus( status );
-  if( format == NULL ) {
-    return NULL;
+  if( status != 0 ) {
+    format = MIDIMessageFormatForStatus( status );
+    if( format == NULL ) {
+      return NULL;
+    }
   }
   message = malloc( sizeof( struct MIDIMessage ) );
   if( message == NULL ) {
@@ -49,7 +51,9 @@ struct MIDIMessage * MIDIMessageCreate( MIDIStatus status ) {
   }
   message->data.size = 0;
   message->data.data = NULL;
-  MIDIMessageSetStatus( message, status );
+  if( status != 0 ) {
+    MIDIMessageSetStatus( message, status );
+  }
   MIDIMessageSetTimestamp( message, timestamp );
   return message;
 }

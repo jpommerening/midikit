@@ -1,14 +1,13 @@
 #ifndef MIDIKIT_MIDI_MESSAGE_FORMAT_H
 #define MIDIKIT_MIDI_MESSAGE_FORMAT_H
-#include <stdint.h>
 #include "midi.h"
 
 #define MIDI_MESSAGE_DATA_BYTES 4
 
 struct MIDIMessageData {
-  uint8_t bytes[MIDI_MESSAGE_DATA_BYTES];
-  size_t  size;
-  void *  data;
+  unsigned char bytes[MIDI_MESSAGE_DATA_BYTES];
+  size_t size;
+  void * data;
 };
 
 struct MIDIMessageFormat * MIDIMessageFormatDetect( void * buffer );

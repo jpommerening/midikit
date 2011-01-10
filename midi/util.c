@@ -3,15 +3,15 @@
 
 /**
  * @brief Read an encoded number with a variable number of bytes.
- * @param buffer The buffer to read from.
- * @param size   The number of available bytes in the buffer.
  * @param value  The location to store the read number in.
+ * @param size   The number of available bytes in the buffer.
+ * @param buffer The buffer to read from.
  * @param read   The location to store the number of read bytes in.
  *               (may be @c NULL)
  * @retval 0 on success.
  * @retval >0 if the number could not be read.
  */
-int MIDIUtilReadVarLen( unsigned char * buffer, size_t size, MIDIVarLen * value, size_t * read ) {
+int MIDIUtilReadVarLen( MIDIVarLen * value, size_t size, unsigned char * buffer, size_t * read ) {
   MIDIVarLen v = 0;
   size_t p = 0;
   if( buffer == NULL || value == NULL ) return 1;
@@ -27,15 +27,15 @@ int MIDIUtilReadVarLen( unsigned char * buffer, size_t size, MIDIVarLen * value,
 
 /**
  * @brief Write a number encoding it with a variable number of bytes.
- * @param buffer  The buffer to write to.
- * @param size    The number of available bytes in the buffer.
  * @param value   The location to read the number from.
+ * @param size    The number of available bytes in the buffer.
+ * @param buffer  The buffer to write to.
  * @param written The location to store the number of written bytes in.
  *               (may be @c NULL)
  * @retval 0 on success.
  * @retval >0 if the number could not be read.
  */
-int MIDIUtilWriteVarLen( unsigned char * buffer, size_t size, MIDIVarLen * value, size_t * written ) {
+int MIDIUtilWriteVarLen( MIDIVarLen * value, size_t size, unsigned char * buffer, size_t * written ) {
   MIDIVarLen v = 0;
   unsigned char tmp[4] = { 0x80, 0x80, 0x80, 0x00 };
   size_t p = 0, q = 0;

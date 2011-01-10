@@ -3,8 +3,8 @@
 #include <sys/select.h>
 
 typedef unsigned int MIDIVarLen;
-int MIDIUtilReadVarLen( unsigned char * buffer, size_t bytes, MIDIVarLen * value, size_t * read );
-int MIDIUtilWriteVarLen( unsigned char * buffer, size_t bytes, MIDIVarLen * value, size_t * written );
+int MIDIUtilReadVarLen( MIDIVarLen * value, size_t size, unsigned char * buffer, size_t * read );
+int MIDIUtilWriteVarLen( MIDIVarLen * value, size_t size, unsigned char * buffer, size_t * written );
 
 struct MIDIRunloopSource {
   int nfds;

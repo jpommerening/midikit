@@ -35,6 +35,7 @@
 		5924AA5412932186004F9C67 /* message_format.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307CC129320B40067DE03 /* message_format.c */; };
 		5924AA5512932186004F9C67 /* message.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307CD129320B40067DE03 /* message.c */; };
 		5924AA5612932186004F9C67 /* midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307CE129320B40067DE03 /* midi.c */; };
+		5925267412D8FB65007B556D /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048B912A95E56001B597E /* util.c */; };
 		59452C8812C2CA08002031F2 /* osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 59452C8512C2CA08002031F2 /* osc.c */; };
 		59452C8912C2CA08002031F2 /* osc.h in Headers */ = {isa = PBXBuildFile; fileRef = 59452C8612C2CA08002031F2 /* osc.h */; };
 		59452C8D12C2CA23002031F2 /* rtpmidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 59452C8B12C2CA23002031F2 /* rtpmidi.c */; };
@@ -58,7 +59,6 @@
 		59BCAB6112D790450019B148 /* driver_applemidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 59BCAB5F12D7903E0019B148 /* driver_applemidi.c */; };
 		59BCAB6212D790510019B148 /* message_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3512AB8C3700DCFEAF /* message_queue.c */; };
 		59DE6B3312AB85BD00DCFEAF /* rtp.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3212AB85BD00DCFEAF /* rtp.c */; };
-		59DE6B3712AB8DF700DCFEAF /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048B912A95E56001B597E /* util.c */; };
 		59DE6B3A12ABCBD100DCFEAF /* cfintegration.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3812ABCBD100DCFEAF /* cfintegration.c */; };
 		59DE6B3B12ABCBD100DCFEAF /* cfintegration.h in Headers */ = {isa = PBXBuildFile; fileRef = 59DE6B3912ABCBD100DCFEAF /* cfintegration.h */; };
 		59DE6B3D12B01C0D00DCFEAF /* applemidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3C12B01C0D00DCFEAF /* applemidi.c */; };
@@ -541,6 +541,7 @@
 				59452C8812C2CA08002031F2 /* osc.c in Sources */,
 				59452C8D12C2CA23002031F2 /* rtpmidi.c in Sources */,
 				5922184012D0A137001FC0AB /* coremidi.c in Sources */,
+				5925267412D8FB65007B556D /* util.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -557,7 +558,6 @@
 				5924AA5512932186004F9C67 /* message.c in Sources */,
 				5924AA5612932186004F9C67 /* midi.c in Sources */,
 				59A048BD12A95E5D001B597E /* util.c in Sources */,
-				59DE6B3712AB8DF700DCFEAF /* util.c in Sources */,
 				59DE6B4312B808FB00DCFEAF /* driver_rtp.c in Sources */,
 				59460C3412932833001C2C13 /* main.c in Sources */,
 				59BCAB5D12D790320019B148 /* runloop.c in Sources */,

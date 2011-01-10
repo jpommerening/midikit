@@ -147,12 +147,12 @@ int test006_message( void ) {
   messages[4].message = MIDIMessageCreate( MIDI_STATUS_NOTE_OFF );
   messages[5].message = MIDIMessageCreate( MIDI_STATUS_NOTE_OFF );
   
-  messages[6].message  = MIDIMessageCreate( MIDI_STATUS_CHANNEL_PRESSURE );
-  messages[7].message  = MIDIMessageCreate( MIDI_STATUS_PITCH_WHEEL_CHANGE );
-  messages[8].message  = MIDIMessageCreate( MIDI_STATUS_ACTIVE_SENSING );
-  messages[9].message  = MIDIMessageCreate( MIDI_STATUS_CONTROL_CHANGE );
-  messages[10].message = MIDIMessageCreate( MIDI_STATUS_START );
-  messages[11].message = MIDIMessageCreate( MIDI_STATUS_STOP );
+  messages[6].message  = MIDIMessageCreate( 0 );
+  messages[7].message  = MIDIMessageCreate( 0 );
+  messages[8].message  = MIDIMessageCreate( 0 );
+  messages[9].message  = MIDIMessageCreate( 0 );
+  messages[10].message = MIDIMessageCreate( 0 );
+  messages[11].message = MIDIMessageCreate( 0 );
   
   ASSERT_NO_ERROR( MIDIMessageSet( messages[0].message, MIDI_CHANNEL, sizeof(MIDIChannel), &(chan[0]) ),
                    "Could not set channel of message 0." );

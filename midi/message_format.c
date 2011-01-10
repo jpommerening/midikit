@@ -31,7 +31,7 @@ struct MIDIMessageFormat {
   int (*decode)( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * read );
 };
 
-#define VOID_BYTE( buffer, n ) ((uint8_t*)buffer)[n]
+#define VOID_BYTE( buffer, n ) ((unsigned char*)buffer)[n]
 
 #pragma mark Encoding & decoding
 /**
@@ -285,7 +285,7 @@ static int _test_tune_request( void * buffer ) {
 }
 
 static int _test_real_time( void * buffer ) {
-  uint8_t byte = VOID_BYTE(buffer,0);
+  unsigned char byte = VOID_BYTE(buffer,0);
   if( byte >= MIDI_STATUS_TIMING_CLOCK &&
       byte <= MIDI_STATUS_RESET ) {
     return ( byte != MIDI_STATUS_UNDEFINED2 )
@@ -351,7 +351,7 @@ static int _test_real_time( void * buffer ) {
  * @retval 1 if the property was not set.
  */
 static int _set_note_off_on( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -374,7 +374,7 @@ static int _set_note_off_on( struct MIDIMessageData * data, MIDIProperty propert
  * @retval 1 if the value was not set.
  */
 static int _get_note_off_on( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -397,7 +397,7 @@ static int _get_note_off_on( struct MIDIMessageData * data, MIDIProperty propert
  * @retval 1 if the property was not set.
  */
 static int _set_polyphonic_key_pressure( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -420,7 +420,7 @@ static int _set_polyphonic_key_pressure( struct MIDIMessageData * data, MIDIProp
  * @retval 1 if the value was not set.
  */
 static int _get_polyphonic_key_pressure( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -443,7 +443,7 @@ static int _get_polyphonic_key_pressure( struct MIDIMessageData * data, MIDIProp
  * @retval 1 if the property was not set.
  */
 static int _set_control_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -466,7 +466,7 @@ static int _set_control_change( struct MIDIMessageData * data, MIDIProperty prop
  * @retval 1 if the value was not set.
  */
 static int _get_control_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -489,7 +489,7 @@ static int _get_control_change( struct MIDIMessageData * data, MIDIProperty prop
  * @retval 1 if the property was not set.
  */
 static int _set_program_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -511,7 +511,7 @@ static int _set_program_change( struct MIDIMessageData * data, MIDIProperty prop
  * @retval 1 if the value was not set.
  */
 static int _get_program_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -533,7 +533,7 @@ static int _get_program_change( struct MIDIMessageData * data, MIDIProperty prop
  * @retval 1 if the property was not set.
  */
 static int _set_channel_pressure( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -555,7 +555,7 @@ static int _set_channel_pressure( struct MIDIMessageData * data, MIDIProperty pr
  * @retval 1 if the value was not set.
  */
 static int _get_channel_pressure( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -577,7 +577,7 @@ static int _get_channel_pressure( struct MIDIMessageData * data, MIDIProperty pr
  * @retval 1 if the property was not set.
  */
 static int _set_pitch_wheel_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_SET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -604,7 +604,7 @@ static int _set_pitch_wheel_change( struct MIDIMessageData * data, MIDIProperty 
  * @retval 1 if the value was not set.
  */
 static int _get_pitch_wheel_change( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET_H(MIDI_STATUS,MIDIStatus,m[0]);
@@ -635,7 +635,7 @@ static int _set_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
     PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,data->bytes[0]);
     PROPERTY_CASE_SET(MIDI_MANUFACTURER_ID,MIDIManufacturerId,data->bytes[1]);
     PROPERTY_CASE_SET(MIDI_SYSEX_SIZE,size_t,data->size);
-    PROPERTY_CASE_SET(MIDI_SYSEX_FRAGMENT,uint8_t,data->bytes[2]);
+    PROPERTY_CASE_SET(MIDI_SYSEX_FRAGMENT,unsigned char,data->bytes[2]);
     PROPERTY_CASE_BASE(MIDI_SYSEX_DATA,void**);
       if( data->data != NULL && data->bytes[3] == 1 ) free( data->data );
       data->data = *((void**)value);
@@ -671,7 +671,7 @@ static int _get_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
     PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,data->bytes[0]);
     PROPERTY_CASE_GET(MIDI_MANUFACTURER_ID,MIDIManufacturerId,data->bytes[1]);
     PROPERTY_CASE_GET(MIDI_SYSEX_SIZE,size_t,data->size);
-    PROPERTY_CASE_GET(MIDI_SYSEX_FRAGMENT,uint8_t,data->bytes[2]);
+    PROPERTY_CASE_GET(MIDI_SYSEX_FRAGMENT,unsigned char,data->bytes[2]);
     PROPERTY_CASE_BASE(MIDI_SYSEX_DATA,void**);
       *((void**)value) = data->data;
       return 0;
@@ -696,7 +696,7 @@ static int _get_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
  * @retval 1 if the property was not set.
  */
 static int _set_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
@@ -718,7 +718,7 @@ static int _set_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProp
  * @retval 1 if the value was not set.
  */
 static int _get_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,m[0]);
@@ -740,7 +740,7 @@ static int _get_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProp
  * @retval 1 if the property was not set.
  */
 static int _set_song_position_pointer( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
@@ -766,7 +766,7 @@ static int _set_song_position_pointer( struct MIDIMessageData * data, MIDIProper
  * @retval 1 if the value was not set.
  */
 static int _get_song_position_pointer( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,m[0]);
@@ -791,7 +791,7 @@ static int _get_song_position_pointer( struct MIDIMessageData * data, MIDIProper
  * @retval 1 if the property was not set.
  */
 static int _set_song_select( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
@@ -812,7 +812,7 @@ static int _set_song_select( struct MIDIMessageData * data, MIDIProperty propert
  * @retval 1 if the value was not set.
  */
 static int _get_song_select( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,m[0]);
@@ -848,7 +848,7 @@ static int _set_tune_request( struct MIDIMessageData * data, MIDIProperty proper
  * @retval 1 if the property was not set.
  */
 static int _set_real_time( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
@@ -868,7 +868,7 @@ static int _set_real_time( struct MIDIMessageData * data, MIDIProperty property,
  * @retval 1 if the value was not set.
  */
 static int _get_tune_request_real_time( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value ) {
-  uint8_t * m = &(data->bytes[0]);
+  unsigned char * m = &(data->bytes[0]);
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,m[0]);
@@ -1079,7 +1079,7 @@ struct MIDIMessageFormat * MIDIMessageFormatDetectRunningStatus( void * buffer, 
  *         status is not an allowed MIDIStatus.
  */
 struct MIDIMessageFormat * MIDIMessageFormatForStatus( MIDIStatus status ) {
-  uint8_t byte;
+  unsigned char byte;
   if( status >= 0x80 ) {
     byte = status;
     if( byte < 0xf0 ) return NULL; /* messed up channel status? */
