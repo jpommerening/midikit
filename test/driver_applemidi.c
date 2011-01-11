@@ -169,7 +169,7 @@ int test002_applemidi( void ) {
 int test003_applemidi( void ) {
   struct MIDIRunloopSource * source;
   struct MIDIRunloop * runloop;
-  unsigned char buf[36];
+  unsigned char buf[36] = { 0 };
 
   runloop = MIDIRunloopCreate();
   ASSERT_NOT_EQUAL( runloop, NULL, "Could not create runloop." );
