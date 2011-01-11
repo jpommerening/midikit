@@ -105,6 +105,8 @@ int _applemidi_init_runloop_source( struct MIDIDriverAppleMIDI * driver ) {
   }
   source->timeout.tv_sec  = 1;
   source->timeout.tv_nsec = 0;
+  source->remain.tv_sec  = 1;
+  source->remain.tv_nsec = 0;
   source->info = driver;
 
   source->read  = NULL;
@@ -171,13 +173,15 @@ static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
 static int _applemidi_endsession( struct MIDIDriverAppleMIDI *, int, socklen_t, struct sockaddr * );
 
 static int _applemidi_disconnect_peer( struct MIDIDriverAppleMIDI * driver, struct RTPPeer * peer ) {
-  struct sockaddr * addr;
+  int result = 0;
+  struct sockaddr * addr = NULL;
   socklen_t size;
-  if( RTPPeerGetAddress( peer, &size, &addr ) ) {
+  if( RTPPeerGetAddress( peer, &size, &addr ) || addr == NULL ) {
     return 1;
   }
-  return RTPSessionRemovePeer( driver->rtp_session, peer )
-       + _applemidi_endsession( driver, driver->control_socket, size, addr );
+  result = _applemidi_endsession( driver, driver->control_socket, size, addr );
+  RTPSessionRemovePeer( driver->rtp_session, peer );
+  return result;
 }
 
 static int _applemidi_disconnect( struct MIDIDriverAppleMIDI * driver, int fd ) {
@@ -254,11 +258,11 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned sh
  * @param driver The driver.
  */
 void MIDIDriverAppleMIDIDestroy( struct MIDIDriverAppleMIDI * driver ) {
+  _applemidi_disconnect( driver, 0 );
   RTPMIDISessionRelease( driver->rtpmidi_session );
   RTPSessionRelease( driver->rtp_session );
   MIDIMessageQueueRelease( driver->in_queue );
   MIDIMessageQueueRelease( driver->out_queue );
-  _applemidi_disconnect( driver, 0 );
 }
 
 /**

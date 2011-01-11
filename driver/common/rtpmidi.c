@@ -51,7 +51,7 @@ struct RTPMIDISession * RTPMIDISessionCreate( struct RTPSession * rtp_session ) 
   session->size = 16;
   session->message_buffer = malloc( sizeof( struct MIDIMessage * ) * session->size );
   if( session->message_buffer == NULL ) session->size = 0;
-  session->rtp_session    = rtp_session;
+  session->rtp_session = rtp_session;
   RTPSessionRetain( rtp_session );
   return session;
 }
@@ -64,7 +64,7 @@ struct RTPMIDISession * RTPMIDISessionCreate( struct RTPSession * rtp_session ) 
  * @param session The session.
  */
 void RTPMIDISessionDestroy( struct RTPMIDISession * session ) {
-  if( session->message_buffer == NULL ) {
+  if( session->message_buffer != NULL ) {
     free( session->message_buffer );
   }
   RTPSessionRelease( session->rtp_session );
@@ -232,9 +232,9 @@ int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList 
   size_t size = 200, written = 0;
   void * buffer = malloc( 200 ); /* fix me, use global buffer */
   struct RTPMIDIHeaderInfo minfo;
-  MIDIRunningStatus status;
-  MIDITimestamp     timestamp;
-  MIDIVarLen        time_diff;
+  MIDIRunningStatus status = 0;
+  MIDITimestamp     timestamp = 0;
+  MIDIVarLen        time_diff = 0;
 
   if( info == NULL ) {
     info = &(session->rtp_info);
