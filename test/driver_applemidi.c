@@ -202,7 +202,23 @@ int test003_applemidi( void ) {
  */
 int test004_applemidi( void ) {
   struct MIDIMessage * messages[3];
-  unsigned char buf[128];
+  unsigned char buffer[128];
+  unsigned char expect[128] = {
+    /* RTP header / seqnum, random */
+    0x80, 0x60, 0x00, 0x00,
+    /* timestamp, random */
+    0x00, 0x00, 0x00, 0x00,
+    /* SSRC */
+    0x00, 0x00, 0x00, 0x00,
+    /* MIDI header */
+    0x23,
+    /* MIDI payload */
+    0x00, 0x90, 0x42, 0x68,
+    0x00, 0xa0, 0x42, 0x78,
+    0x00, 0x80, 0x42, 0x68
+  };
+  unsigned long long ssrc;
+  size_t bytes;
   MIDIChannel  channel = MIDI_CHANNEL_1;
   MIDIKey      key = 66;
   MIDIVelocity velocity = 104;
@@ -226,10 +242,21 @@ int test004_applemidi( void ) {
   ASSERT_NO_ERROR( MIDIDriverAppleMIDISendMessage( driver, messages[2] ), "Could not queue midi message 2." );
   ASSERT_NO_ERROR( MIDIDriverAppleMIDISend( driver ), "Could not send queued messages." );
 
-  ASSERT_GREATER( recv( client_rtp_socket, &(buf[0]), sizeof(buf), 0 ), 0,
-                  "Could not received RTP MIDI packet from AppleMIDI driver." );
+  bytes = recv( client_rtp_socket, &(buffer[0]), sizeof(buffer), 0 );
+  ASSERT_GREATER( bytes, 13, "Could not received RTP MIDI packet from AppleMIDI driver." );
 
-  printf( "%02x %02x %02x %02x\n", buf[0], buf[1], buf[2], buf[3] );
+  for( int i=0; i<bytes; i++ ) {
+    if( (i+1)%8 == 0 || (i+1) == bytes ) {
+      printf( "0x%02x\n", buffer[i] );
+    } else {
+      printf( "0x%02x ", buffer[i] );
+    }
+  }
+
+  ssrc = ( buffer[8] )
+       | ( buffer[9] << 8 )
+       | ( buffer[10] << 16 )
+       | ( buffer[11] << 24 );
 
   MIDIMessageRelease( messages[0] );
   MIDIMessageRelease( messages[1] );

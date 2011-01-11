@@ -65,7 +65,7 @@ struct MIDIMessage * MIDIMessageCreate( MIDIStatus status ) {
  * @param message The message.
  */
 void MIDIMessageDestroy( struct MIDIMessage * message ) {
-  if( message->data.data != NULL && message->data.bytes[3] == 1 ) free( message->data.data );
+  if( message->data.data != NULL && ( message->data.bytes[3] & 1 ) ) free( message->data.data );
   free( message );
 }
 
@@ -194,7 +194,7 @@ int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t 
  * @param message The message.
  */
 static void _check_release_data( struct MIDIMessage * message ) {
-  if( message->data.data != NULL && message->data.bytes[3] == 1 ) {
+  if( message->data.data != NULL && ( message->data.bytes[3] & 1 ) ) {
     free( message->data.data );
     message->data.data = NULL;
   }

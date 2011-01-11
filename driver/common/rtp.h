@@ -59,8 +59,6 @@ int RTPSessionFindPeerByAddress( struct RTPSession * session, struct RTPPeer ** 
 
 int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * info );
 int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo * info );
-int RTPSessionSendToPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload, struct RTPPacketInfo * info );
-int RTPSessionReceiveFromPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload, struct RTPPacketInfo * info );
 int RTPSessionSend( struct RTPSession * session, size_t size, void * payload, struct RTPPacketInfo * info );
 int RTPSessionReceive( struct RTPSession * session, size_t size, void * payload, struct RTPPacketInfo * info );
 

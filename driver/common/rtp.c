@@ -333,6 +333,7 @@ int RTPPeerGetInfo( struct RTPPeer * peer, void ** info ) {
 
 static void _init_addr_with_socket( struct RTPAddress * address, int socket ) {
   address->ssrc = 0;
+  address->size = sizeof(address->addr);
   getsockname( socket, (struct sockaddr *) &(address->addr), &(address->size) );
 }
 
@@ -757,7 +758,9 @@ static int RTPEncodePacket( struct RTPPacketInfo * info, size_t size, void * dat
   if( info->payload_size > 0 && info->payload != NULL ) {
     memcpy( data+ext_header_size, info->payload, info->payload_size );
   //memset( data+data_size, 0, info->padding-1 ); // should be ignored
-    buffer[total_size-1] = info->padding;
+    if( info->padding ) {
+      buffer[total_size-1] = info->padding;
+    }
   }
   return 0;
 }
@@ -874,6 +877,8 @@ int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * in
   } else if( msg.msg_flags != 0 ) {
     return 1;
   } else {
+    info->peer->out_seqnum    = info->sequence_number;
+    info->peer->out_timestamp = info->timestamp;
     return 0;
   }
 }
@@ -918,49 +923,9 @@ int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo *
     RTPSessionAddPeer( session, info->peer );
     RTPPeerRelease( info->peer );
   }
+  info->peer->in_seqnum    = info->sequence_number;
+  info->peer->in_timestamp = info->timestamp;
   return 0;
-}
-
-/**
- * @brief Send an RTP packet.
- * Shorthand for initializing the packet info structure.
- * @public @memberof RTPSession
- * @param session The session.
- * @param info The packet info.
- * @retval 0 On success.
- * @retval >0 If the message could not be sent.
- */
-int RTPSessionSendToPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload,
-                          struct RTPPacketInfo * info ) {
-  int result;
-  info->peer          = peer;
-  info->payload_size  = size;
-  info->payload       = payload;
-  result = RTPSessionSendPacket( session, info );
-  peer->out_seqnum    = info->sequence_number;
-  peer->out_timestamp = info->timestamp;
-  return result;
-}
-
-/**
- * @brief Receive an RTP packet.
- * Shorthand for initializing the packet info structure.
- * @public @memberof RTPSession
- * @param session The session.
- * @param info The packet info.
- * @retval 0 On success.
- * @retval >0 If the message could not be received.
- */
-int RTPSessionReceiveFromPeer( struct RTPSession * session, struct RTPPeer * peer, size_t size, void * payload,
-                               struct RTPPacketInfo * info ) {
-  int result;
-  info->peer         = NULL;
-  info->payload_size = 0;
-  info->payload      = NULL;
-  result = RTPSessionReceivePacket( session, info );
-  peer->in_seqnum    = info->sequence_number;
-  peer->in_timestamp = info->timestamp;
-  return result;
 }
 
 /**
@@ -977,14 +942,18 @@ int RTPSessionSend( struct RTPSession * session, size_t size, void * payload,
   if( info == NULL ) {
     info = &(session->info);
   }
+  info->payload_size  = size;
+  info->payload       = payload;
+
   if( info->peer == NULL ) {
     for( i=0; i<RTP_MAX_PEERS; i++ ) {
       if( session->peers[i] != NULL ) {
-        result += RTPSessionSendToPeer( session, session->peers[i], size, payload, info );
+        info->peer = session->peers[i];
+        result += RTPSessionSendPacket( session, info );
       }
     }
   } else {
-    result = RTPSessionSendToPeer( session, info->peer, size, payload, info );
+    result = RTPSessionSendPacket( session, info );
   }
   return result;
 }
@@ -1003,7 +972,10 @@ int RTPSessionReceive( struct RTPSession * session, size_t size, void * payload,
   if( info == NULL ) {
     info = &(session->info);
   }
-  result = RTPSessionReceiveFromPeer( session, info->peer, info->payload_size, info->payload, info );
+  info->payload_size = 0;
+  info->payload      = NULL;
+
+  result = RTPSessionReceivePacket( session, info );
   if( size >= info->payload_size && payload != NULL ) {
     memcpy( payload, info->payload, info->payload_size );
     info->payload = payload;

@@ -7,8 +7,8 @@
  * @brief Store any kind of MIDI message.
  * Usually the message data only makes sense in combination with a message format.
  * However, there is one important thing to remember. You may only free the data
- * field if bytes[3] is one! (And you need to set it to one if you allocate some
- * buffer for it.
+ * field if bytes[3] has the least significant bit set! (And you need to set it
+ * o one if you allocate some buffer for it.
  *
  * The size and data fields are only used for system exclusive messages. Those
  * messages store the system exclusive data inside the data field. Status,
@@ -158,13 +158,25 @@ static int _decode_three_bytes( struct MIDIMessageData * data, MIDIRunningStatus
 
 static int _encode_system_exclusive( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * written ) {
   if( data == NULL || buffer == NULL ) return 1;
-  if( data->bytes[2] == 0 ) {
-    if( size < data->size+2 ) return 1;
-    VOID_BYTE(buffer,0) = data->bytes[0];
-    VOID_BYTE(buffer,1) = data->bytes[1];
-    if( data->size > 0 && data->data != NULL )
-      memcpy( buffer+2, data->data, data->size );
-    if( written != NULL ) *written = data->size + 2;
+  if( data->bytes[3] <= 1 ) {
+    if( data->bytes[2] & 0x80 || data->bytes[1] != 0 ) {
+      /* extended manufacturer id */
+      if( size < data->size+4 ) return 1;
+      VOID_BYTE(buffer,0) = data->bytes[0];
+      VOID_BYTE(buffer,1) = 0;
+      VOID_BYTE(buffer,2) = data->bytes[1] & 0x7f;
+      VOID_BYTE(buffer,3) = data->bytes[2] & 0x7f;
+      if( data->size > 0 && data->data != NULL )
+        memcpy( buffer+4, data->data, data->size );
+      if( written != NULL ) *written = data->size + 4;
+    } else {
+      if( size < data->size+2 ) return 1;
+      VOID_BYTE(buffer,0) = data->bytes[0];
+      VOID_BYTE(buffer,1) = data->bytes[2];
+      if( data->size > 0 && data->data != NULL )
+        memcpy( buffer+2, data->data, data->size );
+      if( written != NULL ) *written = data->size + 2;
+    }
   } else {
     if( size < data->size ) return 1;
     if( data->size > 0 && data->data != NULL )
@@ -176,14 +188,28 @@ static int _encode_system_exclusive( struct MIDIMessageData * data, MIDIRunningS
 
 static int _decode_system_exclusive( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * read ) {
   if( data == NULL || buffer == NULL ) return 1;
-  data->bytes[0] = VOID_BYTE(buffer,0);
-  data->bytes[1] = VOID_BYTE(buffer,1);
-  data->bytes[2] = 0;
-  data->bytes[3] = 1;
-  data->data = malloc( size-2 );
-  memcpy( data->data, (buffer+2), size-2 );
-  data->size = size-2;
-  if( read != NULL ) *read = size;
+  if( size < 2 ) return 1;
+  if( VOID_BYTE(buffer,1) == 0 ) {
+    /* extended manufacturer id */
+    if( size < 4 ) return 1;
+    data->bytes[0] = VOID_BYTE(buffer,0);
+    data->bytes[1] = VOID_BYTE(buffer,2);
+    data->bytes[2] = VOID_BYTE(buffer,3) | 0x80;
+    data->bytes[3] = 1;
+    data->data = malloc( size-4 );
+    memcpy( data->data, (buffer+4), size-4 );
+    data->size = size-4;
+    if( read != NULL ) *read = size;
+  } else {
+    data->bytes[0] = VOID_BYTE(buffer,0);
+    data->bytes[1] = 0;
+    data->bytes[2] = VOID_BYTE(buffer,1);
+    data->bytes[3] = 1;
+    data->data = malloc( size-2 );
+    memcpy( data->data, (buffer+2), size-2 );
+    data->size = size-2;
+    if( read != NULL ) *read = size;
+  }
   return _update_running_status( data, status );
 }
 
@@ -219,8 +245,12 @@ static int _size_three_bytes( struct MIDIMessageData * data, size_t * size ) {
 
 static int _size_system_exclusive( struct MIDIMessageData * data, size_t * size ) {
   if( data == NULL || size == NULL ) return 1;
-  if( data->bytes[2] == 0 ) {
-    *size = data->size + 2; /* first fragment contains status & manufacturer id */
+  if( data->bytes[3] <= 1 ) {
+    if( data->bytes[1] & 0x80 ) {
+      *size = data->size + 4;
+    } else {
+      *size = data->size + 2; /* first fragment contains status & manufacturer id */
+    }
   } else {
     *size = data->size; /* following fragments contain pure data */
   }
@@ -633,14 +663,18 @@ static int _set_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,data->bytes[0]);
-    PROPERTY_CASE_SET(MIDI_MANUFACTURER_ID,MIDIManufacturerId,data->bytes[1]);
     PROPERTY_CASE_SET(MIDI_SYSEX_SIZE,size_t,data->size);
-    PROPERTY_CASE_SET(MIDI_SYSEX_FRAGMENT,unsigned char,data->bytes[2]);
+    PROPERTY_CASE_BASE(MIDI_MANUFACTURER_ID,MIDIManufacturerId);
+      data->bytes[1] = *((MIDIManufacturerId*)value) >> 8;
+      data->bytes[2] = *((MIDIManufacturerId*)value) & 0xff;
+      return 0;
+    PROPERTY_CASE_BASE(MIDI_SYSEX_FRAGMENT,char);
+      data->bytes[3] = ( data->bytes[3] & 1 ) | (*((char*)value) << 1);
+      return 0;
     PROPERTY_CASE_BASE(MIDI_SYSEX_DATA,void**);
-      if( data->data != NULL && data->bytes[3] == 1 ) free( data->data );
+      if( data->data != NULL && ( data->bytes[3] & 1 ) ) free( data->data );
       data->data = *((void**)value);
       return 0;
-      break;
   /*case MIDI_SYSEX_DATA:
       if( data->size == 0 || data->data == NULL ) {
         data->data = malloc( size );
@@ -669,9 +703,13 @@ static int _get_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
   if( size == 0 || value == NULL ) return 1;
   switch( property ) {
     PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,data->bytes[0]);
-    PROPERTY_CASE_GET(MIDI_MANUFACTURER_ID,MIDIManufacturerId,data->bytes[1]);
     PROPERTY_CASE_GET(MIDI_SYSEX_SIZE,size_t,data->size);
-    PROPERTY_CASE_GET(MIDI_SYSEX_FRAGMENT,unsigned char,data->bytes[2]);
+    PROPERTY_CASE_BASE(MIDI_MANUFACTURER_ID,MIDIManufacturerId);
+      *((MIDIManufacturerId*)value) = (data->bytes[1] << 8) + data->bytes[2];
+      return 0;
+    PROPERTY_CASE_BASE(MIDI_SYSEX_FRAGMENT,char);
+      *((char*)value) = data->bytes[3] >> 1;
+      return 0;
     PROPERTY_CASE_BASE(MIDI_SYSEX_DATA,void**);
       *((void**)value) = data->data;
       return 0;

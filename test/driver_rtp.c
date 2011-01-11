@@ -114,7 +114,12 @@ int test003_rtp( void ) {
 
   ASSERT_NO_ERROR( RTPSessionFindPeerBySSRC( session, &peer, RTP_CLIENT_SSRC ),
                    "Could not find peer." );
-  ASSERT_NO_ERROR( RTPSessionSendToPeer( session, peer, sizeof(send_buffer), &send_buffer[0], &info ),
+
+  info.peer = peer;
+  info.payload_size = sizeof(send_buffer);
+  info.payload = &(send_buffer[0]);
+
+  ASSERT_NO_ERROR( RTPSessionSendPacket( session, &info ),
                    "Could not send payload to peer." );
 
   bytes = recv( s, &recv_buffer[0], sizeof(recv_buffer), 0 );
@@ -143,7 +148,7 @@ int test004_rtp( void ) {
                                   ( RTP_CLIENT_SSRC >> 24 ) & 0xff,
                                   1, 2, 3, 4,
                                   0xca, 0xfe, 0x00, 4 };
-  unsigned char recv_buffer[8];
+  unsigned char recv_buffer[8] = { 0 };
   int s;
   ASSERT_NO_ERROR( _rtp_socket( &s, &client_address ),
                    "Could not create client socket." );

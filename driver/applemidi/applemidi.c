@@ -846,7 +846,7 @@ int MIDIDriverAppleMIDIRemovePeer( struct MIDIDriverAppleMIDI * driver, char * a
 }
 
 static int _applemidi_receive_rtpmidi( struct MIDIDriverAppleMIDI * driver ) {
-  printf( "Receive RTPMIDI...\n" );
+  /*printf( "Receive RTPMIDI...\n" );*/
   return 0;
 }
 
@@ -857,7 +857,7 @@ static int _applemidi_send_rtpmidi( struct MIDIDriverAppleMIDI * driver ) {
   MIDIMessageQueueGetLength( driver->out_queue, &length );
 
   if( length > 0 ) {
-    printf( "Send %i MIDI messages via RTP\n", (int) length );
+    /*printf( "Send %i MIDI messages via RTP\n", (int) length );*/
     for( i=0; i<length && i<APPLEMIDI_MAX_MESSAGES_PER_PACKET; i++ ) {
       MIDIMessageQueuePop( driver->out_queue, &(messages[i].message) );
       messages[i].next = &(messages[i+1]);

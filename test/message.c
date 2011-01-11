@@ -71,23 +71,37 @@ int test004_message( void ) {
  */
 int test005_message( void ) {
   struct MIDIMessage * message = MIDIMessageCreate( MIDI_STATUS_SYSTEM_EXCLUSIVE );
-  unsigned char buffer[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
-  unsigned char * result = &buffer[0];
-  MIDIValue values[2] = { 123, 234 };
+  unsigned char data[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+  unsigned char * result = &(data[0]);
+  unsigned char buffer[12] = { 0 };
+  unsigned char expect[12] = { 0xf0, 0x00, 0x12, 0x34, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7] };
+  size_t size = sizeof(data);
+  MIDIManufacturerId ids[2] = { 123, MIDI_MANUFACTURER_ID_EXTENDED( 0x1234 ) };
 
-  ASSERT( message != NULL, "Could not create system exclusive message." );
-  ASSERT( MIDIMessageSet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &values[0] ) == 0, "Could not set manufacturer id." );
-  ASSERT( MIDIMessageSet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &values[1] ) != 0, "Can set invalid manufacturer id." );
-  ASSERT( MIDIMessageSet( message, MIDI_SYSEX_DATA, sizeof(void*), &result ) == 0, "Could not set system exclusive data." );
-  ASSERT( MIDIMessageGet( message, MIDI_SYSEX_DATA, sizeof(void*), &result ) == 0, "Could not get system exclusive data." );
-  ASSERT_EQUAL( buffer[0], result[0], "Sysex-data was not stored properly." );
-  ASSERT_EQUAL( buffer[1], result[1], "Sysex-data was not stored properly." );
-  ASSERT_EQUAL( buffer[2], result[2], "Sysex-data was not stored properly." );
-  ASSERT_EQUAL( buffer[3], result[3], "Sysex-data was not stored properly." );
-  ASSERT_EQUAL( buffer[4], result[4], "Sysex-data was not stored properly." );
-  ASSERT_EQUAL( buffer[5], result[5], "Sysex-data was not stored properly." );
-  ASSERT_EQUAL( buffer[6], result[6], "Sysex-data was not stored properly." );
-  ASSERT_EQUAL( buffer[7], result[7], "Sysex-data was not stored properly." );
+  ASSERT_NOT_EQUAL( message, NULL, "Could not create system exclusive message." );
+  ASSERT_NO_ERROR( MIDIMessageSet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &ids[0] ), "Could not set manufacturer id." );
+  ASSERT_NO_ERROR( MIDIMessageSet( message, MIDI_SYSEX_DATA, sizeof(void**), &result ), "Could not set system exclusive data." );
+  ASSERT_NO_ERROR( MIDIMessageSet( message, MIDI_SYSEX_SIZE, sizeof(size_t), &size ), "Could not set sysex data size." );
+  ASSERT_NO_ERROR( MIDIMessageGet( message, MIDI_SYSEX_DATA, sizeof(void**), &result ), "Could not get system exclusive data." );
+  ASSERT_NOT_EQUAL( result, NULL, "Could not get system exclusive data." );
+  ASSERT_EQUAL( data[0], result[0], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( data[1], result[1], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( data[2], result[2], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( data[3], result[3], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( data[4], result[4], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( data[5], result[5], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( data[6], result[6], "Sysex-data was not stored properly." );
+  ASSERT_EQUAL( data[7], result[7], "Sysex-data was not stored properly." );
+
+  ASSERT_NO_ERROR( MIDIMessageEncode( message, sizeof(buffer), &(buffer[0]), &size ), "Could not encode sysex message." );
+  ASSERT_EQUAL( size, sizeof(data) + 2, "Failed to encode sysex message with non-extended manufacturer id." );
+
+  ASSERT_NO_ERROR( MIDIMessageSet( message, MIDI_MANUFACTURER_ID, sizeof(MIDIManufacturerId), &ids[1] ), "Could not set extended manufacturer id." );
+  ASSERT_NO_ERROR( MIDIMessageEncode( message, sizeof(buffer), &(buffer[0]), &size ), "Could not encode sysex message." );
+  ASSERT_EQUAL( size, sizeof(data) + 4, "Failed to encode sysex message with extended manufacturer id." );
+
+  ASSERT_EQUAL( memcmp( &(expect[0]), &(buffer[0]), size ), 0, "Encoded unexpeced data." );
+
   MIDIMessageRelease( message );
   return 0;
 }

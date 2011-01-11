@@ -231,7 +231,6 @@ int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList 
   int m, result;
   size_t size = 200, written = 0;
   void * buffer = malloc( 200 ); /* fix me, use global buffer */
-  unsigned char * buf;
   struct RTPMIDIHeaderInfo minfo;
   MIDIRunningStatus status;
   MIDITimestamp     timestamp;
@@ -275,10 +274,6 @@ int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList 
 
   result = RTPSessionSend( session->rtp_session, info->payload_size, info->payload, info );
 
-  for( m=0; m<info->payload_size; m+=8 ) {
-    buf = info->payload + m;
-    printf( "%02x %02x %02x %02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7] );
-  }
   free( info->payload ); /* fix me, use global buffer */
   return result;
 }

@@ -259,6 +259,12 @@
 #define MIDI_MSB( v ) ((v)>>7) & 0x7f
 
 /**
+ * Mark a manufacturer ID as "extended".
+ * Extended manufacturer IDs use 2 bytes + one empty byte.
+ */
+#define MIDI_MANUFACTURER_ID_EXTENDED( v ) v | 0x80
+
+/**
  * @name MIDIBoolean
  * @brief MIDI Booleans.
  * @see MIDIBoolean
@@ -287,7 +293,7 @@ typedef char           MIDIVelocity;
 typedef char           MIDIPressure;
 typedef char           MIDIControl;
 typedef char           MIDIProgram;
-typedef char           MIDIManufacturerId; /**< @todo Make this 4 bytes and sysex-decoder/encoder read var length */
+typedef short          MIDIManufacturerId;
 
 typedef char           MIDIBoolean;
 typedef char           MIDIValue;
