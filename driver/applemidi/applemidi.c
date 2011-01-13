@@ -749,7 +749,7 @@ static int _applemidi_control_addr( socklen_t size, struct sockaddr * rtp_addr, 
  * @retval >0 If the packet could not be sent.
  */
 static int _applemidi_respond( struct MIDIDriverAppleMIDI * driver, int fd, struct AppleMIDICommand * command ) {
-  struct RTPPeer * peer;
+  struct RTPPeer * peer = NULL;
 
   switch( command->type ) {
     case APPLEMIDI_COMMAND_INVITATION:
