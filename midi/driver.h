@@ -7,7 +7,10 @@ struct MIDIConnector;
 struct MIDIDriver;
 
 struct MIDIDriverDelegate {
-  int (*send)( void * info, struct MIDIMessage * message );
+  int (*send)( void * implementation, struct MIDIMessage * message );
+  int (*receive)( void * interface, struct MIDIMessage * message );
+  void * implementation;
+  void * interface;
 };
 
 extern struct MIDIDriverDelegate * midiDriverLoopback;

@@ -30,7 +30,10 @@ static int _send( void * implementation, struct MIDIMessage * message ) {
 }
 
 static struct MIDIDriverDelegate _test_driver = {
-  &_send
+  &_send,
+  NULL,
+  NULL,
+  NULL
 };
 
 /**

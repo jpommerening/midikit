@@ -129,7 +129,10 @@ static int _send( void * implementation, struct MIDIMessage * message ) {
 }
 
 static struct MIDIDriverDelegate _test_driver = {
-  &_send
+  &_send,
+  NULL,
+  NULL,
+  NULL
 };
 
 /**
@@ -157,6 +160,7 @@ int test001_integration( void ) {
   device_1 = MIDIDeviceCreate( &_test_device );
   device_2 = MIDIDeviceCreate( &_test_device );
   driver = MIDIDriverCreate( &_test_driver );
+  _test_driver.implementation = driver;
   connector = MIDIConnectorCreate();
   
   ASSERT_NOT_EQUAL( device_1,  NULL, "Could not create device 1." );

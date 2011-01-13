@@ -3,24 +3,27 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
 
 #define RTP_MAX_PEERS 16
+#define RTP_IOV_LEN 4
 
 struct RTPPacketInfo {
   struct RTPPeer * peer;
-  unsigned char  padding;         // number of padding bytes
-  unsigned char  extension;       // extension present?
-  unsigned char  csrc_count;      // number of valid entries in csrc[]
-  unsigned char  marker;          // marker set?
-  unsigned char  payload_type;
-  unsigned short sequence_number;
-  unsigned long  timestamp;
-  unsigned long  ssrc;            // sender ssrc identifier
-  unsigned long  csrc[16];
-  size_t total_size;   // total packet size in bytes
-  size_t payload_size; // size of payload
-  void * payload;      // payload
+  unsigned char  padding;         /**< number of padding bytes */
+  unsigned char  extension;       /**< if set, use first iov element as header extension */
+  unsigned char  csrc_count;      /**< number of valid entries in csrc[] */
+  unsigned char  marker;          /**< set marker bit? */
+  unsigned char  payload_type;    /**< type of payload */
+  unsigned short sequence_number; /**< sequence number of the packet */
+  unsigned long  timestamp;       /**< timestamp (the time the packet was sent */
+  unsigned long  ssrc;            /**< sender ssrc identifier */
+  unsigned long  csrc[16];        /**< contributing sources */
+  size_t total_size;   /**< total packet size in bytes */
+  size_t payload_size; /**< size of payload */
+  void * payload;      /**< payload data */
+/*replace payload with iovec structure?*/
+  size_t iov_len;      /**< numver of elements in iov[] */
+  struct iovec * iov;  /**< list of io vectors contianing pkg data */
 };
 
 struct RTPPeer * RTPPeerCreate( unsigned long ssrc, socklen_t size, struct sockaddr * addr );

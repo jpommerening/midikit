@@ -72,13 +72,13 @@ struct MIDIDriverAppleMIDI {
   char name[32];
   
   struct MIDIRunloopSource runloop_source;
+  struct AppleMIDICommand  command;
 
   struct RTPPeer * peer;
   struct RTPSession * rtp_session;
   struct RTPMIDISession * rtpmidi_session;
 
-  struct AppleMIDICommand command;
-  
+  struct MIDIDriverDelegate * delegate;
   struct MIDIMessageQueue * in_queue;
   struct MIDIMessageQueue * out_queue;
 };
@@ -86,10 +86,6 @@ struct MIDIDriverAppleMIDI {
 static int _applemidi_read_fds( void * drv, int nfds, fd_set * fds );
 static int _applemidi_write_fds( void * drv, int nfsd, fd_set * fds );
 static int _applemidi_idle_timeout( void * drv, struct timespec * ts );
-
-struct MIDIDriverDelegate MIDIDriverDelegateAppleMIDI = {
-  NULL
-};
 
 int _applemidi_init_runloop_source( struct MIDIDriverAppleMIDI * driver ) {
   struct MIDIRunloopSource * source = &(driver->runloop_source);
@@ -215,6 +211,11 @@ static int _applemidi_disconnect( struct MIDIDriverAppleMIDI * driver, int fd ) 
   return 0;
 }
 
+static int _driver_send( void * driverp, struct MIDIMessage * message ) {
+  struct MIDIDriverAppleMIDI * driver = driverp;
+  return MIDIDriverAppleMIDISendMessage( driver, message );
+}
+
 /**
  * @brief Create a MIDIDriverAppleMIDI instance.
  * Allocate space and initialize an MIDIDriverAppleMIDI instance.
@@ -222,7 +223,7 @@ static int _applemidi_disconnect( struct MIDIDriverAppleMIDI * driver, int fd ) 
  * @return a pointer to the created driver structure on success.
  * @return a @c NULL pointer if the driver could not created.
  */
-struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned short port ) {
+struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegate * delegate, char * name, unsigned short port ) {
   struct MIDIDriverAppleMIDI * driver;
   unsigned long long ts;
 
@@ -253,6 +254,13 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned sh
   driver->command.peer = NULL;
 
   _applemidi_init_runloop_source( driver );
+
+  driver->delegate = delegate;
+
+  if( delegate != NULL ) {
+    delegate->send = &(_driver_send);
+    delegate->interface = driver;
+  }
   return driver;
 }
 
@@ -380,10 +388,10 @@ int MIDIDriverAppleMIDIGetControlSocket( struct MIDIDriverAppleMIDI * driver, in
  * @retval >0 if the message could not be processed.
  */
 int MIDIDriverAppleMIDIReceiveMessage( struct MIDIDriverAppleMIDI * driver, struct MIDIMessage * message ) {
-  unsigned long long ts;
-  RTPSessionGetTimestamp( driver->rtp_session, &ts );
-  MIDIMessageSetTimestamp( message, ts );
-  return MIDIMessageQueuePush( driver->in_queue, message );
+  if( driver->delegate == NULL || driver->delegate->receive == NULL ) {
+    return 0;
+  }
+  return (driver->delegate->receive)( driver->delegate->implementation, message );
 }
 
 /**
@@ -426,7 +434,7 @@ static int _applemidi_init_addr_with_peer( struct AppleMIDICommand * command, st
 static int _test_applemidi( int fd ) {
   ssize_t bytes;
   unsigned short buf[2];
-  bytes = recv( fd, &buf, 2, MSG_PEEK );
+  bytes = recv( fd, &buf, 4, MSG_PEEK );
   if( bytes != 4 ) return -1;
   if( ntohs(buf[0]) == APPLEMIDI_PROTOCOL_SIGNATURE ) {
     switch( ntohs(buf[1]) ) {
@@ -592,7 +600,6 @@ static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd,
  * @retval >0 If the synchronization failed.
  */
 static int _applemidi_sync( struct MIDIDriverAppleMIDI * driver, int fd, struct AppleMIDICommand * command ) {
-  struct RTPPeer * peer = NULL;
   unsigned long ssrc;
   unsigned long long timestamp, diff;
   RTPSessionGetSSRC( driver->rtp_session, &ssrc );
@@ -609,7 +616,7 @@ static int _applemidi_sync( struct MIDIDriverAppleMIDI * driver, int fd, struct 
     driver->sync = 1;
     return _applemidi_send_command( driver, fd, command );
   } else {
-    RTPSessionFindPeerBySSRC( driver->rtp_session, &peer, command->data.sync.ssrc );
+    RTPSessionFindPeerBySSRC( driver->rtp_session, &(driver->peer), command->data.sync.ssrc );
 
     /* received packet from other peer */
     if( command->data.sync.count == 2 ) {
@@ -850,7 +857,24 @@ int MIDIDriverAppleMIDIRemovePeer( struct MIDIDriverAppleMIDI * driver, char * a
 }
 
 static int _applemidi_receive_rtpmidi( struct MIDIDriverAppleMIDI * driver ) {
-  /*printf( "Receive RTPMIDI...\n" );*/
+  struct MIDIMessageList messages[APPLEMIDI_MAX_MESSAGES_PER_PACKET];
+  int i, result;
+
+  for( i=0; i<APPLEMIDI_MAX_MESSAGES_PER_PACKET; i++ ) {
+    messages[i].message = NULL;
+    messages[i].next = &(messages[i+1]);
+  }
+  messages[i-1].next = NULL;
+
+  result = RTPMIDISessionReceive( driver->rtpmidi_session, &(messages[0]) );
+  if( result != 0 ) return result;
+
+  for( i=0; i<APPLEMIDI_MAX_MESSAGES_PER_PACKET && messages[i].message != NULL; i++ ) {
+    MIDIMessageQueuePush( driver->in_queue, messages[i].message );
+    MIDIMessageRelease( messages[i].message );
+    MIDIDriverAppleMIDIReceiveMessage( driver, messages[i].message ); /* fixme: add scheduling! */
+  }
+  
   return 0;
 }
 
@@ -861,14 +885,13 @@ static int _applemidi_send_rtpmidi( struct MIDIDriverAppleMIDI * driver ) {
   MIDIMessageQueueGetLength( driver->out_queue, &length );
 
   if( length > 0 ) {
-    /*printf( "Send %i MIDI messages via RTP\n", (int) length );*/
     for( i=0; i<length && i<APPLEMIDI_MAX_MESSAGES_PER_PACKET; i++ ) {
       MIDIMessageQueuePop( driver->out_queue, &(messages[i].message) );
       messages[i].next = &(messages[i+1]);
     }
     messages[i-1].next = NULL;
 
-    result = RTPMIDISessionSend( driver->rtpmidi_session, &(messages[0]), NULL );
+    result = RTPMIDISessionSend( driver->rtpmidi_session, &(messages[0]) );
 
     for( i=0; i<length && i<APPLEMIDI_MAX_MESSAGES_PER_PACKET; i++ ) {
       if( messages[i].message != NULL ) MIDIMessageRelease( messages[i].message );
@@ -887,7 +910,7 @@ static int _applemidi_read_fds( void * drv, int nfds, fd_set * readfds ) {
 
   if( FD_ISSET( driver->control_socket, readfds ) ) {
     fd = driver->control_socket;
-    if( _test_applemidi( fd ) ) {
+    if( _test_applemidi( fd ) == 0 ) {
       if( _applemidi_recv_command( driver, fd, &(driver->command) ) == 0 ) {
         result += _applemidi_respond( driver, fd, &(driver->command) );
       }
@@ -896,7 +919,7 @@ static int _applemidi_read_fds( void * drv, int nfds, fd_set * readfds ) {
   
   if( FD_ISSET( driver->rtp_socket, readfds ) ) {
     fd = driver->rtp_socket;
-    if( _test_applemidi( fd ) ) {
+    if( _test_applemidi( fd ) == 0 ) {
       if( _applemidi_recv_command( driver, fd, &(driver->command) ) == 0 ) {
         result += _applemidi_respond( driver, fd, &(driver->command) );
       }

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <arpa/inet.h>
 
 #define SOCKADDR_BUFLEN 32
 #define USEC_PER_SEC 1000000
@@ -701,6 +702,14 @@ int RTPSessionFindPeerByAddress( struct RTPSession * session, struct RTPPeer ** 
   return 1;
 }
 
+static size_t _info_payload_size( struct RTPPacketInfo * info ) {
+  size_t i, size = 0;
+  for( i=0; i<info->iov_len; i++ ) {
+    size += info->iov[i].iov_len;
+  }
+  return size;
+}
+
 /**
  * Encode an RTP packet for transmission over network.
  * Read all RTP information (timestamp, ssrc, payload-size, etc.) from an info structure
@@ -715,6 +724,7 @@ static int RTPEncodePacket( struct RTPPacketInfo * info, size_t size, void * dat
   unsigned char * buffer = data;
   size_t header_size     = 12 + ( info->csrc_count * 4 );
   size_t ext_header_size = header_size + ( info->extension ? 4 : 0 );
+  size_t payload_size    = _info_payload_size( info );
   size_t total_size      = ext_header_size + info->payload_size + info->padding;
   info->total_size = total_size;
 
@@ -848,23 +858,23 @@ static int RTPDecodePacket( struct RTPPacketInfo * info, size_t size, void * dat
  */
 int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * info ) {
   ssize_t bytes_sent;
-  struct iovec  msg_iov;
+  struct iovec  msg_iov[RTP_IOV_LEN+1];
   struct msghdr msg;
 
   if( info->peer == NULL ) return 1;
 
   info->ssrc            = session->self.ssrc;
   info->sequence_number = info->peer->out_seqnum + 1;
-  info->timestamp       = _session_get_timestamp( session );
+  info->timestamp       = _session_get_timestamp( session ) & 0xffffffff;
 
   RTPEncodePacket( info, session->buflen, session->buffer );
 
-  msg_iov.iov_base = session->buffer;
-  msg_iov.iov_len  = info->total_size;
+  msg_iov[0].iov_base = session->buffer;
+  msg_iov[0].iov_len  = info->total_size;
 
   msg.msg_name       = &(info->peer->address.addr);
   msg.msg_namelen    = info->peer->address.size;
-  msg.msg_iov        = &msg_iov;
+  msg.msg_iov        = &(msg_iov[0]);
   msg.msg_iovlen     = 1;
   msg.msg_control    = NULL;
   msg.msg_controllen = 0;
@@ -894,15 +904,15 @@ int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * in
 int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo * info ) {
   ssize_t bytes_received;
   struct sockaddr_storage msg_name;
-  struct iovec  msg_iov;
+  struct iovec  msg_iov[RTP_IOV_LEN+1];
   struct msghdr msg;
 
-  msg_iov.iov_base = session->buffer;
-  msg_iov.iov_len  = session->buflen;
+  msg_iov[0].iov_base = session->buffer;
+  msg_iov[0].iov_len  = session->buflen;
 
   msg.msg_name       = &msg_name;
   msg.msg_namelen    = sizeof(msg_name);
-  msg.msg_iov        = &msg_iov;
+  msg.msg_iov        = &(msg_iov[0]);
   msg.msg_iovlen     = 1;
   msg.msg_control    = NULL;
   msg.msg_controllen = 0;
@@ -923,8 +933,10 @@ int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo *
     RTPSessionAddPeer( session, info->peer );
     RTPPeerRelease( info->peer );
   }
-  info->peer->in_seqnum    = info->sequence_number;
-  info->peer->in_timestamp = info->timestamp;
+  if( info->sequence_number == info->peer->in_seqnum + 1 ) {
+    info->peer->in_seqnum    = info->sequence_number;
+    info->peer->in_timestamp = info->timestamp;
+  }
   return 0;
 }
 
@@ -944,6 +956,9 @@ int RTPSessionSend( struct RTPSession * session, size_t size, void * payload,
   }
   info->payload_size  = size;
   info->payload       = payload;
+  info->iov_len = 1;
+  info->iov[0].iov_base = payload;
+  info->iov[0].iov_len  = size;
 
   if( info->peer == NULL ) {
     for( i=0; i<RTP_MAX_PEERS; i++ ) {

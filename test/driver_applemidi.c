@@ -81,13 +81,26 @@ static int _check_socket_in( int fd ) {
   return FD_ISSET( fd, &fds );
 }
 
+static int _n_msg = 0;
+static int _receive( void * interface, struct MIDIMessage * message ) {
+  printf( "Received message!\n" );
+  _n_msg++;
+}
+
+struct MIDIDriverDelegate _test_driver = {
+  NULL,
+  &_receive,
+  NULL,
+  NULL
+};
+
 /**
  * Test that AppleMIDI sessions can be created.
  */
 int test001_applemidi( void ) {
   unsigned char buf[32];
 
-  driver = MIDIDriverAppleMIDICreate( "My MIDI Session", SERVER_CONTROL_PORT );
+  driver = MIDIDriverAppleMIDICreate( &_test_driver, "My MIDI Session", SERVER_CONTROL_PORT );
 
   client_control_socket = socket( PF_INET, SOCK_DGRAM, 0 );
   ASSERT_NOT_EQUAL( client_control_socket, 0, "Could not create control socket." );
@@ -210,10 +223,10 @@ int test004_applemidi( void ) {
     0x00, 0x00, 0x00, 0x00,
     /* SSRC */
     0x00, 0x00, 0x00, 0x00,
-    /* MIDI header */
+    /* MIDI header, Z bit (2) is set */
     0x23,
-    /* MIDI payload */
-    0x00, 0x90, 0x42, 0x68,
+    /* MIDI payload, first timestamp is zero */
+          0x90, 0x42, 0x68,
     0x00, 0xa0, 0x42, 0x78,
     0x00, 0x80, 0x42, 0x68
   };
@@ -240,10 +253,15 @@ int test004_applemidi( void ) {
   ASSERT_NO_ERROR( MIDIDriverAppleMIDISendMessage( driver, messages[0] ), "Could not queue midi message 0." );
   ASSERT_NO_ERROR( MIDIDriverAppleMIDISendMessage( driver, messages[1] ), "Could not queue midi message 1." );
   ASSERT_NO_ERROR( MIDIDriverAppleMIDISendMessage( driver, messages[2] ), "Could not queue midi message 2." );
+
+  MIDIMessageRelease( messages[0] ); messages[0] = NULL;
+  MIDIMessageRelease( messages[1] ); messages[1] = NULL;
+  MIDIMessageRelease( messages[2] ); messages[2] = NULL;
+
   ASSERT_NO_ERROR( MIDIDriverAppleMIDISend( driver ), "Could not send queued messages." );
 
   bytes = recv( client_rtp_socket, &(buffer[0]), sizeof(buffer), 0 );
-  ASSERT_GREATER( bytes, 13, "Could not received RTP MIDI packet from AppleMIDI driver." );
+  ASSERT_GREATER_OR_EQUAL( bytes, 24, "Could not received RTP MIDI packet from AppleMIDI driver." );
 
   for( int i=0; i<bytes; i++ ) {
     if( (i+1)%8 == 0 || (i+1) == bytes ) {
@@ -258,9 +276,11 @@ int test004_applemidi( void ) {
        | ( buffer[10] << 16 )
        | ( buffer[11] << 24 );
 
-  MIDIMessageRelease( messages[0] );
-  MIDIMessageRelease( messages[1] );
-  MIDIMessageRelease( messages[2] );
+  ASSERT_EQUAL( 24, sendto( client_rtp_socket, &(expect[0]), 24, 0,
+                (struct sockaddr *) &server_addr, sizeof(server_addr) ), "Could not send RTP-MIDI." );
+
+  ASSERT_NO_ERROR( MIDIDriverAppleMIDIReceive( driver ), "Could not receive sent messages." );
+  ASSERT_EQUAL( _n_msg, 3, "Received wrong number of messages." );
   return 0;
 }
 

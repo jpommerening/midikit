@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include "test.h"
 #include "driver/common/rtp.h"
 
@@ -126,8 +127,8 @@ int test003_rtp( void ) {
   ASSERT_EQUAL( bytes, 28, "Received message of unexpected size." );
   ASSERT_EQUAL( recv_buffer[0], 0x82, "First byte (V, P, X, CC) of RTP message has incorrect value." );
   ASSERT_EQUAL( recv_buffer[1],   96, "Second byte (M, PT) of RTP message has incorrect value." );
-  // ASSERT_EQUAL( recv_buffer[2], 0x34, "Third byte (Seqnum LSB) of RTP message has incorrect value." );
-  // ASSERT_EQUAL( recv_buffer[3], 0x12, "Forth byte (Seqnum MSB) of RTP message has incorrect value." );
+/*ASSERT_EQUAL( recv_buffer[2], 0x34, "Third byte (Seqnum LSB) of RTP message has incorrect value." );
+  ASSERT_EQUAL( recv_buffer[3], 0x12, "Forth byte (Seqnum MSB) of RTP message has incorrect value." );*/
   close( s );
   return 0;
 }

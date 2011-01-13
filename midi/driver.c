@@ -94,6 +94,11 @@ static int _sender_disconnect( void * driverp, struct MIDIConnector * sender ) {
   return 0;
 }
 
+static int _driver_receive( void * driverp, struct MIDIMessage * message ) {
+  struct MIDIDriver * driver = driverp;
+  return MIDIDriverReceive( driver, message );
+}
+
 /** @} */
 
 #pragma mark Creation and destruction
@@ -118,6 +123,11 @@ struct MIDIDriver * MIDIDriverCreate( struct MIDIDriverDelegate * delegate ) {
   driver->receivers = NULL;
   driver->senders   = NULL;
   driver->clock     = NULL;
+
+  if( delegate != NULL ) {
+    delegate->receive = &(_driver_receive);
+    delegate->interface = driver;
+  }
   return driver;
 }
 
@@ -283,7 +293,7 @@ int MIDIDriverSend( struct MIDIDriver * driver, struct MIDIMessage * message ) {
   if( driver->delegate == NULL || driver->delegate->send == NULL ) {
     return 0;
   }
-  return (*driver->delegate->send)( driver, message );
+  return (*driver->delegate->send)( driver->delegate->implementation, message );
 }
 
 /** @} */
