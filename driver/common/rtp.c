@@ -9,16 +9,16 @@
 #define USEC_PER_SEC 1000000
 
 struct RTPHeader {
-  unsigned version         : 2; // automatic
-  unsigned padding         : 1; // packet spec.
-  unsigned extension       : 1; // packet spec.
-  unsigned csrc_count      : 4; // packet spec.
-  unsigned marker          : 1; // packet spec.
-  unsigned payload_type    : 7; // packet spec.
-  unsigned sequence_number : 16; // automatic
-  unsigned long timestamp; // automatic
-  unsigned long ssrc; // automatic
-  unsigned long * csrc_list; // packet spec.
+  unsigned version         : 2;  /* automatic */
+  unsigned padding         : 1;  /* packet spec. */
+  unsigned extension       : 1;  /* packet spec. */
+  unsigned csrc_count      : 4;  /* packet spec. */
+  unsigned marker          : 1;  /* packet spec. */
+  unsigned payload_type    : 7;  /* packet spec. */
+  unsigned sequence_number : 16; /* automatic */
+  unsigned long timestamp;       /* automatic */
+  unsigned long ssrc;            /* automatic */
+  unsigned long * csrc_list;     /* packet spec. */
 };
 
 /**
@@ -767,7 +767,8 @@ static int RTPEncodePacket( struct RTPPacketInfo * info, size_t size, void * dat
   
   if( info->payload_size > 0 && info->payload != NULL ) {
     memcpy( data+ext_header_size, info->payload, info->payload_size );
-  //memset( data+data_size, 0, info->padding-1 ); // should be ignored
+  /*padding should be ignored*/
+  /*memset( data+data_size, 0, info->padding-1 );*/
     if( info->padding ) {
       buffer[total_size-1] = info->padding;
     }
@@ -792,7 +793,7 @@ static int RTPDecodePacket( struct RTPPacketInfo * info, size_t size, void * dat
   size_t total_size = size;
 
   if( ( buffer[0] & 0xc0 ) != 0x80 ) {
-    return 1; // wrong rtp version
+    return 1; /* wrong rtp version */
   }
   info->padding         = ( buffer[0] & 0x20 ) ? buffer[total_size-1] : 0;
   info->extension       = ( buffer[0] & 0x10 ) ? 1 : 0;
@@ -824,8 +825,8 @@ static int RTPDecodePacket( struct RTPPacketInfo * info, size_t size, void * dat
   }
 
   if( info->extension ) {
-    //buffer[header_size];
-    //buffer[header_size+1];
+       /* buffer[header_size];   */
+       /* buffer[header_size+1]; */
     j =   buffer[header_size+2]
       | ( buffer[header_size+3] << 8 );
     ext_header_size = header_size + 4 + (j*4);

@@ -67,7 +67,7 @@ static int _receive_sx( struct MIDIDevice * device, MIDIManufacturerId manufactu
   ASSERT_EQUAL( manufacturer_id, _test_values[0], "Received unexpected manufacturer id in system exclusive message." );
   ASSERT_EQUAL( size,            _test_values[1], "Received unexpected size in system exclusive message." );
   ASSERT_EQUAL( fragment,        _test_values[2], "Received unexpected fragment in system exclusive message." );
-//uint8_t * values = data;
+/*uint8_t * values = data;*/
   return 0;
 }
 
@@ -169,7 +169,7 @@ int test001_integration( void ) {
   ASSERT_NOT_EQUAL( connector, NULL, "Could not create connector." );
   ASSERT_NO_ERROR( MIDIDeviceAttachOut( device_1, connector ), "Could not attach connector to device 1 out port." );
   ASSERT_NO_ERROR( MIDIDeviceAttachIn( device_2, connector ), "Could not attach connector to device 2 in port." );
-  MIDIConnectorRelease( connector ); // connector is retained by the device 1 & 2.
+  MIDIConnectorRelease( connector ); /* connector is retained by the device 1 & 2. */
   connector = NULL;
   
   ASSERT_NO_ERROR( MIDIDriverProvideSendConnector( driver, &connector ), "Could not provide driver output." );
@@ -196,7 +196,7 @@ int test001_integration( void ) {
   ASSERT_NO_ERROR( MIDIDeviceSendNoteOff( device_2, _test_values[0], _test_values[1], _test_values[2] ), "Could not send note off event." );
   
   _test_values[0] = MIDI_CHANNEL_2;
-  _test_values[1] = 0x07; // Volume controller
+  _test_values[1] = 0x07; /* Volume controller */
   _test_values[2] = 64;
   ASSERT_NO_ERROR( MIDIDeviceSendControlChange( device_2, _test_values[0], _test_values[1], _test_values[2] ), "Could not send control change event." );
 

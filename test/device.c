@@ -11,19 +11,19 @@ static int _receive_rt( struct MIDIDevice * device, MIDIStatus status, MIDITimes
 }
 
 static struct MIDIDeviceDelegate _test_device = {
-  NULL, // recv_nof
-  NULL, // recv_non
-  NULL, // recv_pkp
-  NULL, // recv_cc
-  NULL, // recv_pc
-  NULL, // recv_cp
-  NULL, // recv_pwc
-  NULL, // recv_sx
-  NULL, // recv_tcqf
-  NULL, // recv_spp
-  NULL, // recv_ss
-  NULL, // recv_tr
-  NULL, // recv_eox
+  NULL, /* recv_nof  */
+  NULL, /* recv_non  */
+  NULL, /* recv_pkp  */
+  NULL, /* recv_cc   */
+  NULL, /* recv_pc   */
+  NULL, /* recv_cp   */
+  NULL, /* recv_pwc  */
+  NULL, /* recv_sx   */
+  NULL, /* recv_tcqf */
+  NULL, /* recv_spp  */
+  NULL, /* recv_ss   */
+  NULL, /* recv_tr   */
+  NULL, /* recv_eox  */
   &_receive_rt
 };
 

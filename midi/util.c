@@ -322,9 +322,9 @@ struct MIDIRunloop * MIDIRunloopCreate() {
   FD_ZERO( &(runloop->master.readfds) );
   FD_ZERO( &(runloop->master.writefds) );
   runloop->master.timeout.tv_sec  = 0;
-  runloop->master.timeout.tv_nsec = 10000000; // 10 ms
+  runloop->master.timeout.tv_nsec = 10000000; /* 10 ms */
   runloop->master.remain.tv_sec  = 0;
-  runloop->master.remain.tv_nsec = 10000000; // 10 ms
+  runloop->master.remain.tv_nsec = 10000000; /* 10 ms */
   runloop->master.read  = NULL;
   runloop->master.write = NULL;
   runloop->master.idle  = NULL;

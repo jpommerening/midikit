@@ -33,10 +33,10 @@ static int _keyboard_timeout( void * kbd, struct timespec * ts ) {
 int _keyboard_init_runloop_source( struct MIDIKeyboard * keyboard ) {
   struct MIDIRunloopSource * source = &(keyboard->runloop_source);
   
-  source->nfds = 1; // stdin + 1
+  source->nfds = 1; /* stdin + 1 */
   FD_ZERO( &(source->readfds) );
   FD_ZERO( &(source->writefds) );
-  FD_SET( 0, &(source->readfds) ); // stdin
+  FD_SET( 0, &(source->readfds) ); /* stdin */
   source->timeout.tv_sec = 5;
   source->timeout.tv_nsec = 0;
   source->remain.tv_sec = 5;
@@ -109,7 +109,7 @@ int main( int argc, char *argv[] ) {
 
   printf( "Starting session '%s' on port %hu.\n", argv[1], port );
   keyboard  = MIDIKeyboardCreate();
-  applemidi = MIDIDriverAppleMIDICreate( argv[1], port );
+  applemidi = MIDIDriverAppleMIDICreate( NULL, argv[1], port );
   runloop   = MIDIRunloopCreate();
 
   if( client_addr[0] != '\0' && client_port != 0 ) {

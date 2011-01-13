@@ -140,9 +140,9 @@ int test003_rtp( void ) {
 int test004_rtp( void ) {
   struct RTPPeer * peer;
   struct RTPPacketInfo info;
-  unsigned char send_buffer[20] = { 0xa0, 96,   // V=2, P=0, X=0, CC=0, PT=96
-                                    0x34, 0x12, // Seqnum = 0x1234
-                                    5, 6, 7, 8, // timestamp
+  unsigned char send_buffer[20] = { 0xa0, 96,   /* V=2, P=0, X=0, CC=0, PT=96 */
+                                    0x34, 0x12, /* Seqnum = 0x1234 */
+                                    5, 6, 7, 8, /* timestamp */
                                   ( RTP_CLIENT_SSRC ) & 0xff,
                                   ( RTP_CLIENT_SSRC >> 8 ) & 0xff,
                                   ( RTP_CLIENT_SSRC >> 16 ) & 0xff,
