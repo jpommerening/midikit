@@ -282,7 +282,7 @@ int MIDIMessageDecodeRunningStatus( struct MIDIMessage * message, MIDIRunningSta
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
-int MIDIMessageEncodeList( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * written ) {
+int MIDIMessageListEncode( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * written ) {
   struct MIDIMessage * message;
   MIDIRunningStatus status = 0;
   size_t p = 0, w = 0, s = size;
@@ -311,7 +311,7 @@ int MIDIMessageEncodeList( struct MIDIMessageList * messages, size_t size, unsig
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
-int MIDIMessageDecodeList( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * read ) {
+int MIDIMessageListDecode( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * read ) {
   struct MIDIMessage * message;
   MIDIRunningStatus status = 0;
   size_t p = 0, r = 0, s = size;

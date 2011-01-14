@@ -164,6 +164,9 @@ int MIDIMessageQueuePop( struct MIDIMessageQueue * queue, struct MIDIMessage ** 
   if( item != NULL ) {
     *message     = item->message;
     queue->first = item->next;
+    if( queue->last == item ) {
+      queue->last = NULL;
+    }
     queue->length--;
     free( item );
   } else {

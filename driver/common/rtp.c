@@ -5,7 +5,10 @@
 #include <sys/time.h>
 #include <arpa/inet.h>
 
-#define SOCKADDR_BUFLEN 32
+#define RTP_MAX_PEERS 16
+#define RTP_BUF_LEN   512
+#define RTP_IOV_LEN   16
+
 #define USEC_PER_SEC 1000000
 
 struct RTPHeader {
@@ -204,6 +207,7 @@ struct RTPSession {
   struct RTPPeer *  peers[RTP_MAX_PEERS];
   struct RTPPacketInfo info;
   
+  struct iovec iov[RTP_IOV_LEN];
   size_t buflen;
   void * buffer;
 
@@ -391,10 +395,17 @@ struct RTPSession * RTPSessionCreate( int socket ) {
     session->peers[i] = NULL;
   }
   
-  session->buflen = 1024;
+  
+  session->buflen = RTP_BUF_LEN;
   session->buffer = malloc( session->buflen );
   if( session->buffer == NULL ) {
     session->buflen = 0;
+  }
+  session->iov[0].iov_base = session->buffer;
+  session->iov[9].iov_len  = session->buflen;
+  for( i=1; i<RTP_IOV_LEN; i++ ) {
+    session->iov[i].iov_base = NULL;
+    session->iov[i].iov_len  = 0;
   }
   
   session->timestamp_offset  = 0;
@@ -409,8 +420,8 @@ struct RTPSession * RTPSessionCreate( int socket ) {
   session->info.marker       = 0;
   session->info.payload_type = 0;
   session->info.ssrc         = session->self.ssrc;
-  session->info.payload_size = 0;
-  session->info.payload      = NULL;
+  session->info.iovlen       = RTP_IOV_LEN;
+  session->info.iov          = &(session->iov[0]);
 
   return session;
 }
@@ -702,34 +713,13 @@ int RTPSessionFindPeerByAddress( struct RTPSession * session, struct RTPPeer ** 
   return 1;
 }
 
-static size_t _info_payload_size( struct RTPPacketInfo * info ) {
-  size_t i, size = 0;
-  for( i=0; i<info->iov_len; i++ ) {
-    size += info->iov[i].iov_len;
-  }
-  return size;
-}
-
-/**
- * Encode an RTP packet for transmission over network.
- * Read all RTP information (timestamp, ssrc, payload-size, etc.) from an info structure
- * and encode it to an RTP packet.
- * @relates RTPSession
- * @param info The packet information structure to fill.
- * @param size The size of buffer that should hold the packet.
- * @param data The buffer to hold the encoded packet.
- */
-static int RTPEncodePacket( struct RTPPacketInfo * info, size_t size, void * data ) {
+static int _rtp_encode_header( struct RTPPacketInfo * info, size_t size, void * data, size_t * written ) {
   int i, j;
   unsigned char * buffer = data;
-  size_t header_size     = 12 + ( info->csrc_count * 4 );
-  size_t ext_header_size = header_size + ( info->extension ? 4 : 0 );
-  size_t payload_size    = _info_payload_size( info );
-  size_t total_size      = ext_header_size + info->payload_size + info->padding;
-  info->total_size = total_size;
+  size_t header_size = 12 + ( info->csrc_count * 4 );
 
-  if( total_size > size ) return 1;
-  
+  if( size < header_size ) return 1;
+    
   buffer[0] = 0x80
             | ( info->padding ? 0x20 : 0 )
             | ( info->extension ? 0x10 : 0 )
@@ -738,115 +728,137 @@ static int RTPEncodePacket( struct RTPPacketInfo * info, size_t size, void * dat
   buffer[1] = ( info->payload_type & 0x7f )
             | ( info->marker ? 0x80 : 0x00 );
   
-  buffer[2] =   info->sequence_number        & 0xff;
-  buffer[3] = ( info->sequence_number >> 8 ) & 0xff;
+  buffer[2] = ( info->sequence_number >> 8 ) & 0xff;
+  buffer[3] =   info->sequence_number        & 0xff;
 
-  buffer[4] =   info->timestamp         & 0xff;
-  buffer[5] = ( info->timestamp >> 8 )  & 0xff;
-  buffer[6] = ( info->timestamp >> 16 ) & 0xff;
-  buffer[7] = ( info->timestamp >> 24 ) & 0xff;
+  buffer[4] = ( info->timestamp >> 24 ) & 0xff;
+  buffer[5] = ( info->timestamp >> 16 ) & 0xff;
+  buffer[6] = ( info->timestamp >> 8 )  & 0xff;
+  buffer[7] =   info->timestamp         & 0xff;
 
-  buffer[8]  =   info->ssrc         & 0xff;
-  buffer[9]  = ( info->ssrc >> 8 )  & 0xff;
-  buffer[10] = ( info->ssrc >> 16 ) & 0xff;
-  buffer[11] = ( info->ssrc >> 24 ) & 0xff;
+  buffer[8]  = ( info->ssrc >> 24 ) & 0xff;
+  buffer[9]  = ( info->ssrc >> 16 ) & 0xff;
+  buffer[10] = ( info->ssrc >> 8 )  & 0xff;
+  buffer[11] =   info->ssrc         & 0xff;
 
   for( i=0, j=0; i<info->csrc_count; i++, j+=4 ) {
-    buffer[12+j] =   info->csrc[i]         & 0xff;
-    buffer[13+j] = ( info->csrc[i] >> 8 )  & 0xff;
-    buffer[14+j] = ( info->csrc[i] >> 16 ) & 0xff;
-    buffer[15+j] = ( info->csrc[i] >> 24 ) & 0xff;
+    buffer[12+j] = ( info->csrc[i] >> 24 ) & 0xff;
+    buffer[13+j] = ( info->csrc[i] >> 16 ) & 0xff;
+    buffer[14+j] = ( info->csrc[i] >> 8 )  & 0xff;
+    buffer[15+j] =   info->csrc[i]         & 0xff;
   }
   
-  if( info->extension ) {
-    buffer[header_size]   = 0;
-    buffer[header_size+1] = 0;
-    buffer[header_size+2] = 0;
-    buffer[header_size+3] = 0;
-  }
-  
-  if( info->payload_size > 0 && info->payload != NULL ) {
-    memcpy( data+ext_header_size, info->payload, info->payload_size );
-  /*padding should be ignored*/
-  /*memset( data+data_size, 0, info->padding-1 );*/
-    if( info->padding ) {
-      buffer[total_size-1] = info->padding;
-    }
-  }
+  *written = header_size;
   return 0;
 }
 
-/**
- * Decode an RTP packet received on a socket.
- * Store all RTP information (timestamp, ssrc, payload-size, etc.) inside the info structure
- * and set the info-structures data pointer to the location of the payload.
- * @relates RTPSession
- * @param info The packet information structure to fill.
- * @param size The size of the received packet in bytes.
- * @param data The buffer holding the encoded packet.
- */
-static int RTPDecodePacket( struct RTPPacketInfo * info, size_t size, void * data ) {
+static int _rtp_decode_header( struct RTPPacketInfo * info, size_t size, void * data, size_t * read ) {
   int i, j;
   unsigned char * buffer = data;
   size_t header_size;
-  size_t ext_header_size;
-  size_t total_size = size;
 
   if( ( buffer[0] & 0xc0 ) != 0x80 ) {
     return 1; /* wrong rtp version */
   }
-  info->padding         = ( buffer[0] & 0x20 ) ? buffer[total_size-1] : 0;
+  info->padding         = ( buffer[0] & 0x20 ) ? buffer[size-1] : 0;
   info->extension       = ( buffer[0] & 0x10 ) ? 1 : 0;
   info->csrc_count      =   buffer[0] & 0x0f;
 
   info->marker          = ( buffer[1] & 0x80 ) ? 1 : 0;
   info->payload_type    =   buffer[1] & 0x7f;
 
-  info->sequence_number =   buffer[2]
-                        | ( buffer[3] << 8 );
+  info->sequence_number = ( buffer[2] << 8 )
+                        |   buffer[3];
 
-  info->timestamp       =   buffer[4]
-                        | ( buffer[5] << 8 )
-                        | ( buffer[6] << 16 )
-                        | ( buffer[7] << 24 );
+  info->timestamp       = ( buffer[4] << 24 )
+                        | ( buffer[5] << 16 )
+                        | ( buffer[6] << 8 )
+                        |   buffer[7];
 
-  info->ssrc            =   buffer[8]
-                        | ( buffer[9] << 8 )
-                        | ( buffer[10] << 16 )
-                        | ( buffer[11] << 24 );
+  info->ssrc            = ( buffer[8] << 24 )
+                        | ( buffer[9] << 16 )
+                        | ( buffer[10] << 8 )
+                        |   buffer[11];
 
   header_size = 12 + ( info->csrc_count * 4 );
+  
+  if( size < header_size ) return 1;
 
   for( i=0, j=0; i<info->csrc_count; i++, j+=4 ) {
-    info->csrc[i] =   buffer[12+j]
-                  | ( buffer[13+j] << 8 )
-                  | ( buffer[14+j] << 16 )
-                  | ( buffer[15+j] << 24 );
+    info->csrc[i] = ( buffer[12+j] << 24 )
+                  | ( buffer[13+j] << 16 )
+                  | ( buffer[14+j] << 8 )
+                  |   buffer[15+j];
   }
+
+  *read = header_size;
+  return 0;
+}
+
+static int _rtp_encode_extension( struct RTPPacketInfo * info, size_t size, void * data, size_t * written ) {
+  int i;
+  unsigned char * buffer = data;
+  size_t ext_header_size;
+  
+  if( info->extension ) {
+    if( info->iovlen < 1 ) return 1;
+    ext_header_size = info->iov[0].iov_len;
+    if( ext_header_size % 4 || ext_header_size == 0 ) {
+      /* fill up to whole 4 bytes words */
+      ext_header_size += 4 - (info->iov[0].iov_len % 4);
+    }
+
+    memcpy( buffer, info->iov[0].iov_base, info->iov[0].iov_len );
+    i = ext_header_size / 4;
+    buffer[2] = ( i >> 8 ) & 0xff;
+    buffer[3] =   i        & 0xff;
+  } else {
+    ext_header_size = 0;
+  }
+  
+  *written = ext_header_size;
+  return 0;
+}
+
+static int _rtp_decode_extension( struct RTPPacketInfo * info, size_t size, void * data, size_t * read ) {
+  int i;
+  unsigned char * buffer = data;
+  size_t ext_header_size;
 
   if( info->extension ) {
-       /* buffer[header_size];   */
-       /* buffer[header_size+1]; */
-    j =   buffer[header_size+2]
-      | ( buffer[header_size+3] << 8 );
-    ext_header_size = header_size + 4 + (j*4);
+    if( info->iovlen < 1 ) return 1;
+    i = ( buffer[2] << 8 )
+      |   buffer[3];
+    ext_header_size = 4 + (i*4);
+    info->iov[0].iov_base = buffer;
+    info->iov[0].iov_len  = ext_header_size;
   } else {
-    ext_header_size = header_size;
+    ext_header_size = 0;
   }
 
-  info->total_size   = total_size;
-  info->payload_size = total_size - ext_header_size - info->padding;
-
-  if( info->payload_size == 0 ) {
-    info->payload = NULL;
-  } else {
-    if( info->payload != NULL ) {
-      memcpy( info->payload, data+ext_header_size, info->payload_size );
-    } else {
-      info->payload = data+ext_header_size;
-    }
-  }
+  *read = ext_header_size;
   return 0;
+}
+
+static int _rtp_encode_padding( struct RTPPacketInfo * info, size_t size, void * data, size_t * written ) {
+  unsigned char * buffer = data;
+  if( info->padding ) {
+    if( size < info->padding ) return 1;
+    buffer[info->padding-1] = info->padding;
+  }
+  *written = info->padding;
+  return 0;
+}
+
+static void _advance_buffer( size_t * size, void ** buffer, size_t bytes ) {
+  *size   -= bytes;
+  *buffer += bytes;
+}
+
+static void _append_iov( size_t * iovlen, struct iovec * iov, size_t size, void * buffer ) {
+  iov[*iovlen].iov_len  = size;
+  iov[*iovlen].iov_base = buffer;
+  *iovlen += 1;
 }
 
 /**
@@ -858,31 +870,62 @@ static int RTPDecodePacket( struct RTPPacketInfo * info, size_t size, void * dat
  * @retval >0 If the message could not be sent.
  */
 int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * info ) {
-  ssize_t bytes_sent;
-  struct iovec  msg_iov[RTP_IOV_LEN+1];
+  size_t size, written = 0, iovlen = 0;
+  void * buffer;
   struct msghdr msg;
-
-  if( info->peer == NULL ) return 1;
+  struct iovec  iov[RTP_IOV_LEN+3];
+  ssize_t bytes_sent;
+  
+  if( info == NULL || info->peer == NULL ) return 1;
+  if( info->iovlen > RTP_IOV_LEN ) return 1;
+  
+  size   = session->buflen;
+  buffer = session->buffer;
 
   info->ssrc            = session->self.ssrc;
   info->sequence_number = info->peer->out_seqnum + 1;
   info->timestamp       = _session_get_timestamp( session ) & 0xffffffff;
 
-  RTPEncodePacket( info, session->buflen, session->buffer );
-
-  msg_iov[0].iov_base = session->buffer;
-  msg_iov[0].iov_len  = info->total_size;
+  info->total_size = 0;
+  _rtp_encode_header( info, size, buffer, &written );
+  _append_iov( &iovlen, &(iov[0]), written, buffer );
+  _advance_buffer( &size, &buffer, written );
+  info->total_size += written;
+  if( info->extension ) {
+    _rtp_encode_extension( info, size, &buffer, &written );
+    _append_iov( &iovlen, &(iov[0]), written, buffer );
+    _advance_buffer( &size, &buffer, written );
+    info->total_size += written;
+  }
+  info->payload_size = 0;
+  while( (iovlen-1)<info->iovlen ) {
+    info->payload_size += info->iov[iovlen-1].iov_len;
+    _append_iov( &iovlen, &(iov[0]), info->iov[iovlen-1].iov_len, info->iov[iovlen-1].iov_base );
+  }
+  info->total_size += info->payload_size;
+  if( info->padding ) {
+    _rtp_encode_padding( info, size, &buffer, &written );
+    _append_iov( &iovlen, &(iov[0]), written, buffer );
+    _advance_buffer( &size, &buffer, written );
+    info->total_size += written;
+  }
+  /*
+  printf( "Sending RTP message consisting of %i iovecs.\n", (int) iovlen );
+  for( int i=0; i<iovlen; i++ ) {
+    printf( "[%i] iov_len: %i, iov_base: %p\n", i, (int) iov[i].iov_len, iov[i].iov_base );
+    for( int j=0; j<iov[i].iov_len; j++ ) printf( " 0x%02x", *((char*)iov[i].iov_base+j) );
+  }*/
 
   msg.msg_name       = &(info->peer->address.addr);
   msg.msg_namelen    = info->peer->address.size;
-  msg.msg_iov        = &(msg_iov[0]);
-  msg.msg_iovlen     = 1;
+  msg.msg_iov        = &(iov[0]);
+  msg.msg_iovlen     = iovlen;
   msg.msg_control    = NULL;
   msg.msg_controllen = 0;
   msg.msg_flags      = 0;
 
   bytes_sent = sendmsg( session->socket, &msg, 0 );
-  
+
   if( bytes_sent != info->total_size ) {
     return bytes_sent;
   } else if( msg.msg_flags != 0 ) {
@@ -903,17 +946,19 @@ int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * in
  * @retval >0 If the message could not be received.
  */
 int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo * info ) {
-  ssize_t bytes_received;
-  struct sockaddr_storage msg_name;
-  struct iovec  msg_iov[RTP_IOV_LEN+1];
+  size_t size, read = 0;
+  void * buffer;
+  struct sockaddr_storage name;
   struct msghdr msg;
+  struct iovec  iov;
+  ssize_t bytes_received;
 
-  msg_iov[0].iov_base = session->buffer;
-  msg_iov[0].iov_len  = session->buflen;
+  iov.iov_base = session->buffer;
+  iov.iov_len  = session->buflen;
 
-  msg.msg_name       = &msg_name;
-  msg.msg_namelen    = sizeof(msg_name);
-  msg.msg_iov        = &(msg_iov[0]);
+  msg.msg_name       = &name;
+  msg.msg_namelen    = sizeof(name);
+  msg.msg_iov        = &iov;
   msg.msg_iovlen     = 1;
   msg.msg_control    = NULL;
   msg.msg_controllen = 0;
@@ -925,8 +970,24 @@ int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo *
   if( msg.msg_flags != 0  )  return 1;
   if( bytes_received < 12 )  return 1;
 
-  RTPDecodePacket( info, bytes_received, session->buffer );
-
+  size   = bytes_received;
+  buffer = session->buffer;
+  info->total_size = bytes_received;
+  _rtp_decode_header( info, size, buffer, &read );
+  _advance_buffer( &size, &buffer, read );
+  if( info->extension ) {
+    _rtp_decode_extension( info, size, buffer, &read );
+    _advance_buffer( &size, &buffer, read );
+  }
+  info->payload_size = size - info->padding;
+  if( info->extension ) {
+    info->iov[1].iov_base = buffer;
+    info->iov[1].iov_len  = info->payload_size;
+  } else {
+    info->iov[0].iov_base = buffer;
+    info->iov[0].iov_len  = info->payload_size;
+  }
+  
   info->peer = NULL;
   RTPSessionFindPeerBySSRC( session, &(info->peer), info->ssrc );
   if( info->peer == NULL ) {
@@ -952,15 +1013,18 @@ int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo *
 int RTPSessionSend( struct RTPSession * session, size_t size, void * payload,
                     struct RTPPacketInfo * info ) {
   int i, result = 0;
+  struct iovec iov;
+  
   if( info == NULL ) {
     info = &(session->info);
   }
-  info->payload_size  = size;
-  info->payload       = payload;
-  info->iov_len = 1;
-  info->iov[0].iov_base = payload;
-  info->iov[0].iov_len  = size;
 
+  iov.iov_base    = payload;
+  iov.iov_len     = size;
+  info->extension = 0;
+  info->iovlen    = 1;
+  info->iov       = &iov;
+  
   if( info->peer == NULL ) {
     for( i=0; i<RTP_MAX_PEERS; i++ ) {
       if( session->peers[i] != NULL ) {
@@ -985,16 +1049,19 @@ int RTPSessionSend( struct RTPSession * session, size_t size, void * payload,
 int RTPSessionReceive( struct RTPSession * session, size_t size, void * payload,
                        struct RTPPacketInfo * info ) {
   int result;
+  struct iovec iov;
+  
   if( info == NULL ) {
     info = &(session->info);
   }
-  info->payload_size = 0;
-  info->payload      = NULL;
+  
+  info->iovlen = 1;
+  info->iov    = &iov;
 
   result = RTPSessionReceivePacket( session, info );
-  if( size >= info->payload_size && payload != NULL ) {
-    memcpy( payload, info->payload, info->payload_size );
-    info->payload = payload;
+  if( size >= info->iov[0].iov_len && payload != NULL ) {
+    memcpy( payload, info->iov[0].iov_base, info->iov[0].iov_len );
+    info->iov[0].iov_base = payload;
   }
   return result;
 }

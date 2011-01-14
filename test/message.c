@@ -205,13 +205,13 @@ int test006_message( void ) {
   ASSERT_NO_ERROR( MIDIMessageSet( messages[5].message, MIDI_VELOCITY, sizeof(MIDIVelocity), &(vels[4]) ),
                    "Could not set velocity of message 5." );
                    
-  ASSERT_NO_ERROR( MIDIMessageEncodeList( &(messages[0]), sizeof(buffer), &(buffer[0]), &bytes ),
+  ASSERT_NO_ERROR( MIDIMessageListEncode( &(messages[0]), sizeof(buffer), &(buffer[0]), &bytes ),
                    "Could not encode message list." );
 
   ASSERT_EQUAL( bytes, 14, "Wrote unexpected number of bytes." );
   ASSERT_EQUAL( memcmp( buffer, expect, 32 ), 0, "Encoded message has unexpected format." );
   
-  ASSERT_NO_ERROR( MIDIMessageDecodeList( &(messages[6]), sizeof(expect), &(expect[0]), &bytes ),
+  ASSERT_NO_ERROR( MIDIMessageListDecode( &(messages[6]), sizeof(expect), &(expect[0]), &bytes ),
                   "Could not decode message list." );
 
   ASSERT_NO_ERROR( MIDIMessageGet( messages[6].message, MIDI_STATUS, sizeof(MIDIStatus), &status ),

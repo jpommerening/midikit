@@ -23,6 +23,7 @@
 #define APPLEMIDI_RTP_SOCKET     1
 
 #define APPLEMIDI_MAX_MESSAGES_PER_PACKET 16
+#define APPLEMIDI_MSG_BUFFER_SIZE 16
 
 struct AppleMIDICommand {
   struct RTPPeer * peer; /* use peers sockaddr instead .. we get initialization problems otherwise */
@@ -35,7 +36,7 @@ struct AppleMIDICommand {
       unsigned long version;
       unsigned long token;
       unsigned long ssrc;
-      char name[32];
+      char name[64];
     } session;
     struct {
       unsigned long ssrc;
@@ -245,6 +246,7 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegat
   driver->rtpmidi_session = RTPMIDISessionCreate( driver->rtp_session );
   driver->in_queue  = MIDIMessageQueueCreate();
   driver->out_queue = MIDIMessageQueueCreate();
+  
 
   RTPSessionSetTimestampRate( driver->rtp_session, 44100.0 );
   RTPSessionGetTimestamp( driver->rtp_session, &ts );
@@ -462,7 +464,7 @@ static int _test_applemidi( int fd ) {
  */
 static int _applemidi_send_command( struct MIDIDriverAppleMIDI * driver, int fd, struct AppleMIDICommand * command ) {
   unsigned long ssrc;
-  unsigned long msg[12];
+  unsigned long msg[16];
   int len;
 
   msg[0] = htonl( ( APPLEMIDI_PROTOCOL_SIGNATURE << 16 ) | command->type );
@@ -530,7 +532,7 @@ static int _applemidi_send_command( struct MIDIDriverAppleMIDI * driver, int fd,
  */
 static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd, struct AppleMIDICommand * command ) {
   unsigned long ssrc;
-  unsigned long msg[12];
+  unsigned long msg[16];
   int len;
   
   command->size = sizeof(command->addr);
@@ -833,7 +835,7 @@ int MIDIDriverAppleMIDIAddPeer( struct MIDIDriverAppleMIDI * driver, char * addr
  * @retval >0 if the session could not be ended.
  */
 int MIDIDriverAppleMIDIRemovePeer( struct MIDIDriverAppleMIDI * driver, char * address, unsigned short port ) {
-  struct addrinfo * res;
+  struct addrinfo * res = NULL;
   int result;
   char portname[8];
   struct RTPPeer * peer;

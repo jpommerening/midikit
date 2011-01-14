@@ -95,6 +95,7 @@ int test002_rtp( void ) {
 int test003_rtp( void ) {
   struct RTPPeer * peer;
   struct RTPPacketInfo info;
+  struct iovec iov;
   unsigned char send_buffer[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
   unsigned char recv_buffer[32];
   int s, bytes;
@@ -110,15 +111,15 @@ int test003_rtp( void ) {
   info.timestamp = 0;
   info.csrc[0] = 0x80706050;
   info.csrc[1] = 0x04030201;
-  info.payload_size = 0;
-  info.payload = NULL;
+  info.iovlen = 1;
+  info.iov    = &iov;
 
   ASSERT_NO_ERROR( RTPSessionFindPeerBySSRC( session, &peer, RTP_CLIENT_SSRC ),
                    "Could not find peer." );
 
   info.peer = peer;
-  info.payload_size = sizeof(send_buffer);
-  info.payload = &(send_buffer[0]);
+  iov.iov_len  = sizeof(send_buffer);
+  iov.iov_base = &(send_buffer[0]);
 
   ASSERT_NO_ERROR( RTPSessionSendPacket( session, &info ),
                    "Could not send payload to peer." );
@@ -143,10 +144,10 @@ int test004_rtp( void ) {
   unsigned char send_buffer[20] = { 0xa0, 96,   /* V=2, P=0, X=0, CC=0, PT=96 */
                                     0x34, 0x12, /* Seqnum = 0x1234 */
                                     5, 6, 7, 8, /* timestamp */
-                                  ( RTP_CLIENT_SSRC ) & 0xff,
-                                  ( RTP_CLIENT_SSRC >> 8 ) & 0xff,
-                                  ( RTP_CLIENT_SSRC >> 16 ) & 0xff,
                                   ( RTP_CLIENT_SSRC >> 24 ) & 0xff,
+                                  ( RTP_CLIENT_SSRC >> 16 ) & 0xff,
+                                  ( RTP_CLIENT_SSRC >> 8 ) & 0xff,
+                                  ( RTP_CLIENT_SSRC ) & 0xff,
                                   1, 2, 3, 4,
                                   0xca, 0xfe, 0x00, 4 };
   unsigned char recv_buffer[8] = { 0 };

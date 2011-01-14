@@ -25,9 +25,23 @@ exec >"${MAIN_C}"
 
 echo "#include <stdio.h>"
 sed "s/${TEST_DECL_PATTERN}/extern \1 \2( void );/p;d" ${FILES}
-echo "int main(void) {"
-echo "  int failures = 0;"
-sed "s/${TEST_DECL_PATTERN}/  if( \2() ) { failures++; printf( \"\2 failed\\\\n\" ); } else { printf( \"\2 passed\\\\n\" ); }/p;d" ${FILES}
+echo "int main( int argc, char *argv[] ) {"
+echo "  int i, j, failures = 0;"
+echo "  struct {"
+echo "    char * name;"
+echo "    int (*func)(void);"
+echo "  } tests[] = {"
+sed "s/${TEST_DECL_PATTERN}/    { \"\2\", \&\2 },/p;d" ${FILES}
+echo "  };"
+echo "  for( i=0; i<(sizeof(tests)/sizeof(tests[0])); i++ ) {"
+echo "    printf( \"> Running %s\\\\n\", tests[i].name );"
+echo "    if( (tests[i].func)() ) {"
+echo "      failures++;"
+echo "      printf( \"> Test %s failed.\\\\n\", tests[i].name );"
+echo "    } else {"
+echo "      printf( \"> Test %s passed.\\\\n\", tests[i].name );"
+echo "    }"
+echo "  }"
 echo "  return failures;"
 echo "}"
 

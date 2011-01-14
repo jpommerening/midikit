@@ -4,8 +4,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#define RTP_MAX_PEERS 16
-#define RTP_IOV_LEN 4
 
 struct RTPPacketInfo {
   struct RTPPeer * peer;
@@ -20,9 +18,9 @@ struct RTPPacketInfo {
   unsigned long  csrc[16];        /**< contributing sources */
   size_t total_size;   /**< total packet size in bytes */
   size_t payload_size; /**< size of payload */
-  void * payload;      /**< payload data */
+/*void * payload;     */ /**< payload data */
 /*replace payload with iovec structure?*/
-  size_t iov_len;      /**< numver of elements in iov[] */
+  size_t iovlen;      /**< numver of elements in iov[] */
   struct iovec * iov;  /**< list of io vectors contianing pkg data */
 };
 

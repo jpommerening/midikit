@@ -5,7 +5,7 @@ struct RTPMIDIInfo {
   unsigned char journal;
   unsigned char zero;
   unsigned char phantom;
-  int messages;
+  int len;
 };
 
 /**
@@ -106,10 +106,10 @@ struct RTPMIDISession * RTPMIDISessionCreate( struct RTPSession * rtp_session ) 
   session->rtp_session = rtp_session;
   RTPSessionRetain( rtp_session );
 
-  session->midi_info.journal  = 0;
-  session->midi_info.zero     = 0;
-  session->midi_info.phantom  = 0;
-  session->midi_info.messages = 0;
+  session->midi_info.journal = 0;
+  session->midi_info.zero    = 0;
+  session->midi_info.phantom = 0;
+  session->midi_info.len     = 0;
 
   session->size   = 512;
   session->buffer = malloc( session->size );
@@ -291,22 +291,22 @@ static void _advance_buffer( size_t * size, void ** buffer, size_t bytes ) {
 
 static int _rtpmidi_encode_header( struct RTPMIDIInfo * info, size_t size, void * data, size_t * written ) {
   unsigned char * buffer = data;
-  if( info->messages > 0x0fff ) return 1;
-  if( info->messages > 0x0f ) {
+  if( info->len > 0x0fff ) return 1;
+  if( info->len > 0x0f ) {
     if( size<2 ) return 1;
     buffer[0] = 0x80
               | (info->journal ? 0x40 : 0 )
               | (info->zero    ? 0x20 : 0 )
               | (info->phantom ? 0x10 : 0 )
-              | ( (info->messages >> 8) & 0x0f );
-    buffer[1] = info->messages & 0xff;
+              | ( (info->len >> 8) & 0x0f );
+    buffer[1] = info->len & 0xff;
     *written = 2;
   } else {
     if( size<1 ) return 1;
-    buffer[0] = (info->journal  ? 0x40 : 0 )
-              | (info->zero     ? 0x20 : 0 )
-              | (info->phantom  ? 0x10 : 0 )
-              | (info->messages & 0x0f );
+    buffer[0] = (info->journal ? 0x40 : 0 )
+              | (info->zero    ? 0x20 : 0 )
+              | (info->phantom ? 0x10 : 0 )
+              | (info->len     & 0x0f );
     *written = 1;
   }
   return 0;
@@ -316,17 +316,17 @@ static int _rtpmidi_decode_header( struct RTPMIDIInfo * info, size_t size, void 
   unsigned char * buffer = data;
   if( buffer[0] & 0x80 ) {
     if( size<2 ) return 1;
-    info->journal  = (buffer[0] & 0x40) ? 1 : 0;
-    info->zero     = (buffer[0] & 0x20) ? 1 : 0;
-    info->phantom  = (buffer[0] & 0x10) ? 1 : 0;
-    info->messages = ((buffer[0] & 0x0f) << 8) | buffer[1];
+    info->journal = (buffer[0] & 0x40) ? 1 : 0;
+    info->zero    = (buffer[0] & 0x20) ? 1 : 0;
+    info->phantom = (buffer[0] & 0x10) ? 1 : 0;
+    info->len     = ((buffer[0] & 0x0f) << 8) | buffer[1];
     *read = 2;
   } else {
     if( size<1 ) return 1;
-    info->journal  = (buffer[0] & 0x40) ? 1 : 0;
-    info->zero     = (buffer[0] & 0x20) ? 1 : 0;
-    info->phantom  = (buffer[0] & 0x10) ? 1 : 0;
-    info->messages = (buffer[0] & 0x0f);
+    info->journal = (buffer[0] & 0x40) ? 1 : 0;
+    info->zero    = (buffer[0] & 0x20) ? 1 : 0;
+    info->phantom = (buffer[0] & 0x10) ? 1 : 0;
+    info->len     = (buffer[0] & 0x0f);
     *read = 1;
   }
   return 0;
@@ -340,17 +340,14 @@ static int _rtpmidi_encode_messages( struct RTPMIDIInfo * info, MIDITimestamp ti
   MIDITimestamp     timestamp2;
   MIDIVarLen        time_diff;
 
-  for( m=0; (m<info->messages) && (size>0) && (messages!=NULL) && (messages->message!=NULL); m++ ) {
+  for( m=0; (size>0) && (messages!=NULL) && (messages->message!=NULL); m++ ) {
     MIDIMessageGetTimestamp( messages->message, &timestamp2 );
     time_diff = ( timestamp2 > timestamp ) ? ( timestamp2 - timestamp ) : 0;
     timestamp = timestamp2;
-
     if( m == 0 ) {
-      if( time_diff == 0 ) info->zero = 1;
-      _rtpmidi_encode_header( info, size, buffer, &w );
-      _advance_buffer( &size, &buffer, w );
+      info->zero = time_diff ? 1 : 0;
     }
-    if( m > 0 || info->zero == 0 ) {
+    if( m > 0 || info->zero == 1 ) {
       MIDIUtilWriteVarLen( &time_diff, size, buffer, &w );
       _advance_buffer( &size, &buffer, w );
     }
@@ -359,6 +356,8 @@ static int _rtpmidi_encode_messages( struct RTPMIDIInfo * info, MIDITimestamp ti
     messages = messages->next;
   }
 
+  info->len = buffer - data;
+  
   *written = buffer - data;
   return result;
 }
@@ -370,16 +369,14 @@ static int _rtpmidi_decode_messages( struct RTPMIDIInfo * info, MIDITimestamp ti
   MIDIRunningStatus status = 0;
   MIDIVarLen        time_diff;
 
-  _rtpmidi_decode_header( info, size, buffer, &r );
-  _advance_buffer( &size, &buffer, r );
   if( info->phantom ) {
     /* we don't really care about the source coding for now .. */
   }
-  for( m=0; (m<info->messages) && (size>0) && (messages!=NULL); m++ ) {
+  for( m=0; (size>0) && (messages!=NULL) && (buffer-data) < info->len; m++ ) {
     if( messages->message == NULL ) {
       messages->message = MIDIMessageCreate( 0 );
     }
-    if( m > 0 || info->zero == 0 ) {
+    if( m > 0 || info->zero == 1 ) {
       MIDIUtilReadVarLen( &time_diff, size, buffer, &r );
       _advance_buffer( &size, &buffer, r );
     } else {
@@ -420,7 +417,7 @@ static int _list_length( struct MIDIMessageList * messages ) {
  */
 int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList * messages ) {
   int result = 0;
-  struct iovec iov[2];
+  struct iovec iov[3];
   size_t written = 0;
   size_t size    = session->size;
   void * buffer  = session->buffer;
@@ -434,22 +431,25 @@ int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList 
 
   MIDIMessageGetTimestamp( messages->message, &timestamp );
 
+  info->peer            = 0;
   info->padding         = 0;
   info->extension       = 0;
   info->csrc_count      = 0;
   info->marker          = 0;
-  info->payload_type    = 96;
+  info->payload_type    = 97;
   info->sequence_number = 0; /* filled out by rtp */
   info->timestamp       = 0; /* filled out by rtp */
-  info->payload_size    = 0;
-  info->payload         = buffer;
 
   minfo->journal = 0;
   minfo->phantom = 0;
   minfo->zero    = 0;
-  minfo->messages = _list_length( messages );
 
   _rtpmidi_encode_messages( minfo, timestamp, messages, size, buffer, &written );
+  iov[1].iov_base = buffer;
+  iov[1].iov_len  = written;
+  _advance_buffer( &size, &buffer, written );
+
+  _rtpmidi_encode_header( minfo, size, buffer, &written );
   iov[0].iov_base = buffer;
   iov[0].iov_len  = written;
   _advance_buffer( &size, &buffer, written );
@@ -461,18 +461,18 @@ int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList 
     if( minfo->journal ) {
       journal = NULL; /* peer out journal */
       _rtpmidi_journal_encode( session, journal, size, buffer, &written );
-      iov[1].iov_base = buffer;
-      iov[1].iov_len  = written;
+      iov[2].iov_base = buffer;
+      iov[2].iov_len  = written;
       _advance_buffer( &size, &buffer, written );
     } else {
-      iov[1].iov_base = NULL;
-      iov[1].iov_len  = 0;
+      iov[2].iov_base = NULL;
+      iov[2].iov_len  = 0;
     }
 
-    info->peer    = peer;
-    info->iov_len = ( minfo->journal ) ? 2 : 1;
-    info->iov     = &(iov[0]);
-    info->payload_size = iov[0].iov_len + iov[1].iov_len;
+    info->peer   = peer;
+    info->iovlen = ( minfo->journal ) ? 3 : 2;
+    info->iov    = &(iov[0]);
+    info->payload_size = iov[0].iov_len + iov[1].iov_len + iov[2].iov_len;
 
     result = RTPSessionSendPacket( session->rtp_session, info );
 
@@ -512,18 +512,11 @@ int RTPMIDISessionReceive( struct RTPMIDISession * session, struct MIDIMessageLi
   struct RTPMIDIJournal * journal = NULL;
   struct RTPMIDIInfo    * minfo   = &(session->midi_info);
   struct RTPPacketInfo  * info    = &(session->rtp_info);
-
-  info->payload_size = size;
-  info->payload      = buffer;
   
   if( messages == NULL ) return 1;
   result = RTPSessionReceivePacket( session->rtp_session, info );
   if( result != 0 ) return result;
-  
-  buffer = info->payload;
-  size   = info->payload_size;
-  read   = 0;
-  
+    
   timestamp = info->timestamp;
   
   _rtpmidi_decode_messages( minfo, timestamp, messages, size, buffer, &read );

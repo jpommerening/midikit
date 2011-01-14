@@ -201,6 +201,7 @@ int test003_applemidi( void ) {
 
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
+  ASSERT( _check_socket_in( client_rtp_socket ), "Expected message on client control socket." );
   ASSERT_EQUAL( 36, recv( client_rtp_socket, &(buf[0]), sizeof(buf), 0), "Did not receive synchronization answer." );
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
   ASSERT_NO_ERROR( MIDIRunloopStep( runloop ), "Could not step through runloop." );
@@ -260,8 +261,9 @@ int test004_applemidi( void ) {
 
   ASSERT_NO_ERROR( MIDIDriverAppleMIDISend( driver ), "Could not send queued messages." );
 
+  ASSERT( _check_socket_in( client_rtp_socket ), "Expected message on client control socket." );
   bytes = recv( client_rtp_socket, &(buffer[0]), sizeof(buffer), 0 );
-  ASSERT_GREATER_OR_EQUAL( bytes, 24, "Could not received RTP MIDI packet from AppleMIDI driver." );
+  ASSERT_GREATER_OR_EQUAL( bytes, 23, "Could not received RTP MIDI packet from AppleMIDI driver." );
 
   for( int i=0; i<bytes; i++ ) {
     if( (i+1)%8 == 0 || (i+1) == bytes ) {
@@ -271,10 +273,10 @@ int test004_applemidi( void ) {
     }
   }
 
-  ssrc = ( buffer[8] )
-       | ( buffer[9] << 8 )
-       | ( buffer[10] << 16 )
-       | ( buffer[11] << 24 );
+  ssrc = ( buffer[8] << 24)
+       | ( buffer[9] << 16 )
+       | ( buffer[10] << 8 )
+       | ( buffer[11] );
 
   ASSERT_EQUAL( 24, sendto( client_rtp_socket, &(expect[0]), 24, 0,
                 (struct sockaddr *) &server_addr, sizeof(server_addr) ), "Could not send RTP-MIDI." );

@@ -7,6 +7,8 @@
 struct MIDIMessage;
 struct MIDIMessageList;
 struct MIDIMessageList {
+/*size_t refs;
+  size_t length;*/
   struct MIDIMessage * message;
   struct MIDIMessageList * next;
 };
@@ -32,7 +34,18 @@ int MIDIMessageEncodeRunningStatus( struct MIDIMessage * message, MIDIRunningSta
 int MIDIMessageDecodeRunningStatus( struct MIDIMessage * message, MIDIRunningStatus * status,
                                     size_t size, unsigned char * buffer, size_t * read );
 
-int MIDIMessageEncodeList( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * written );
-int MIDIMessageDecodeList( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * read );
+/*
+struct MIDIMessageList * MIDIMessageListCreate( size_t length );
+void MIDIMessageListDestroy( struct MIDIMessageList * messages );
+void MIDIMessageListRetain( struct MIDIMessageList * messages );
+void MIDIMessageListRelease( struct MIDIMessageList * messages );
+
+int MIDIMessageListAppend( struct MIDIMessageList * messages, struct MIDIMessage * message );
+int MIDIMessageListConcat( struct MIDIMessageList * messages, struct MIDIMessageList * other );
+
+int MIDIMessageListGetLength( struct MIDIMessageList * messages, size_t * length );
+*/
+int MIDIMessageListEncode( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * written );
+int MIDIMessageListDecode( struct MIDIMessageList * messages, size_t size, unsigned char * buffer, size_t * read );
 
 #endif
