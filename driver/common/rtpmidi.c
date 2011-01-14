@@ -504,6 +504,7 @@ int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList 
  */
 int RTPMIDISessionReceive( struct RTPMIDISession * session, struct MIDIMessageList * messages ) {
   int result = 0;
+  struct iovec iov[3];
   size_t read = 0;
   size_t size;
   void * buffer;
@@ -513,6 +514,9 @@ int RTPMIDISessionReceive( struct RTPMIDISession * session, struct MIDIMessageLi
   struct RTPMIDIJournal * journal = NULL;
   struct RTPMIDIInfo    * minfo   = &(session->midi_info);
   struct RTPPacketInfo  * info    = &(session->rtp_info);
+
+  info->iovlen = 3;
+  info->iov    = &(iov[0]);
   
   if( messages == NULL ) return 1;
   result = RTPSessionReceivePacket( session->rtp_session, info );

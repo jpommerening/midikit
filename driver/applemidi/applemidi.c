@@ -757,6 +757,11 @@ static int _applemidi_respond( struct MIDIDriverAppleMIDI * driver, int fd, stru
     case APPLEMIDI_COMMAND_INVITATION:
       if( driver->accept ) {
         command->type = APPLEMIDI_COMMAND_INVITATION_ACCEPTED;
+        if( fd == driver->rtp_socket ) {
+          peer = RTPPeerCreate( command->data.session.ssrc, command->size, (struct sockaddr *) &(command->addr) );
+          RTPSessionAddPeer( driver->rtp_session, peer );
+          RTPPeerRelease( peer );
+        }
       } else {
         command->type = APPLEMIDI_COMMAND_INVITATION_REJECTED;
       }
