@@ -85,6 +85,7 @@ static int _n_msg = 0;
 static int _receive( void * interface, struct MIDIMessage * message ) {
   printf( "Received message!\n" );
   _n_msg++;
+  return 0;
 }
 
 struct MIDIDriverDelegate _test_driver = {
@@ -225,7 +226,7 @@ int test004_applemidi( void ) {
     /* SSRC */
     0x00, 0x00, 0x00, 0x00,
     /* MIDI header, Z bit (2) is set */
-    0x23,
+    0x0b,
     /* MIDI payload, first timestamp is zero */
           0x90, 0x42, 0x68,
     0x00, 0xa0, 0x42, 0x78,

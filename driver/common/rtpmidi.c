@@ -382,6 +382,7 @@ static int _rtpmidi_decode_messages( struct RTPMIDIInfo * info, MIDITimestamp ti
     } else {
       time_diff = 0;
     }
+
     MIDIMessageDecodeRunningStatus( messages->message, &status, size, buffer, &r );
     _advance_buffer( &size, &buffer, r );
 
@@ -503,9 +504,9 @@ int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList 
  */
 int RTPMIDISessionReceive( struct RTPMIDISession * session, struct MIDIMessageList * messages ) {
   int result = 0;
-  size_t read   = 0;
-  size_t size   = session->size;
-  void * buffer = session->buffer;
+  size_t read = 0;
+  size_t size;
+  void * buffer;
   MIDITimestamp timestamp;
 
   struct RTPPeer        * peer    = NULL;
@@ -516,9 +517,14 @@ int RTPMIDISessionReceive( struct RTPMIDISession * session, struct MIDIMessageLi
   if( messages == NULL ) return 1;
   result = RTPSessionReceivePacket( session->rtp_session, info );
   if( result != 0 ) return result;
-    
-  timestamp = info->timestamp;
   
+  timestamp = info->timestamp;
+  size      = info->iov[0].iov_len;
+  buffer    = info->iov[0].iov_base;
+
+  _rtpmidi_decode_header( minfo, size, buffer, &read );
+  _advance_buffer( &size, &buffer, read );
+
   _rtpmidi_decode_messages( minfo, timestamp, messages, size, buffer, &read );
   _advance_buffer( &size, &buffer, read );
   
