@@ -95,8 +95,7 @@ static int _sender_disconnect( void * driverp, struct MIDIConnector * sender ) {
 }
 
 static int _driver_receive( void * driverp, struct MIDIMessage * message ) {
-  struct MIDIDriver * driver = driverp;
-  return MIDIDriverReceive( driver, message );
+  return MIDIDriverReceive( driverp, message );
 }
 
 /** @} */
@@ -125,7 +124,7 @@ struct MIDIDriver * MIDIDriverCreate( struct MIDIDriverDelegate * delegate ) {
   driver->clock     = NULL;
 
   if( delegate != NULL ) {
-    delegate->receive = &(_driver_receive);
+    delegate->receive   = &_driver_receive;
     delegate->interface = driver;
   }
   return driver;
@@ -257,6 +256,22 @@ int MIDIDriverProvideReceiveConnector( struct MIDIDriver * driver, struct MIDICo
  * Receiving and sending MIDIMessage objects.
  * @{
  */
+
+/**
+ * @brief Make the MIDIDriver implement itself as loopback.
+ * The driver's delegate will be modified so that it passes
+ * outgoing messages to it's own receive method.
+ * @public @memberof MIDIDriver
+ * @param driver The driver
+ * @retval 0  on success.
+ * @retval >0 if the operation could not be completed.
+ */
+int MIDIDriverMakeLoopback( struct MIDIDriver * driver ) {
+  if( driver->delegate == NULL ) return 1;
+  driver->delegate->send = &_driver_receive;
+  driver->delegate->implementation = driver;
+  return 0;
+}
 
 /**
  * @brief Receive a generic MIDIMessage.

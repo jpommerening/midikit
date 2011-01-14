@@ -11,8 +11,11 @@ void RTPMIDISessionDestroy( struct RTPMIDISession * session );
 void RTPMIDISessionRetain( struct RTPMIDISession * session );
 void RTPMIDISessionRelease( struct RTPMIDISession * session );
 
-int RTPMIDISessionTrunkateSendJournal( struct RTPMIDISession * session, struct RTPPeer * peer, unsigned long seqnum );
-int RTPMIDISessionTrunkateReceiveJournal( struct RTPMIDISession * session, struct RTPPeer * peer, unsigned long seqnum );
+int RTPMIDISessionJournalTrunkate( struct RTPMIDISession * session, struct RTPPeer * peer, unsigned long seqnum );
+int RTPMIDISessionJournalStoreMessages( struct RTPMIDISession * session, struct RTPPeer * peer,
+                                        unsigned long seqnum, struct MIDIMessageList * messages );
+int RTPMIDISessionJournalRecoverMessages( struct RTPMIDISession * session, struct RTPPeer * peer,
+                                          unsigned long seqnum, struct MIDIMessageList * messages );
 
 int RTPMIDIPeerSetInfo( struct RTPPeer * peer, void * info );
 int RTPMIDIPeerGetInfo( struct RTPPeer * peer, void ** info );

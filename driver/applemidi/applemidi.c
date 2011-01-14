@@ -213,8 +213,7 @@ static int _applemidi_disconnect( struct MIDIDriverAppleMIDI * driver, int fd ) 
 }
 
 static int _driver_send( void * driverp, struct MIDIMessage * message ) {
-  struct MIDIDriverAppleMIDI * driver = driverp;
-  return MIDIDriverAppleMIDISendMessage( driver, message );
+  return MIDIDriverAppleMIDISendMessage( driverp, message );
 }
 
 /**
@@ -260,8 +259,8 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegat
   driver->delegate = delegate;
 
   if( delegate != NULL ) {
-    delegate->send = &(_driver_send);
-    delegate->interface = driver;
+    delegate->send = &_driver_send;
+    delegate->implementation = driver;
   }
   return driver;
 }
@@ -793,7 +792,7 @@ static int _applemidi_respond( struct MIDIDriverAppleMIDI * driver, int fd, stru
       return _applemidi_sync( driver, fd, command );
     case APPLEMIDI_COMMAND_RECEIVER_FEEDBACK:
       RTPSessionFindPeerBySSRC( driver->rtp_session, &peer, command->data.feedback.ssrc );
-      RTPMIDISessionTrunkateSendJournal( driver->rtpmidi_session, peer, command->data.feedback.seqnum );
+      RTPMIDISessionJournalTrunkate( driver->rtpmidi_session, peer, command->data.feedback.seqnum );
       break;
     default:
       return 1;

@@ -206,6 +206,7 @@ static int _rtpmidi_journal_decode( struct RTPMIDISession * session, struct RTPM
  */
 static int _rtpmidi_journal_encode_messages( struct RTPMIDIJournal * journal, unsigned short checkpoint,
                                              struct MIDIMessageList * messages ) {
+  struct MIDIMessage * message;
   return 0;
 }
 
@@ -218,6 +219,7 @@ static int _rtpmidi_journal_encode_messages( struct RTPMIDIJournal * journal, un
  */
 static int _rtpmidi_journal_decode_messages( struct RTPMIDIJournal * journal, unsigned short checkpoint,
                                              struct MIDIMessageList * messages ) {
+  struct MIDIMessage * message;
   return 0;
 }
 
@@ -229,14 +231,6 @@ static int _rtpmidi_journal_decode_messages( struct RTPMIDIJournal * journal, un
  * Sending and receiving @c MIDIMessage objects using the RTP-protocol.
  * @{
  */
-
-int RTPMIDISessionTrunkateSendJournal( struct RTPMIDISession * session, struct RTPPeer * peer, unsigned long seqnum ) {
-  return 0;
-}
-
-int RTPMIDISessionTrunkateReceiveJournal( struct RTPMIDISession * session, struct RTPPeer * peer, unsigned long seqnum ) {
-  return 0;
-}
 
 static void * _rtpmidi_peer_info_create() {
   struct RTPMIDIPeerInfo * info = malloc( sizeof( struct RTPMIDIPeerInfo ) );
@@ -259,6 +253,7 @@ int RTPMIDIPeerSetInfo( struct RTPPeer * peer, void * info ) {
   RTPPeerGetInfo( peer, (void **) &info_ );
   if( info_ == NULL ) {
     info_ = _rtpmidi_peer_info_create();
+    RTPPeerSetInfo( peer, info_ );
   }
   info_->info = info;
   return 0;
@@ -276,6 +271,8 @@ int RTPMIDIPeerGetInfo( struct RTPPeer * peer, void ** info ) {
   struct RTPMIDIPeerInfo * info_ = NULL;
   RTPPeerGetInfo( peer, (void **) &info_ );
   if( info_ == NULL ) {
+    info_ = _rtpmidi_peer_info_create();
+    RTPPeerSetInfo( peer, info_ );
     *info = NULL;
   } else {
     *info = info_->info;
@@ -283,6 +280,66 @@ int RTPMIDIPeerGetInfo( struct RTPPeer * peer, void ** info ) {
   return 0;
 }
 
+/**
+ * @brief Trunkate a peers send journal.
+ * Remove all message entries that have a sequence number less or equal to @c seqnum.
+ * @public @memberof RTPMIDISession
+ * @param session The session.
+ * @param peer    The peer.
+ * @param seqnum  The sequence number.
+ * @retval 0 on success.
+ */
+int RTPMIDISessionJournalTrunkate( struct RTPMIDISession * session, struct RTPPeer * peer, unsigned long seqnum ) {
+  return 0;
+}
+
+/**
+ * @brief Store a list of messages in a peer's send journal and
+ * associate them with the given sequence number.
+ * @public @memberof RTPMIDISession
+ * @param session  The session.
+ * @param peer     The peer.
+ * @param seqnum   The sequence number.
+ * @param messages The messages list to encode.
+ * @retval 0 on success.
+ */
+int RTPMIDISessionJournalStoreMessages( struct RTPMIDISession * session, struct RTPPeer * peer,
+                                        unsigned long seqnum, struct MIDIMessageList * messages ) {
+  struct RTPMIDIPeerInfo * info = NULL;
+
+  RTPPeerGetInfo( peer, (void**) &info );
+  if( info == NULL ) {
+    info = _rtpmidi_peer_info_create();
+    RTPPeerSetInfo( peer, info );
+  }
+
+  if( info->send_journal == NULL ) {
+    /* create journal */
+  }
+
+  return _rtpmidi_journal_encode_messages( info->send_journal, seqnum, messages );
+}
+
+/**
+ * @brief Restore a list of messages from a peer's receive
+ * journal associated with the given sequence number.
+ * @public @memberof RTPMIDISession
+ * @param session  The session.
+ * @param peer     The peer.
+ * @param seqnum   The sequence number.
+ * @param messages The messages list to decode messages to.
+ * @retval 0 on success.
+ */
+int RTPMIDISessionJournalRecoverMessages( struct RTPMIDISession * session, struct RTPPeer * peer,
+                                          unsigned long seqnum, struct MIDIMessageList * messages ) {
+  struct RTPMIDIPeerInfo * info = NULL;
+
+  RTPPeerGetInfo( peer, (void**) &info );
+  if( info == NULL ) return 0;
+  if( info->receive_journal == NULL ) return 0;
+
+  return _rtpmidi_journal_decode_messages( info->receive_journal, seqnum, messages );
+}
 
 static void _advance_buffer( size_t * size, void ** buffer, size_t bytes ) {
   *size   -= bytes;
@@ -395,12 +452,6 @@ static int _rtpmidi_decode_messages( struct RTPMIDIInfo * info, MIDITimestamp ti
   return result;
 }
 
-static int _list_length( struct MIDIMessageList * messages ) {
-  int i;
-  for( i=0; messages != NULL; i++ ) { messages = messages->next; }
-  return i;
-}
-
 /**
  * @brief Send MIDI messages over an RTPSession.
  * Broadcast the messages to all connected peers. Store the number of sent messages
@@ -439,7 +490,7 @@ int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList 
   info->marker          = 0;
   info->payload_type    = 97;
   info->sequence_number = 0; /* filled out by rtp */
-  info->timestamp       = 0; /* filled out by rtp */
+  info->timestamp       = timestamp; /* filled out by rtp but shouldn't */
 
   minfo->journal = 0;
   minfo->phantom = 0;

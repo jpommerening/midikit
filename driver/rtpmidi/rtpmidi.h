@@ -3,9 +3,8 @@
 #include "midi/driver.h"
 
 struct MIDIDriverRTPMIDI;
-extern struct MIDIDriverDelegate MIDIDriverDelegateRTPMIDI;
 
-struct MIDIDriverRTPMIDI * MIDIDriverRTPMIDICreate();
+struct MIDIDriverRTPMIDI * MIDIDriverRTPMIDICreate( struct MIDIDriverDelegate * delegate );
 void MIDIDriverRTPMIDIDestroy( struct MIDIDriverRTPMIDI * driver );
 void MIDIDriverRTPMIDIRetain( struct MIDIDriverRTPMIDI * driver );
 void MIDIDriverRTPMIDIRelease( struct MIDIDriverRTPMIDI * driver );

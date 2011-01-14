@@ -6,32 +6,32 @@ struct MIDIDriverCoreMIDI {
   MIDIClientRef client;
   MIDIPortRef   in_port;
   MIDIPortRef   out_port;
-  struct MIDIMessageQueue * in_queue;
-  struct MIDIMessageQueue * out_queue;
-};
-
-struct MIDIDriverDelegate MIDIDriverDelegateCoreMIDI = {
-  NULL
+  struct MIDIDriverDelegate * delegate;
 };
 
 static void _coremidi_readproc( const MIDIPacketList *pktlist, void * readProcRefCon, void * srcRefCon ) {
   struct MIDIDriverCoreMIDI * driver = readProcRefCon;
   struct MIDIMessage * message       = NULL;
   int i;
-  size_t size, read;
+  size_t size, read = 0;
+  void * buffer;
   
   for( i=0; i<pktlist->numPackets; i++ ) {
+    size   = pktlist->packet[i].length;
+    buffer = pkglist->packet[i].data;
     do {
-      size = 0;
-      read = 0;
-      if( message == NULL ) message = MIDIMessageCreate( MIDI_STATUS_RESET );
-      MIDIMessageDecode( message, pktlist->packet[i].length-read, (unsigned char *) &(pktlist->packet[i].data[read]), &size );
+      message = MIDIMessageCreate( MIDI_STATUS_RESET );
+      MIDIMessageDecode( message, size, buffer, &read );
       MIDIDriverCoreMIDIReceiveMessage( driver, message );
       MIDIMessageRelease( message );
-      message = NULL;
-      read += size;
-    } while( read < pktlist->packet[i].length );
+      size   -= read;
+      buffer += read;
+    } while( size > 0 );
   }
+}
+
+static int _driver_send( void * driverp, struct MIDIMessage * message ) {
+  return MIDIDriverCoreMIDISendMessage( driverp, message );
 }
 
 /**
@@ -41,7 +41,7 @@ static void _coremidi_readproc( const MIDIPacketList *pktlist, void * readProcRe
  * @return a pointer to the created driver structure on success.
  * @return a @c NULL pointer if the driver could not created.
  */
-struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( MIDIClientRef client ) {
+struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( struct MIDIDriverDelegate * delegate, MIDIClientRef client ) {
   struct MIDIDriverCoreMIDI * driver;
 
   driver->client    = client;
@@ -49,7 +49,12 @@ struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( MIDIClientRef client ) {
   MIDIOutputPortCreate( client, CFSTR("MIDIKit output"), &(driver->out_port) );
   driver->in_queue  = MIDIMessageQueueCreate();
   driver->out_queue = MIDIMessageQueueCreate();
+  driver->delegate  = delegate;
 
+  if( delegate != NULL ) {
+    delegate->send = &_driver_send;
+    delegate->implementation = driver;
+  }
   return driver;
 }
 
@@ -99,7 +104,7 @@ void MIDIDriverCoreMIDIRelease( struct MIDIDriverCoreMIDI * driver ) {
  * @retval >0 if the message could not be processed.
  */
 int MIDIDriverCoreMIDIReceiveMessage( struct MIDIDriverCoreMIDI * driver, struct MIDIMessage * message ) {
-  return MIDIMessageQueuePush( driver->in_queue, message );
+  return 0;
 }
 
 /**
@@ -113,7 +118,7 @@ int MIDIDriverCoreMIDIReceiveMessage( struct MIDIDriverCoreMIDI * driver, struct
  * @retval >0 if the message could not be processed.
  */
 int MIDIDriverCoreMIDISendMessage( struct MIDIDriverCoreMIDI * driver, struct MIDIMessage * message ) {
-  return MIDIMessageQueuePush( driver->out_queue, message );
+  return 0;
 }
 
 /**

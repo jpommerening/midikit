@@ -5,9 +5,8 @@
 #include <CoreMIDI/MIDIServices.h>
 
 struct MIDIDriverCoreMIDI;
-extern struct MIDIDriverDelegate MIDIDriverDelegateCoreMIDI;
 
-struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( MIDIClientRef client );
+struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( struct MIDIDriverDelegate * delegate, MIDIClientRef client );
 void MIDIDriverCoreMIDIDestroy( struct MIDIDriverCoreMIDI * driver );
 void MIDIDriverCoreMIDIRetain( struct MIDIDriverCoreMIDI * driver );
 void MIDIDriverCoreMIDIRelease( struct MIDIDriverCoreMIDI * driver );
