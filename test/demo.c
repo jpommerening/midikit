@@ -7,6 +7,7 @@ struct MIDIKeyboard {
   size_t refs;
   struct MIDIRunloopSource runloop_source;
   struct MIDIRunloop * runloop;
+  struct MIDIDriverAppleMIDI * driver;
 };
 
 static int _keyboard_read_fds( void * kbd, int nfds, fd_set * fds ) {
@@ -27,6 +28,21 @@ static int _keyboard_read_fds( void * kbd, int nfds, fd_set * fds ) {
 
 static int _keyboard_timeout( void * kbd, struct timespec * ts ) {
   printf( "kbd timeout %i.%06i s\n", (int) ts->tv_sec, (int) ts->tv_nsec );
+  struct MIDIKeyboard * keyboard = kbd;
+  struct MIDIMessage * message;
+  MIDIChannel channel = 0;
+  MIDIKey key = 60;
+  MIDIVelocity velocity = 120;
+  if( keyboard->driver != NULL ) {
+    message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
+    MIDIMessageSet( message, MIDI_CHANNEL, sizeof(channel), &channel );
+    MIDIMessageSet( message, MIDI_KEY, sizeof(key), &key );
+    MIDIMessageSet( message, MIDI_VELOCITY, sizeof(velocity), &velocity );
+    MIDIDriverAppleMIDISendMessage( keyboard->driver, message );
+    printf( "send message" );
+    MIDIDriverAppleMIDISend( keyboard->driver );
+    MIDIMessageRelease( message );
+  }
   return 0;
 }
 
@@ -51,6 +67,7 @@ int _keyboard_init_runloop_source( struct MIDIKeyboard * keyboard ) {
 struct MIDIKeyboard * MIDIKeyboardCreate() {
   struct MIDIKeyboard * keyboard = malloc( sizeof( struct MIDIKeyboard ) );
   keyboard->refs = 1;
+  keyboard->driver = NULL;
   _keyboard_init_runloop_source( keyboard );
   return keyboard;
 }
@@ -70,12 +87,30 @@ int MIDIKeyboardGetRunloopSource( struct MIDIKeyboard * keyboard, struct MIDIRun
   return 0;
 }
 
+static int _recv( void * interface, struct MIDIMessage * message ) {
+  size_t i, size;
+  unsigned char buffer[8];
+  printf( "Received MIDI message\n" );
+  MIDIMessageEncode( message, sizeof(buffer), buffer, &size );
+  for( i=0; i<size; i++ ) {
+    if( i!=size-1 ) printf( "0x%02x ", buffer[i] );
+    else            printf( "0x%02x\n", buffer[i] );
+  }
+  return 0;
+}
+
 int main( int argc, char *argv[] ) {
   struct MIDIKeyboard * keyboard;
   struct MIDIDriverAppleMIDI * applemidi;
   struct MIDIRunloopSource * keyboard_rls;
   struct MIDIRunloopSource * driver_rls;
   struct MIDIRunloop * runloop;
+  struct MIDIDriverDelegate delegate;
+  
+  delegate.receive = &_recv;
+  delegate.send = NULL;
+  delegate.interface = NULL;
+  delegate.implementation = NULL;
 
   int i;
   char client_addr[16] = { '\0' };
@@ -109,8 +144,10 @@ int main( int argc, char *argv[] ) {
 
   printf( "Starting session '%s' on port %hu.\n", argv[1], port );
   keyboard  = MIDIKeyboardCreate();
-  applemidi = MIDIDriverAppleMIDICreate( NULL, argv[1], port );
+  applemidi = MIDIDriverAppleMIDICreate( &delegate, argv[1], port );
   runloop   = MIDIRunloopCreate();
+  
+  keyboard->driver = applemidi;
 
   if( client_addr[0] != '\0' && client_port != 0 ) {
     printf( "Connecting to client %s:%hu.\n", client_addr, client_port );
