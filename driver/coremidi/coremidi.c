@@ -18,7 +18,7 @@ static void _coremidi_readproc( const MIDIPacketList *pktlist, void * readProcRe
   
   for( i=0; i<pktlist->numPackets; i++ ) {
     size   = pktlist->packet[i].length;
-    buffer = pkglist->packet[i].data;
+    buffer = pktlist->packet[i].data;
     do {
       message = MIDIMessageCreate( MIDI_STATUS_RESET );
       MIDIMessageDecode( message, size, buffer, &read );
@@ -47,8 +47,6 @@ struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( struct MIDIDriverDelegate 
   driver->client    = client;
   MIDIInputPortCreate( client, CFSTR("MIDIKit input"), &_coremidi_readproc, driver, &(driver->in_port) );
   MIDIOutputPortCreate( client, CFSTR("MIDIKit output"), &(driver->out_port) );
-  driver->in_queue  = MIDIMessageQueueCreate();
-  driver->out_queue = MIDIMessageQueueCreate();
   driver->delegate  = delegate;
 
   if( delegate != NULL ) {
@@ -65,8 +63,8 @@ struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( struct MIDIDriverDelegate 
  * @param driver The driver.
  */
 void MIDIDriverCoreMIDIDestroy( struct MIDIDriverCoreMIDI * driver ) {
-  MIDIMessageQueueRelease( driver->in_queue );
-  MIDIMessageQueueRelease( driver->out_queue );
+  MIDIPortDispose( driver->in_port );
+  MIDIPortDispose( driver->out_port );
 }
 
 /**

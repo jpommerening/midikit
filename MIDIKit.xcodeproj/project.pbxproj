@@ -7,12 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		591611A712E6163E00D0BB3C /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 591611A612E6163E00D0BB3C /* CoreServices.framework */; };
+		591611A912E6170E00D0BB3C /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 591611A812E6170E00D0BB3C /* CFNetwork.framework */; };
 		5922184012D0A137001FC0AB /* coremidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 5922183D12D0A137001FC0AB /* coremidi.c */; };
 		5922184112D0A137001FC0AB /* coremidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 5922183E12D0A137001FC0AB /* coremidi.h */; };
-		5922184512D0A1D6001FC0AB /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5922184412D0A1D6001FC0AB /* CoreMIDI.framework */; };
-		5922184712D0AEF8001FC0AB /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5922184612D0AEF8001FC0AB /* CoreFoundation.framework */; };
-		5922185212D252DA001FC0AB /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 5922185112D252DA001FC0AB /* main.c */; };
-		5922186212D25335001FC0AB /* libMIDIKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 592307A112931F520067DE03 /* libMIDIKit.dylib */; };
 		592307B91293209F0067DE03 /* clock.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307AB1293209F0067DE03 /* clock.c */; };
 		592307BA1293209F0067DE03 /* clock.h in Headers */ = {isa = PBXBuildFile; fileRef = 592307AC1293209F0067DE03 /* clock.h */; };
 		592307BB1293209F0067DE03 /* connector.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307AD1293209F0067DE03 /* connector.c */; };
@@ -36,6 +34,10 @@
 		5924AA5512932186004F9C67 /* message.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307CD129320B40067DE03 /* message.c */; };
 		5924AA5612932186004F9C67 /* midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307CE129320B40067DE03 /* midi.c */; };
 		5925267412D8FB65007B556D /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048B912A95E56001B597E /* util.c */; };
+		592FFB8612E0EA1400205C6C /* demo.c in Sources */ = {isa = PBXBuildFile; fileRef = 59BCAB6412D798160019B148 /* demo.c */; };
+		592FFB8812E0EA3F00205C6C /* libMIDIKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 592307A112931F520067DE03 /* libMIDIKit.dylib */; };
+		592FFB8B12E0EA3F00205C6C /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 592FFB8912E0EA3F00205C6C /* CoreFoundation.framework */; };
+		592FFB8C12E0EA3F00205C6C /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 592FFB8A12E0EA3F00205C6C /* CoreMIDI.framework */; };
 		59452C8812C2CA08002031F2 /* osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 59452C8512C2CA08002031F2 /* osc.c */; };
 		59452C8912C2CA08002031F2 /* osc.h in Headers */ = {isa = PBXBuildFile; fileRef = 59452C8612C2CA08002031F2 /* osc.h */; };
 		59452C8D12C2CA23002031F2 /* rtpmidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 59452C8B12C2CA23002031F2 /* rtpmidi.c */; };
@@ -44,9 +46,6 @@
 		59460C3712932B61001C2C13 /* libMIDIKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 592307A112931F520067DE03 /* libMIDIKit.dylib */; };
 		59A048B112A95E16001B597E /* applemidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048AA12A95E16001B597E /* applemidi.h */; };
 		59A048B212A95E16001B597E /* rtp.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048AC12A95E16001B597E /* rtp.h */; };
-		59A048B312A95E16001B597E /* command_section.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048AE12A95E16001B597E /* command_section.c */; };
-		59A048B412A95E16001B597E /* journal.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048AF12A95E16001B597E /* journal.c */; };
-		59A048B512A95E16001B597E /* rtpmidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048B012A95E16001B597E /* rtpmidi.h */; };
 		59A048BC12A95E56001B597E /* util.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048BA12A95E56001B597E /* util.h */; };
 		59A048BD12A95E5D001B597E /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048B712A95E49001B597E /* util.c */; };
 		59A048C012A96873001B597E /* message_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048BE12A96873001B597E /* message_queue.c */; };
@@ -63,16 +62,46 @@
 		59DE6B3B12ABCBD100DCFEAF /* cfintegration.h in Headers */ = {isa = PBXBuildFile; fileRef = 59DE6B3912ABCBD100DCFEAF /* cfintegration.h */; };
 		59DE6B3D12B01C0D00DCFEAF /* applemidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3C12B01C0D00DCFEAF /* applemidi.c */; };
 		59DE6B4312B808FB00DCFEAF /* driver_rtp.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B4212B808FB00DCFEAF /* driver_rtp.c */; };
+		59E657CF12E5F62000B5829F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59E657CE12E5F62000B5829F /* Foundation.framework */; };
+		59E657D612E5F63200B5829F /* applemidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3C12B01C0D00DCFEAF /* applemidi.c */; };
+		59E657D712E5F63600B5829F /* rtp.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3212AB85BD00DCFEAF /* rtp.c */; };
+		59E657D812E5F63900B5829F /* rtpmidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 59452C8B12C2CA23002031F2 /* rtpmidi.c */; };
+		59E657D912E5F63D00B5829F /* coremidi.c in Sources */ = {isa = PBXBuildFile; fileRef = 5922183D12D0A137001FC0AB /* coremidi.c */; };
+		59E657DA12E5F64000B5829F /* osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 59452C8512C2CA08002031F2 /* osc.c */; };
+		59E657DB12E5F65300B5829F /* cfintegration.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3812ABCBD100DCFEAF /* cfintegration.c */; };
+		59E657DC12E5F65300B5829F /* cfintegration.h in Headers */ = {isa = PBXBuildFile; fileRef = 59DE6B3912ABCBD100DCFEAF /* cfintegration.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657DD12E5F65300B5829F /* clock.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307AB1293209F0067DE03 /* clock.c */; };
+		59E657DE12E5F65300B5829F /* clock.h in Headers */ = {isa = PBXBuildFile; fileRef = 592307AC1293209F0067DE03 /* clock.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657DF12E5F65300B5829F /* connector.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307AD1293209F0067DE03 /* connector.c */; };
+		59E657E012E5F65300B5829F /* connector.h in Headers */ = {isa = PBXBuildFile; fileRef = 592307AE1293209F0067DE03 /* connector.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657E112E5F65300B5829F /* controller.c in Sources */ = {isa = PBXBuildFile; fileRef = 59AACD8A1297E49B006DB19D /* controller.c */; };
+		59E657E212E5F65300B5829F /* controller.h in Headers */ = {isa = PBXBuildFile; fileRef = 59AACD8B1297E49B006DB19D /* controller.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657E412E5F65300B5829F /* device.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307AF1293209F0067DE03 /* device.c */; };
+		59E657E512E5F65300B5829F /* device.h in Headers */ = {isa = PBXBuildFile; fileRef = 592307B01293209F0067DE03 /* device.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657E612E5F65300B5829F /* driver.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307B11293209F0067DE03 /* driver.c */; };
+		59E657E712E5F65300B5829F /* driver.h in Headers */ = {isa = PBXBuildFile; fileRef = 592307B21293209F0067DE03 /* driver.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657E812E5F65300B5829F /* message_format.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307B31293209F0067DE03 /* message_format.c */; };
+		59E657E912E5F65300B5829F /* message_format.h in Headers */ = {isa = PBXBuildFile; fileRef = 592307B41293209F0067DE03 /* message_format.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657EA12E5F65300B5829F /* message_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048BE12A96873001B597E /* message_queue.c */; };
+		59E657EB12E5F65300B5829F /* message_queue.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048BF12A96873001B597E /* message_queue.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657EC12E5F65300B5829F /* message.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307B51293209F0067DE03 /* message.c */; };
+		59E657ED12E5F65300B5829F /* message.h in Headers */ = {isa = PBXBuildFile; fileRef = 592307B61293209F0067DE03 /* message.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657EE12E5F65300B5829F /* midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 592307B71293209F0067DE03 /* midi.c */; };
+		59E657EF12E5F65300B5829F /* midi.h in Headers */ = {isa = PBXBuildFile; fileRef = 592307B81293209F0067DE03 /* midi.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657F012E5F65300B5829F /* timer.c in Sources */ = {isa = PBXBuildFile; fileRef = 59AACD8F1297E4AC006DB19D /* timer.c */; };
+		59E657F112E5F65300B5829F /* timer.h in Headers */ = {isa = PBXBuildFile; fileRef = 59AACD901297E4AC006DB19D /* timer.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657F212E5F65300B5829F /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 59A048B912A95E56001B597E /* util.c */; };
+		59E657F312E5F65300B5829F /* util.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048BA12A95E56001B597E /* util.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657F412E5F68500B5829F /* applemidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048AA12A95E16001B597E /* applemidi.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657F512E5F69100B5829F /* rtp.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048AC12A95E16001B597E /* rtp.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657F612E5F69400B5829F /* rtpmidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 59452C8C12C2CA23002031F2 /* rtpmidi.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657F712E5F69600B5829F /* coremidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 5922183E12D0A137001FC0AB /* coremidi.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59E657F812E5F69900B5829F /* osc.h in Headers */ = {isa = PBXBuildFile; fileRef = 59452C8612C2CA08002031F2 /* osc.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		59EBD50C12E0EAF60013A217 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 592FFB8912E0EA3F00205C6C /* CoreFoundation.framework */; };
+		59EBD50D12E0EAF80013A217 /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 592FFB8A12E0EA3F00205C6C /* CoreMIDI.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		5922186312D2547D001FC0AB /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 5923079712931F520067DE03 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 592307A012931F520067DE03;
-			remoteInfo = MIDIKit;
-		};
 		5924AA5A1293229A004F9C67 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5923079712931F520067DE03 /* Project object */;
@@ -90,7 +119,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		5922184C12D252DA001FC0AB /* CopyFiles */ = {
+		592307DC129320E40067DE03 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -99,7 +128,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
-		592307DC129320E40067DE03 /* CopyFiles */ = {
+		592FFB7B12E0E9DF00205C6C /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -111,13 +140,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		591611A612E6163E00D0BB3C /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = System/Library/Frameworks/CoreServices.framework; sourceTree = SDKROOT; };
+		591611A812E6170E00D0BB3C /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS4.2.sdk/System/Library/Frameworks/CFNetwork.framework; sourceTree = DEVELOPER_DIR; };
 		5922183D12D0A137001FC0AB /* coremidi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = coremidi.c; sourceTree = "<group>"; };
 		5922183E12D0A137001FC0AB /* coremidi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coremidi.h; sourceTree = "<group>"; };
-		5922184412D0A1D6001FC0AB /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = System/Library/Frameworks/CoreMIDI.framework; sourceTree = SDKROOT; };
-		5922184612D0AEF8001FC0AB /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
-		5922184E12D252DA001FC0AB /* appltest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = appltest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5922185012D252DA001FC0AB /* appltest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; name = appltest.1; path = ../appltest.1; sourceTree = "<group>"; };
-		5922185112D252DA001FC0AB /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = main.c; path = Source/main.c; sourceTree = "<group>"; };
 		592307A112931F520067DE03 /* libMIDIKit.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libMIDIKit.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		592307AB1293209F0067DE03 /* clock.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = clock.c; sourceTree = "<group>"; };
 		592307AC1293209F0067DE03 /* clock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = clock.h; sourceTree = "<group>"; };
@@ -145,6 +172,9 @@
 		592307DE129320E40067DE03 /* test_main */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_main; sourceTree = BUILT_PRODUCTS_DIR; };
 		592307E0129320E40067DE03 /* test_main.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = test_main.1; sourceTree = "<group>"; };
 		5924AA59129321D2004F9C67 /* generate_main.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = generate_main.sh; sourceTree = "<group>"; };
+		592FFB7D12E0E9DF00205C6C /* demo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = demo; sourceTree = BUILT_PRODUCTS_DIR; };
+		592FFB8912E0EA3F00205C6C /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		592FFB8A12E0EA3F00205C6C /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = System/Library/Frameworks/CoreMIDI.framework; sourceTree = SDKROOT; };
 		59452C8512C2CA08002031F2 /* osc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = osc.c; sourceTree = "<group>"; };
 		59452C8612C2CA08002031F2 /* osc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = osc.h; sourceTree = "<group>"; };
 		59452C8B12C2CA23002031F2 /* rtpmidi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rtpmidi.c; sourceTree = "<group>"; };
@@ -152,9 +182,6 @@
 		59460C311293282E001C2C13 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		59A048AA12A95E16001B597E /* applemidi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = applemidi.h; sourceTree = "<group>"; };
 		59A048AC12A95E16001B597E /* rtp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rtp.h; sourceTree = "<group>"; };
-		59A048AE12A95E16001B597E /* command_section.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = command_section.c; sourceTree = "<group>"; };
-		59A048AF12A95E16001B597E /* journal.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = journal.c; sourceTree = "<group>"; };
-		59A048B012A95E16001B597E /* rtpmidi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rtpmidi.h; sourceTree = "<group>"; };
 		59A048B712A95E49001B597E /* util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = util.c; sourceTree = "<group>"; };
 		59A048B912A95E56001B597E /* util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = util.c; sourceTree = "<group>"; };
 		59A048BA12A95E56001B597E /* util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = util.h; sourceTree = "<group>"; };
@@ -174,23 +201,18 @@
 		59DE6B3912ABCBD100DCFEAF /* cfintegration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cfintegration.h; sourceTree = "<group>"; };
 		59DE6B3C12B01C0D00DCFEAF /* applemidi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = applemidi.c; sourceTree = "<group>"; };
 		59DE6B4212B808FB00DCFEAF /* driver_rtp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = driver_rtp.c; sourceTree = "<group>"; };
+		59E657CC12E5F62000B5829F /* libiOS-MIDIKit.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libiOS-MIDIKit.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		59E657CE12E5F62000B5829F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		5922184B12D252DA001FC0AB /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5922186212D25335001FC0AB /* libMIDIKit.dylib in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		5923079E12931F520067DE03 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5922184712D0AEF8001FC0AB /* CoreFoundation.framework in Frameworks */,
-				5922184512D0A1D6001FC0AB /* CoreMIDI.framework in Frameworks */,
+				591611A712E6163E00D0BB3C /* CoreServices.framework in Frameworks */,
+				59EBD50C12E0EAF60013A217 /* CoreFoundation.framework in Frameworks */,
+				59EBD50D12E0EAF80013A217 /* CoreMIDI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -199,6 +221,25 @@
 			buildActionMask = 2147483647;
 			files = (
 				59460C3712932B61001C2C13 /* libMIDIKit.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		592FFB7A12E0E9DF00205C6C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				592FFB8B12E0EA3F00205C6C /* CoreFoundation.framework in Frameworks */,
+				592FFB8C12E0EA3F00205C6C /* CoreMIDI.framework in Frameworks */,
+				592FFB8812E0EA3F00205C6C /* libMIDIKit.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		59E657C912E5F62000B5829F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				591611A912E6170E00D0BB3C /* CFNetwork.framework in Frameworks */,
+				59E657CF12E5F62000B5829F /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -217,10 +258,8 @@
 		5923079512931F520067DE03 = {
 			isa = PBXGroup;
 			children = (
-				592307A112931F520067DE03 /* libMIDIKit.dylib */,
-				5922184612D0AEF8001FC0AB /* CoreFoundation.framework */,
-				5922184412D0A1D6001FC0AB /* CoreMIDI.framework */,
 				5923079C12931F520067DE03 /* Source */,
+				59E657CD12E5F62000B5829F /* Frameworks */,
 				592307A212931F520067DE03 /* Products */,
 				592307D9129320E40067DE03 /* Documentation */,
 			);
@@ -232,7 +271,6 @@
 				592307AA12931F7E0067DE03 /* driver */,
 				592307A912931F760067DE03 /* test */,
 				592307A812931F6C0067DE03 /* midi */,
-				5922185112D252DA001FC0AB /* main.c */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -240,8 +278,10 @@
 		592307A212931F520067DE03 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				592307A112931F520067DE03 /* libMIDIKit.dylib */,
 				592307DE129320E40067DE03 /* test_main */,
-				5922184E12D252DA001FC0AB /* appltest */,
+				592FFB7D12E0E9DF00205C6C /* demo */,
+				59E657CC12E5F62000B5829F /* libiOS-MIDIKit.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -308,7 +348,6 @@
 				59A048A912A95E16001B597E /* applemidi */,
 				59A048AB12A95E16001B597E /* common */,
 				5922183C12D0A137001FC0AB /* coremidi */,
-				59A048AD12A95E16001B597E /* rtpmidi */,
 				59452C8312C2CA08002031F2 /* osc */,
 			);
 			path = driver;
@@ -353,14 +392,16 @@
 			path = common;
 			sourceTree = "<group>";
 		};
-		59A048AD12A95E16001B597E /* rtpmidi */ = {
+		59E657CD12E5F62000B5829F /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				59A048AE12A95E16001B597E /* command_section.c */,
-				59A048AF12A95E16001B597E /* journal.c */,
-				59A048B012A95E16001B597E /* rtpmidi.h */,
+				591611A812E6170E00D0BB3C /* CFNetwork.framework */,
+				591611A612E6163E00D0BB3C /* CoreServices.framework */,
+				592FFB8912E0EA3F00205C6C /* CoreFoundation.framework */,
+				592FFB8A12E0EA3F00205C6C /* CoreMIDI.framework */,
+				59E657CE12E5F62000B5829F /* Foundation.framework */,
 			);
-			path = rtpmidi;
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -381,13 +422,36 @@
 				59AACD921297E4AC006DB19D /* timer.h in Headers */,
 				59A048B112A95E16001B597E /* applemidi.h in Headers */,
 				59A048B212A95E16001B597E /* rtp.h in Headers */,
-				59A048B512A95E16001B597E /* rtpmidi.h in Headers */,
 				59A048BC12A95E56001B597E /* util.h in Headers */,
 				59A048C112A96873001B597E /* message_queue.h in Headers */,
 				59DE6B3B12ABCBD100DCFEAF /* cfintegration.h in Headers */,
 				59452C8912C2CA08002031F2 /* osc.h in Headers */,
 				59452C8E12C2CA23002031F2 /* rtpmidi.h in Headers */,
 				5922184112D0A137001FC0AB /* coremidi.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		59E657CA12E5F62000B5829F /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				59E657DC12E5F65300B5829F /* cfintegration.h in Headers */,
+				59E657DE12E5F65300B5829F /* clock.h in Headers */,
+				59E657F412E5F68500B5829F /* applemidi.h in Headers */,
+				59E657E012E5F65300B5829F /* connector.h in Headers */,
+				59E657F712E5F69600B5829F /* coremidi.h in Headers */,
+				59E657F812E5F69900B5829F /* osc.h in Headers */,
+				59E657F612E5F69400B5829F /* rtpmidi.h in Headers */,
+				59E657E212E5F65300B5829F /* controller.h in Headers */,
+				59E657E512E5F65300B5829F /* device.h in Headers */,
+				59E657E712E5F65300B5829F /* driver.h in Headers */,
+				59E657E912E5F65300B5829F /* message_format.h in Headers */,
+				59E657EB12E5F65300B5829F /* message_queue.h in Headers */,
+				59E657F512E5F69100B5829F /* rtp.h in Headers */,
+				59E657ED12E5F65300B5829F /* message.h in Headers */,
+				59E657EF12E5F65300B5829F /* midi.h in Headers */,
+				59E657F112E5F65300B5829F /* timer.h in Headers */,
+				59E657F312E5F65300B5829F /* util.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -411,24 +475,6 @@
 /* End PBXLegacyTarget section */
 
 /* Begin PBXNativeTarget section */
-		5922184D12D252DA001FC0AB /* appltest */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 5922185512D252DA001FC0AB /* Build configuration list for PBXNativeTarget "appltest" */;
-			buildPhases = (
-				5922184A12D252DA001FC0AB /* Sources */,
-				5922184B12D252DA001FC0AB /* Frameworks */,
-				5922184C12D252DA001FC0AB /* CopyFiles */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				5922186412D2547D001FC0AB /* PBXTargetDependency */,
-			);
-			name = appltest;
-			productName = appltest;
-			productReference = 5922184E12D252DA001FC0AB /* appltest */;
-			productType = "com.apple.product-type.tool";
-		};
 		592307A012931F520067DE03 /* MIDIKit */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 592307A512931F520067DE03 /* Build configuration list for PBXNativeTarget "MIDIKit" */;
@@ -466,6 +512,40 @@
 			productReference = 592307DE129320E40067DE03 /* test_main */;
 			productType = "com.apple.product-type.tool";
 		};
+		592FFB7C12E0E9DF00205C6C /* demo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 592FFB8312E0E9E000205C6C /* Build configuration list for PBXNativeTarget "demo" */;
+			buildPhases = (
+				592FFB7912E0E9DF00205C6C /* Sources */,
+				592FFB7A12E0E9DF00205C6C /* Frameworks */,
+				592FFB7B12E0E9DF00205C6C /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = demo;
+			productName = demo;
+			productReference = 592FFB7D12E0E9DF00205C6C /* demo */;
+			productType = "com.apple.product-type.tool";
+		};
+		59E657CB12E5F62000B5829F /* iOS-MIDIKit */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 59E657D312E5F62000B5829F /* Build configuration list for PBXNativeTarget "iOS-MIDIKit" */;
+			buildPhases = (
+				59E657C812E5F62000B5829F /* Sources */,
+				59E657C912E5F62000B5829F /* Frameworks */,
+				59E657CA12E5F62000B5829F /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "iOS-MIDIKit";
+			productName = "iOS-MIDIKit";
+			productReference = 59E657CC12E5F62000B5829F /* libiOS-MIDIKit.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -487,9 +567,10 @@
 			projectRoot = "";
 			targets = (
 				592307A012931F520067DE03 /* MIDIKit */,
+				59E657CB12E5F62000B5829F /* iOS-MIDIKit */,
 				592307DD129320E40067DE03 /* test_main */,
 				59A7CDD912932641006F70F5 /* main_c */,
-				5922184D12D252DA001FC0AB /* appltest */,
+				592FFB7C12E0E9DF00205C6C /* demo */,
 			);
 		};
 /* End PBXProject section */
@@ -511,14 +592,6 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		5922184A12D252DA001FC0AB /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5922185212D252DA001FC0AB /* main.c in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		5923079D12931F520067DE03 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -532,8 +605,6 @@
 				592307C51293209F0067DE03 /* midi.c in Sources */,
 				59AACD8C1297E49B006DB19D /* controller.c in Sources */,
 				59AACD911297E4AC006DB19D /* timer.c in Sources */,
-				59A048B312A95E16001B597E /* command_section.c in Sources */,
-				59A048B412A95E16001B597E /* journal.c in Sources */,
 				59A048C012A96873001B597E /* message_queue.c in Sources */,
 				59DE6B3312AB85BD00DCFEAF /* rtp.c in Sources */,
 				59DE6B3A12ABCBD100DCFEAF /* cfintegration.c in Sources */,
@@ -566,14 +637,41 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		592FFB7912E0E9DF00205C6C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				592FFB8612E0EA1400205C6C /* demo.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		59E657C812E5F62000B5829F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				59E657D612E5F63200B5829F /* applemidi.c in Sources */,
+				59E657D712E5F63600B5829F /* rtp.c in Sources */,
+				59E657DA12E5F64000B5829F /* osc.c in Sources */,
+				59E657D912E5F63D00B5829F /* coremidi.c in Sources */,
+				59E657D812E5F63900B5829F /* rtpmidi.c in Sources */,
+				59E657DB12E5F65300B5829F /* cfintegration.c in Sources */,
+				59E657DD12E5F65300B5829F /* clock.c in Sources */,
+				59E657DF12E5F65300B5829F /* connector.c in Sources */,
+				59E657E112E5F65300B5829F /* controller.c in Sources */,
+				59E657E412E5F65300B5829F /* device.c in Sources */,
+				59E657E612E5F65300B5829F /* driver.c in Sources */,
+				59E657E812E5F65300B5829F /* message_format.c in Sources */,
+				59E657EA12E5F65300B5829F /* message_queue.c in Sources */,
+				59E657EC12E5F65300B5829F /* message.c in Sources */,
+				59E657EE12E5F65300B5829F /* midi.c in Sources */,
+				59E657F012E5F65300B5829F /* timer.c in Sources */,
+				59E657F212E5F65300B5829F /* util.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		5922186412D2547D001FC0AB /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 592307A012931F520067DE03 /* MIDIKit */;
-			targetProxy = 5922186312D2547D001FC0AB /* PBXContainerItemProxy */;
-		};
 		5924AA5B1293229A004F9C67 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 592307A012931F520067DE03 /* MIDIKit */;
@@ -596,175 +694,6 @@
 		5922185412D252DA001FC0AB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-			};
-			name = Release;
-		};
-		5922185612D252DA001FC0AB /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-			};
-			name = Debug;
-		};
-		5922185712D252DA001FC0AB /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-			};
-			name = Release;
-		};
-		5922185812D252DA001FC0AB /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				PRODUCT_NAME = appltest;
-			};
-			name = Debug;
-		};
-		5922185912D252DA001FC0AB /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				PRODUCT_NAME = appltest;
-			};
-			name = Release;
-		};
-		5922185A12D252DA001FC0AB /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				PRODUCT_NAME = appltest;
-			};
-			name = Debug;
-		};
-		5922185B12D252DA001FC0AB /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				PRODUCT_NAME = appltest;
-			};
-			name = Release;
-		};
-		5922185C12D252DA001FC0AB /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				PRODUCT_NAME = appltest;
-			};
-			name = Debug;
-		};
-		5922185D12D252DA001FC0AB /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				PRODUCT_NAME = appltest;
-			};
-			name = Release;
-		};
-		5922185E12D252DA001FC0AB /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				PRODUCT_NAME = appltest;
-			};
-			name = Debug;
-		};
-		5922185F12D252DA001FC0AB /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				PRODUCT_NAME = appltest;
-			};
-			name = Release;
-		};
-		5922186012D252DA001FC0AB /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				PRODUCT_NAME = appltest;
-			};
-			name = Debug;
-		};
-		5922186112D252DA001FC0AB /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SDKROOT)/Users/jonaspommerening/Develop/code.google.com/MIDIKit/build/Debug\"",
-				);
-				PRODUCT_NAME = appltest;
 			};
 			name = Release;
 		};
@@ -882,6 +811,30 @@
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				PRODUCT_NAME = test_main;
+			};
+			name = Release;
+		};
+		592FFB8412E0E9E000205C6C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		592FFB8512E0E9E000205C6C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
 		};
@@ -1028,28 +981,41 @@
 			};
 			name = Release;
 		};
+		59E657D412E5F62000B5829F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				DSTROOT = /tmp/iOS_MIDIKit.dst;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "iOS-MIDIKit/iOS_MIDIKit-Prefix.pch";
+				INSTALL_PATH = /usr/local/lib;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.2;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		59E657D512E5F62000B5829F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				DSTROOT = /tmp/iOS_MIDIKit.dst;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "iOS-MIDIKit/iOS_MIDIKit-Prefix.pch";
+				INSTALL_PATH = /usr/local/lib;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.2;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		5922185512D252DA001FC0AB /* Build configuration list for PBXNativeTarget "appltest" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				5922185612D252DA001FC0AB /* Debug */,
-				5922185712D252DA001FC0AB /* Release */,
-				5922185812D252DA001FC0AB /* Debug */,
-				5922185912D252DA001FC0AB /* Release */,
-				5922185A12D252DA001FC0AB /* Debug */,
-				5922185B12D252DA001FC0AB /* Release */,
-				5922185C12D252DA001FC0AB /* Debug */,
-				5922185D12D252DA001FC0AB /* Release */,
-				5922185E12D252DA001FC0AB /* Debug */,
-				5922185F12D252DA001FC0AB /* Release */,
-				5922186012D252DA001FC0AB /* Debug */,
-				5922186112D252DA001FC0AB /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		5923079A12931F520067DE03 /* Build configuration list for PBXProject "MIDIKit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1089,6 +1055,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		592FFB8312E0E9E000205C6C /* Build configuration list for PBXNativeTarget "demo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				592FFB8412E0E9E000205C6C /* Debug */,
+				592FFB8512E0E9E000205C6C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		59A7CDDC12932641006F70F5 /* Build configuration list for PBXLegacyTarget "main_c" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1102,6 +1077,15 @@
 				59A7CDE412932641006F70F5 /* Release */,
 				59A7CDE512932641006F70F5 /* Debug */,
 				59A7CDE612932641006F70F5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		59E657D312E5F62000B5829F /* Build configuration list for PBXNativeTarget "iOS-MIDIKit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				59E657D412E5F62000B5829F /* Debug */,
+				59E657D512E5F62000B5829F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
