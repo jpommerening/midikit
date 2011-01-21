@@ -8,18 +8,18 @@
 int test001_clock( void ) {
   struct MIDIClock * clock = MIDIClockCreate( MIDI_SAMPLING_RATE_DEFAULT );
   MIDITimestamp start, ticks;
+  MIDISamplingRate default_rate;
 
   ASSERT_NOT_EQUAL( clock, NULL, "Could not create MIDI clock." );
+  ASSERT_NO_ERROR( MIDIClockGetSamplingRate( clock, &default_rate ), "Could not get sampling rate." );
   ASSERT_NO_ERROR( MIDIClockGetNow( clock, &start ), "Could not get current clock time." );
-  usleep( 1000000 / MIDI_SAMPLING_RATE_DEFAULT + 100 );
+  usleep( 1000000 / default_rate + 100 );
   ASSERT_NO_ERROR( MIDIClockGetNow( clock, &ticks ), "Could not get current clock time." );
   ASSERT_GREATER_OR_EQUAL( ticks, start, "MIDIClock ticks backwards!" );
-  if( ticks > start ) {
-    MIDIClockRelease( clock );
-    return 0;
-  }
-  ASSERT( 0, "MIDIClock does not tick." );
-  return 1;
+  ASSERT_NOT_EQUAL( ticks-start, 0, "MIDIClock does not tick." );
+
+  MIDIClockRelease( clock );
+  return 0;
 }
 
 /**
@@ -65,7 +65,8 @@ int test004_clock( void ) {
 
   ASSERT_NOT_EQUAL( clock, NULL, "Could not create MIDI clock." );
   ASSERT_NO_ERROR( MIDIClockGetNow( clock, &timestamp ), "Could not get current clock time." );
-  ASSERT_NEAR_GREATER( timestamp, 0, "Clock is not initialized with zero." );
+  ASSERT_GREATER_OR_EQUAL( timestamp, 0, "Clock is not initialized with zero." );
+  ASSERT_LESS( timestamp, 3, "Clock is not initialized with zero." );
   timestamp = -1000;
   ASSERT_NO_ERROR( MIDIClockSetNow( clock, timestamp ), "Could not set current clock time." );
   MIDIClockGetNow( clock, &timestamp );

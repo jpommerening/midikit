@@ -282,8 +282,8 @@
 typedef unsigned char  MIDIByte;
 typedef unsigned short MIDIProperty;
 
-typedef double    MIDISamplingRate;
-typedef long long MIDITimestamp;
+typedef unsigned int MIDISamplingRate;
+typedef long long    MIDITimestamp;
 
 typedef unsigned char  MIDIStatus;
 typedef unsigned char  MIDIRunningStatus;

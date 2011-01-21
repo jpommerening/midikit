@@ -870,7 +870,7 @@ int MIDIDriverAppleMIDIRemovePeer( struct MIDIDriverAppleMIDI * driver, char * a
     return 1;
   }
   
-  result = MIDIDriverApppleMIDIRemovePeerWithSockaddr( driver, res->ai_addrlen, res->ai_addr );
+  result = MIDIDriverAppleMIDIRemovePeerWithSockaddr( driver, res->ai_addrlen, res->ai_addr );
   freeaddrinfo( res );
   return result;
 }

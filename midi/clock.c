@@ -1,9 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/time.h>
 #include "clock.h"
-
-#define USEC_PER_SEC 1000000.0
 
 /**
  * @brief Provider for accurate timestamps.
@@ -14,13 +11,78 @@ struct MIDIClock {
   size_t           refs;
   MIDITimestamp    offset;
   MIDISamplingRate rate;
-  double           divisor;
+  unsigned long long numer;
+  unsigned long long denom;
 };
 
-static MIDITimestamp _get_real_time( struct MIDIClock * c ) {
-  struct timeval tv;
+/* use clock_gettime */
+#ifdef _POSIX_SOURCE
+#include <time.h>
+#ifdef _CLOCK_MONOTONIC_FAST
+#define CLOCK_TYPE CLOCK_MONOTONIC_FAST
+#else
+#ifdef _CLOCK_MONOTONIC
+#define CLOCK_TYPE CLOCK_MONOTONIC
+#endif
+#endif
+
+/* use posix clock_gettime */
+#ifdef CLOCK_TYPE
+#define NSEC_PER_SEC 1000000000
+
+static unsigned long long _timestamp_clock( void ) {
+  static struct timespec ts;
+  clock_gettime( CLOCK_TYPE, &ts );
+  return (ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec);
+}
+
+static void _init_clock_clock( struct MIDIClock * clock ) {
+  clock->numer = 1;
+  clock->denom = NSEC_PER_SEC;
+}
+#endif
+#endif
+
+
+/* use mach_absolute_time */
+#ifdef _MACH
+#include <mach/mach.h>
+#include <mach/mach_time.h>
+
+static unsigned long long _timestamp_mach( void ) {
+  return mach_absolute_time();
+}
+
+static void _init_clock_mach( struct MIDIClock * clock ) {
+  static mach_timebase_info_data_t info;
+  if( info.denom == 0 ) {
+    mach_timebase_info( &info );
+  }
+  clock->numer = info.numer;
+  clock->denom = info.denom;
+}
+#endif
+
+/* use good old gettimeofday */
+#ifdef _POSIX_SOURCE
+#include <sys/time.h>
+#define USEC_PER_SEC 1000000
+
+static unsigned long long _timestamp_posix( void ) {
+  static struct timeval tv;
   gettimeofday( &tv, NULL );
-  return (tv.tv_sec * USEC_PER_SEC + tv.tv_usec) / c->divisor;
+  return (tv.tv_sec * USEC_PER_SEC + tv.tv_usec);
+}
+
+static void _init_clock_posix( struct MIDIClock * clock ) {
+  clock->numer = 1;
+  clock->denom = USEC_PER_SEC;
+}
+#endif
+
+
+static MIDITimestamp _get_real_time( struct MIDIClock * clock ) {
+  return (_timestamp_posix() * clock->numer) / clock->denom;
 }
 
 struct MIDIClock * MIDIClockCreate( MIDISamplingRate rate ) {
@@ -28,14 +90,12 @@ struct MIDIClock * MIDIClockCreate( MIDISamplingRate rate ) {
   if( clock == NULL ) {
     return NULL;
   }
-  clock->refs    = 1;
-  clock->rate    = rate;
-  clock->divisor = USEC_PER_SEC / rate;
-  clock->offset  = 0 - _get_real_time( clock );
-  if( rate < 1.0 || rate > USEC_PER_SEC ) {
-    free( clock );
-    return NULL;
-  }
+  clock->refs = 1;
+  _init_clock_posix( clock );
+  if( rate == 0 ) rate = ( clock->denom / clock->numer );
+  clock->rate   = rate;
+  clock->numer *= rate;
+  clock->offset = -1 * _get_real_time( clock );
   return clock;
 }
 
@@ -64,8 +124,8 @@ int MIDIClockGetNow( struct MIDIClock * clock, MIDITimestamp * now ) {
 }
 
 int MIDIClockSetSamplingRate( struct MIDIClock * clock, MIDISamplingRate rate ) {
-  clock->rate = rate;
-  clock->divisor = USEC_PER_SEC / rate;
+  clock->numer = ( clock->numer / clock->rate ) * rate;
+  clock->rate  = rate;
   return 0;
 }
 
