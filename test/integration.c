@@ -128,12 +128,7 @@ static int _send( void * implementation, struct MIDIMessage * message ) {
   return MIDIDriverReceive( driver, message );
 }
 
-static struct MIDIDriverDelegate _test_driver = {
-  &_send,
-  NULL,
-  NULL,
-  NULL
-};
+static struct MIDIDriverDelegate _test_driver = MIDI_DRIVER_DELEGATE_INITIALIZER;
 
 /**
  * Integration test.
@@ -142,7 +137,7 @@ static struct MIDIDriverDelegate _test_driver = {
  * The messages that are received by the driver are given to the first device:
  *
  * [device 1] -(out)-----(in)-> [device 2] -(out)-------> [driver] (loopback)
- *        ^-(in)--------------------------------------------Â´
+ *        ^-(in)--------------------------------------------´
  *
  * device 1 receives from driver
  * device 2 receives from device 1 out
@@ -160,6 +155,7 @@ int test001_integration( void ) {
   device_1 = MIDIDeviceCreate( &_test_device );
   device_2 = MIDIDeviceCreate( &_test_device );
   driver = MIDIDriverCreate( &_test_driver );
+  _test_driver.send = &_send;
   _test_driver.implementation = driver;
   connector = MIDIConnectorCreate();
   

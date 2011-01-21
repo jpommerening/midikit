@@ -29,12 +29,7 @@ static int _send( void * implementation, struct MIDIMessage * message ) {
   return 0;
 }
 
-static struct MIDIDriverDelegate _test_driver = {
-  &_send,
-  NULL,
-  NULL,
-  NULL
-};
+static struct MIDIDriverDelegate _test_driver = MIDI_DRIVER_DELEGATE_INITIALIZER;
 
 /**
  * Test that a MIDI driver can receive messages.
@@ -47,6 +42,8 @@ int test001_driver( void ) {
   MIDIChannel channel = MIDI_CHANNEL_2;
   MIDIKey key = 60;
   MIDIVelocity velocity = 123;    
+
+  _test_driver.send = &_send;
 
   message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
   ASSERT_NOT_EQUAL( message, NULL, "Could not create note on message!" );
