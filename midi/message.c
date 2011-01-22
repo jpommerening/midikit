@@ -186,6 +186,15 @@ int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t 
   return MIDIMessageFormatGet( message->format, &(message->data), property, size, value );
 }
 
+/** @} */
+
+#pragma mark Message coding
+/**
+ * @name Message coding
+ * Methods for encoding and decoding midi message objects.
+ * @{
+ */
+ 
 /**
  * @brief Release auxiliary data.
  * Check if the message has auxiliary data (variable length sysex data) and release it if
@@ -223,6 +232,7 @@ int MIDIMessageEncode( struct MIDIMessage * message, size_t size, unsigned char 
  * @param message  The message.
  * @param size     The size of the memory pointed to by @c buffer.
  * @param buffer   The buffer to decode the message from.
+ * @param read     The number of bytes that were actually read.
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
@@ -242,6 +252,7 @@ int MIDIMessageDecode( struct MIDIMessage * message, size_t size, unsigned char 
  * @param status   A pointer to the running status.
  * @param size     The size of the memory pointed to by @c buffer.
  * @param buffer   The buffer to decode the message from.
+ * @param written  The number of bytes that were actually written.
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
@@ -259,6 +270,7 @@ int MIDIMessageEncodeRunningStatus( struct MIDIMessage * message, MIDIRunningSta
  * @param status   A pointer to the running status.
  * @param size     The size of the memory pointed to by @c buffer.
  * @param buffer   The buffer to decode the message from.
+ * @param read     The number of bytes that were actually read.
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
@@ -279,6 +291,7 @@ int MIDIMessageDecodeRunningStatus( struct MIDIMessage * message, MIDIRunningSta
  * @param messages The list of messages.
  * @param size     The size of the memory pointed to by @c buffer.
  * @param buffer   The buffer to encode the message into.
+ * @param written  The number of bytes that were actually written.
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
@@ -308,6 +321,7 @@ int MIDIMessageListEncode( struct MIDIMessageList * messages, size_t size, unsig
  * @param messages The list of messages.
  * @param size     The size of the memory pointed to by @c buffer.
  * @param buffer   The buffer to decode the message from.
+ * @param read     The number of bytes that were actually read.
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */

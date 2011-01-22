@@ -12,11 +12,12 @@ static int _netservice_get_first_addr( CFNetServiceRef netService, socklen_t * s
   CFArrayRef addresses;
   CFDataRef data;
   
+  CFNetServiceResolveWithTimeout( netService, 0.1, NULL );
   addresses = CFNetServiceGetAddressing( netService );
   if( CFArrayGetCount( addresses ) < 1 ) {
     return 1;
   }
-  data = CFArrayGetValueAtIndex( addresses, 0 );
+  data  = CFArrayGetValueAtIndex( addresses, 0 );
   *size = CFDataGetLength( data );
   *addr = CFDataGetBytePtr( data );
   return 0;

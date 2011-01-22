@@ -62,6 +62,9 @@ struct AppleMIDIPeer {
   struct RTPMIDIPeer * rtp_peer;
 };
 
+/**
+ * @brief MIDIDriver implementation using Apple's network MIDI protocol.
+ */
 struct MIDIDriverAppleMIDI {
   size_t refs;
   int control_socket;
@@ -88,7 +91,7 @@ static int _applemidi_read_fds( void * drv, int nfds, fd_set * fds );
 static int _applemidi_write_fds( void * drv, int nfsd, fd_set * fds );
 static int _applemidi_idle_timeout( void * drv, struct timespec * ts );
 
-int _applemidi_init_runloop_source( struct MIDIDriverAppleMIDI * driver ) {
+static int _applemidi_init_runloop_source( struct MIDIDriverAppleMIDI * driver ) {
   struct MIDIRunloopSource * source = &(driver->runloop_source);
 
   FD_ZERO( &(source->readfds) );
@@ -219,6 +222,13 @@ static int _driver_send( void * driverp, struct MIDIMessage * message ) {
   return MIDIDriverAppleMIDISendMessage( driverp, message );
 }
 
+#pragma mark Creation and destruction
+/**
+ * @name Creation and destruction
+ * Creating, destroying and reference counting of MIDIClock objects.
+ * @{
+ */
+
 /**
  * @brief Create a MIDIDriverAppleMIDI instance.
  * Allocate space and initialize an MIDIDriverAppleMIDI instance.
@@ -305,6 +315,8 @@ void MIDIDriverAppleMIDIRelease( struct MIDIDriverAppleMIDI * driver ) {
     MIDIDriverAppleMIDIDestroy( driver );
   }
 }
+
+/** @} */
 
 /**
  * @brief Set the base port to be used for session management.
@@ -804,6 +816,17 @@ static int _applemidi_respond( struct MIDIDriverAppleMIDI * driver, int fd, stru
   return 0;
 }
 
+/**
+ * @brief Connect to a peer with a socket address.
+ * Use the AppleMIDI protocol to establish an RTP-session, including a SSRC that was received
+ * from the peer. Send the session packets to the given socket address.
+ * @public @memberof MIDIDriverAppleMIDI
+ * @param driver The driver.
+ * @param size The size of the address pointed to by @c addr.
+ * @param addr A pointer to an address that can be used to send packets to the client.
+ * @retval 0 on success.
+ * @retval >0 if the connection could not be established.
+ */
 int MIDIDriverAppleMIDIAddPeerWithSockaddr( struct MIDIDriverAppleMIDI * driver, socklen_t size, struct sockaddr * addr ) {
   return _applemidi_invite( driver, driver->control_socket, size, addr );
 }
@@ -835,6 +858,17 @@ int MIDIDriverAppleMIDIAddPeer( struct MIDIDriverAppleMIDI * driver, char * addr
   return result;
 }
 
+/**
+ * @brief Disconnect from a peer.
+ * Use the AppleMIDI protocol to tell the peer that the session ended.
+ * Remove the peer from the @c RTPSession.
+ * @public @memberof MIDIDriverAppleMIDI
+ * @param driver The driver.
+ * @param size The size of the address pointed to by @c addr.
+ * @param addr A pointer to an address that can be used to send packets to the client.
+ * @retval 0 on success.
+ * @retval >0 if the session could not be ended.
+ */
 int MIDIDriverAppleMIDIRemovePeerWithSockaddr( struct MIDIDriverAppleMIDI * driver, socklen_t size, struct sockaddr * addr ) {
   int result;
   struct RTPPeer * peer;

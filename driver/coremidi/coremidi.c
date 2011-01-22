@@ -1,3 +1,4 @@
+#ifdef __APPLE__
 #include "coremidi.h"
 #include "midi/message_queue.h"
 
@@ -156,3 +157,5 @@ int MIDIDriverCoreMIDISend( struct MIDIDriverCoreMIDI * driver ) {
 int MIDIDriverCoreMIDIIdle( struct MIDIDriverCoreMIDI * driver ) {
   return 0;
 }
+
+#endif

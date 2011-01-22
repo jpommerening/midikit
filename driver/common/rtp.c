@@ -378,9 +378,7 @@ static void _session_randomize_ssrc( struct RTPSession * session ) {
  * @brief Create an RTPSession instance.
  * Allocate space and initialize an RTPSession instance.
  * @public @memberof RTPSession
- * @param size The size of the socket address pointed to by @c addr.
- * @param addr A socket address.
- * @param type The communication type to use. (SOCK_DGRAM, SOCK_STREAM, etc.)
+ * @param socket The socket to use for communication.
  * @return a pointer to the created controller structure on success.
  * @return a @c NULL pointer if the controller could not created.
  */

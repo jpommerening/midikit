@@ -4,7 +4,66 @@
 #include "connector.h"
 
 struct MIDIConnectorList;
-  
+
+/**
+ * @struct MIDIDriverDelegate driver.h
+ * @brief Delegate for driver communication.
+ * Delegate for bi-directional communication between a MIDIDriver and
+ * it's implementation using MIDIMessages.
+ */
+/**
+ * @public @property MIDIDriverDelegate::send
+ * @brief Callback for sending.
+ * This callback is called by the driver when it wants to send a @c MIDIMessage
+ * with the implementation. The @c implementation element is passed as first parameter.
+ * @param implementation The implementation pointer given to the delegate.
+ * @param message        The message that will be sent.
+ */
+/**
+ * @public @property MIDIDriverDelegate::receive
+ * @brief Callback for receiving.
+ * This callback can be called by the implementation when it wants to notify the
+ * driver interface of incoming messages. The @c interface element has to be passed as
+ * first parameter.
+ * @param interface The interface pointer given to the delegate.
+ * @param message   The message that was received.
+ */
+/**
+ * @public @property MIDIDriverDelegate::event
+ * @brief Callback for various state changes or events.
+ * This is called in various places and it's semantics depend on the
+ * event that happened. In general, you should only respond to events
+ * you know.
+ * @param observer       The observer that handles the events.
+ * @param interface      The interface pointer given to the delegate.
+ * @param implementation The implementation pointer given to the delegate.
+ * @param event          An event number.
+ * @param info           Ancillary information specified by the event type.
+ */
+/**
+ * @public @property MIDIDriverDelegate::implementation
+ * @brief The driver implementation.
+ * This should point to a valid driver implementation object, for example a
+ * MIDIDriverAppleMIDI, MIDIDriverCoreMIDI or MIDIDriverOSC object.
+ */
+/**
+ * @public @property MIDIDriverDelegate::interface
+ * @brief The driver interface.
+ * This will be set by the MIDIDriver interface to point to the MIDIDriver.
+ */
+/**
+ * @public @property MIDIDriverDelegate::observer
+ * @brief The observer that manages event and status changes.
+ */
+
+/**
+ * @brief Interface to send MIDI messages with various drivers.
+ * The MIDIDriver is an interface that can be used to pass messages
+ * to an underlying implementation. The communication between the interface
+ * and it's implementation is estrablished using the delegate that is passed
+ * on initialization.
+ * 
+ */
 struct MIDIDriver {
   size_t refs;
   struct MIDIDriverDelegate * delegate;

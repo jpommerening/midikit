@@ -6,63 +6,17 @@ struct MIDIConnector;
 
 struct MIDIDriver;
 
-/**
- * Delegate for bi-directional communication between a MIDIDriver and
- * it's implementation using MIDIMessages.
- */
 struct MIDIDriverDelegate {
-  /**
-   * @brief Callback for sending.
-   * This callback is called by the driver when it wants to send a @c MIDIMessage
-   * with the implementation. The @c implementation element is passed as first parameter.
-   * @param implementation The implementation pointer given to the delegate.
-   * @param message        The message that will be sent.
-   */
   int (*send)( void * implementation, struct MIDIMessage * message );
-
-  /**
-   * @brief Callback for receiving.
-   * This callback can be called by the implementation when it wants to notify the
-   * driver interface of incoming messages. The @interface element has to be passed as
-   * first parameter.
-   * @param interface The interface pointer given to the delegate.
-   * @param message   The message that was received.
-   */
   int (*receive)( void * interface, struct MIDIMessage * message );
-
-  /**
-   * @brief Callback for various state changes or events.
-   * This is called in various places and it's semantics depend on the
-   * event that happened. In general, you should only respond to events
-   * you know.
-   * @param observer       The observer that handles the events.
-   * @param interface      The interface pointer given to the delegate.
-   * @param implementation The implementation pointer given to the delegate.
-   * @param event          An event number.
-   * @param info           Ancillary information specified by the event type.
-   */
   int (*event)( void * observer, void * interface, void * implementation, int event, void * info );
-
-  /**
-   * @brief The driver implementation.
-   * This should point to a valid driver implementation object, for example a
-   * MIDIDriverAppleMIDI, MIDIDriverCoreMIDI or MIDIDriverOSC object.
-   */
   void * implementation;
-
-  /**
-   * @brief The driver interface.
-   * This will be set by the MIDIDriver interface to point to the MIDIDriver.
-   */
   void * interface;
-
-  /**
-   * @brief The observer that manages event and status changes.
-   */
   void * observer;
 };
 
 /**
+ * @def MIDI_DRIVER_DELEGATE_INITIALIZER
  * @brief Initializer for MIDI driver delegates.
  * Assign to a delegate to initialize as empty.
  */

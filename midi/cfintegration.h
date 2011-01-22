@@ -1,9 +1,13 @@
 #ifndef MIDIKIT_MIDI_CFINTEGRATION_H
 #define MIDIKIT_MIDI_CFINTEGRATION_H
 #ifdef __APPLE__
-#include <CoreFoundation/CFSocket.h>
-#include <CoreFoundation/CFRunLoop.h>
+#include <CoreFoundation/CoreFoundation.h>
+#if TARGET_OS_MAC
+#include <CoreServices/CoreServices.h>
+#endif
+#if TARGET_OS_IPHONE
 #include <CFNetwork/CFNetServices.h>
+#endif
 
 #include "driver/applemidi/applemidi.h"
 
