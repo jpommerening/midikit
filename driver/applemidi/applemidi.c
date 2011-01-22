@@ -1,14 +1,17 @@
 #include <string.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <sys/select.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <errno.h>
+
 #include "applemidi.h"
 #include "driver/common/rtp.h"
 #include "driver/common/rtpmidi.h"
+#include "midi/driver.h"
+#include "midi/message.h"
 #include "midi/message_queue.h"
+#include "midi/runloop.h"
 
 #define APPLEMIDI_PROTOCOL_SIGNATURE          0xffff
 
@@ -183,7 +186,7 @@ static int _applemidi_disconnect_peer( struct MIDIDriverAppleMIDI * driver, stru
   if( RTPPeerGetAddress( peer, &size, &rtp_addr ) || rtp_addr == NULL ) {
     return 1;
   }
-  _applemidi_control_addr( size, rtp_addr, &addr );
+  _applemidi_control_addr( size, rtp_addr, (struct sockaddr *) &addr );
   result = _applemidi_endsession( driver, driver->control_socket, size, (struct sockaddr *) &addr );
   RTPSessionRemovePeer( driver->rtp_session, peer );
   return result;
@@ -404,10 +407,7 @@ int MIDIDriverAppleMIDIGetControlSocket( struct MIDIDriverAppleMIDI * driver, in
  * @retval >0 if the message could not be processed.
  */
 int MIDIDriverAppleMIDIReceiveMessage( struct MIDIDriverAppleMIDI * driver, struct MIDIMessage * message ) {
-  if( driver->delegate == NULL || driver->delegate->receive == NULL ) {
-    return 0;
-  }
-  return (driver->delegate->receive)( driver->delegate->implementation, message );
+  return MIDIDriverDelegateReceiveMessage( driver->delegate, message );
 }
 
 /**
@@ -494,9 +494,9 @@ static int _applemidi_send_command( struct MIDIDriverAppleMIDI * driver, int fd,
         if( command->data.session.name[0] != '\0' ) {
           len = strlen( command->data.session.name );
           memcpy( &(msg[4]), command->data.session.name, len );
-          len += sizeof( unsigned int ) * 4;
+          len += 16;
         } else {
-          len  = sizeof( unsigned int ) * 4;
+          len  = 16;
         }
         break;
       case APPLEMIDI_COMMAND_SYNCHRONIZATION:
@@ -509,12 +509,13 @@ static int _applemidi_send_command( struct MIDIDriverAppleMIDI * driver, int fd,
         msg[6] = htonl( command->data.sync.timestamp2 & 0xffffffff );
         msg[7] = htonl( command->data.sync.timestamp3 >> 32 );
         msg[8] = htonl( command->data.sync.timestamp3 & 0xffffffff );
-        len    = sizeof( unsigned long ) * 9;
+        len    = 36;
         break;
       case APPLEMIDI_COMMAND_RECEIVER_FEEDBACK:
         ssrc   = command->data.feedback.ssrc;
         msg[1] = htonl( command->data.feedback.ssrc );
         msg[2] = htonl( command->data.feedback.seqnum );
+        len    = 12;
         break;
       default:
         return 1;
@@ -566,23 +567,22 @@ static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd,
       case APPLEMIDI_COMMAND_INVITATION_ACCEPTED:
       case APPLEMIDI_COMMAND_INVITATION_REJECTED:
       case APPLEMIDI_COMMAND_ENDSESSION:
-        if( len < 4 * sizeof( unsigned long ) ) return 1;
+        if( len < 16 ) return 1;
         command->data.session.version = ntohl( msg[1] );
         command->data.session.token   = ntohl( msg[2] );
         command->data.session.ssrc    = ntohl( msg[3] );
-        len -= 4 * sizeof(unsigned long);
+        len -= 16;
         if( len > 0 ) {
           if( len > sizeof( command->data.session.name ) - 1 ) {
             len = sizeof( command->data.session.name ) - 1;
           }
           memcpy( &(command->data.session.name[0]), &msg[4], len ); 
           command->data.session.name[len] = '\0';
-          printf( "recv ses: %s (%lx)\n", command->data.session.name, command->data.session.ssrc );
         }
         ssrc = command->data.session.ssrc;
         break;
       case APPLEMIDI_COMMAND_SYNCHRONIZATION:
-        if( len != 9 * sizeof( unsigned long ) ) return 1;
+        if( len != 36 ) return 1;
         command->data.sync.ssrc        = ntohl( msg[1] );
         command->data.sync.count       = ntohl( msg[2] ) >> 24;
         command->data.sync.timestamp1  = (unsigned long long) ntohl( msg[3] ) << 32;
@@ -594,7 +594,7 @@ static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd,
         ssrc = command->data.sync.ssrc;
         break;
       case APPLEMIDI_COMMAND_RECEIVER_FEEDBACK:
-        if( len != 2 * sizeof( unsigned long ) ) return 1;
+        if( len != 12 ) return 1;
         command->data.feedback.ssrc   = ntohl( msg[1] );
         command->data.feedback.seqnum = ntohl( msg[2] );
         ssrc = command->data.feedback.ssrc;
@@ -771,6 +771,7 @@ static int _applemidi_respond( struct MIDIDriverAppleMIDI * driver, int fd, stru
 
   switch( command->type ) {
     case APPLEMIDI_COMMAND_INVITATION:
+      MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_APPLEMIDI_PEER_DID_SEND_INVITATION, peer );
       if( driver->accept ) {
         command->type = APPLEMIDI_COMMAND_INVITATION_ACCEPTED;
         if( fd == driver->rtp_socket ) {
@@ -791,15 +792,18 @@ static int _applemidi_respond( struct MIDIDriverAppleMIDI * driver, int fd, stru
         } else {
           peer = RTPPeerCreate( command->data.session.ssrc, command->size, (struct sockaddr *) &(command->addr) );
           RTPSessionAddPeer( driver->rtp_session, peer );
+          MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_APPLEMIDI_PEER_DID_ACCEPT_INVITATION, peer );
           RTPPeerRelease( peer );
           return _applemidi_start_sync( driver, driver->rtp_socket, command->size, (struct sockaddr *) &(command->addr) );
         }
       }
       break;
     case APPLEMIDI_COMMAND_INVITATION_REJECTED:
+      MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_APPLEMIDI_PEER_DID_REJECT_INVITATION, NULL );
       break;
     case APPLEMIDI_COMMAND_ENDSESSION:
       RTPSessionFindPeerBySSRC( driver->rtp_session, &peer, command->data.session.ssrc );
+      MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_APPLEMIDI_PEER_DID_END_SESSION, peer );
       if( peer != NULL ) {
         RTPSessionRemovePeer( driver->rtp_session, peer );
       }

@@ -1,12 +1,17 @@
 #ifndef MIDIKIT_DRIVER_APPLEMIDI_H
 #define MIDIKIT_DRIVER_APPLEMIDI_H
-#include <stdlib.h>
 #include <sys/socket.h>
-#include "midi/driver.h"
-#include "midi/message.h"
-#include "midi/util.h"
+
+struct MIDIMessage;
+struct MIDIDriverDelegate;
+struct MIDIRunloopSource;
 
 struct MIDIDriverAppleMIDI;
+
+#define MIDI_APPLEMIDI_PEER_DID_SEND_INVITATION   3000
+#define MIDI_APPLEMIDI_PEER_DID_ACCEPT_INVITATION 3001
+#define MIDI_APPLEMIDI_PEER_DID_REJECT_INVITATION 3002
+#define MIDI_APPLEMIDI_PEER_DID_END_SESSION       3003
 
 struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegate * delegate, char * name, unsigned short port );
 void MIDIDriverAppleMIDIDestroy( struct MIDIDriverAppleMIDI * driver );
@@ -19,7 +24,6 @@ int MIDIDriverAppleMIDIGetPort( struct MIDIDriverAppleMIDI * driver, unsigned sh
 int MIDIDriverAppleMIDIAcceptFromNone( struct MIDIDriverAppleMIDI * driver );
 int MIDIDriverAppleMIDIAcceptFromAny( struct MIDIDriverAppleMIDI * driver );
 int MIDIDriverAppleMIDIAcceptFromPeer( struct MIDIDriverAppleMIDI * driver, char * address, unsigned short port );
-
 
 int MIDIDriverAppleMIDIAddPeerWithSockaddr( struct MIDIDriverAppleMIDI * driver, socklen_t size, struct sockaddr * addr );
 int MIDIDriverAppleMIDIRemovePeerWithSockaddr( struct MIDIDriverAppleMIDI * driver, socklen_t size, struct sockaddr * addr );

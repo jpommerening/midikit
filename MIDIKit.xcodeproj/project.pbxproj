@@ -40,6 +40,8 @@
 		59452C8E12C2CA23002031F2 /* rtpmidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 59452C8C12C2CA23002031F2 /* rtpmidi.h */; };
 		59460C3412932833001C2C13 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 59460C311293282E001C2C13 /* main.c */; };
 		59460C3712932B61001C2C13 /* libMIDIKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 592307A112931F520067DE03 /* libMIDIKit.dylib */; };
+		5965B18B12EB7F9A009D9533 /* runloop.c in Sources */ = {isa = PBXBuildFile; fileRef = 5965B18912EB7F9A009D9533 /* runloop.c */; };
+		5965B18C12EB7F9A009D9533 /* runloop.h in Headers */ = {isa = PBXBuildFile; fileRef = 5965B18A12EB7F9A009D9533 /* runloop.h */; };
 		59A048B112A95E16001B597E /* applemidi.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048AA12A95E16001B597E /* applemidi.h */; };
 		59A048B212A95E16001B597E /* rtp.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048AC12A95E16001B597E /* rtp.h */; };
 		59A048BC12A95E56001B597E /* util.h in Headers */ = {isa = PBXBuildFile; fileRef = 59A048BA12A95E56001B597E /* util.h */; };
@@ -140,6 +142,8 @@
 		59452C8B12C2CA23002031F2 /* rtpmidi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rtpmidi.c; sourceTree = "<group>"; };
 		59452C8C12C2CA23002031F2 /* rtpmidi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rtpmidi.h; sourceTree = "<group>"; };
 		59460C311293282E001C2C13 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		5965B18912EB7F9A009D9533 /* runloop.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = runloop.c; sourceTree = "<group>"; };
+		5965B18A12EB7F9A009D9533 /* runloop.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runloop.h; sourceTree = "<group>"; };
 		59A048AA12A95E16001B597E /* applemidi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = applemidi.h; sourceTree = "<group>"; };
 		59A048AC12A95E16001B597E /* rtp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rtp.h; sourceTree = "<group>"; };
 		59A048B712A95E49001B597E /* util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = util.c; sourceTree = "<group>"; };
@@ -261,6 +265,8 @@
 				592307B61293209F0067DE03 /* message.h */,
 				592307B71293209F0067DE03 /* midi.c */,
 				592307B81293209F0067DE03 /* midi.h */,
+				5965B18912EB7F9A009D9533 /* runloop.c */,
+				5965B18A12EB7F9A009D9533 /* runloop.h */,
 				59AACD8F1297E4AC006DB19D /* timer.c */,
 				59AACD901297E4AC006DB19D /* timer.h */,
 				59A048B912A95E56001B597E /* util.c */,
@@ -378,6 +384,7 @@
 				59452C8912C2CA08002031F2 /* osc.h in Headers */,
 				59452C8E12C2CA23002031F2 /* rtpmidi.h in Headers */,
 				5922184112D0A137001FC0AB /* coremidi.h in Headers */,
+				5965B18C12EB7F9A009D9533 /* runloop.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -495,7 +502,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "DOT_PATH=/usr/local/graphviz-2.14/bin\nDOXY_PATH=/Applications/Doxygen.app/Contents/Resources\nexport PATH=$PATH:$DOT_PATH:$DOXY_PATH\ncd $SRCROOT\ndoxygen\nmake -C documentation/html install";
+			shellScript = "DOT_PATH=/usr/local/graphviz-2.14/bin\nDOXY_PATH=/Applications/Doxygen.app/Contents/Resources\nexport PATH=$PATH:$DOT_PATH:$DOXY_PATH\ncd $SRCROOT\n#doxygen\n#make -C documentation/html install";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -521,6 +528,7 @@
 				59452C8D12C2CA23002031F2 /* rtpmidi.c in Sources */,
 				5922184012D0A137001FC0AB /* coremidi.c in Sources */,
 				5925267412D8FB65007B556D /* util.c in Sources */,
+				5965B18B12EB7F9A009D9533 /* runloop.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

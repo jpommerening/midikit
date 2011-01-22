@@ -1,4 +1,5 @@
 #include "rtpmidi.h"
+#include "rtp.h"
 #include "midi/util.h"
 
 struct RTPMIDIInfo {

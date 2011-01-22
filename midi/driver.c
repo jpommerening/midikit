@@ -6,6 +6,29 @@
 struct MIDIConnectorList;
 
 /**
+ * @def MIDI_DRIVER_DELEGATE_INITIALIZER
+ * @brief Initializer for MIDI driver delegates.
+ * Assign to a delegate to initialize as empty.
+ */
+
+/**
+ * @def MIDI_DRIVER_WILL_SEND_MESSAGE
+ * @brief MIDI driver will send a message.
+ * This is called by the driver interface before it will send a message to
+ * the implementation. Return a value other than 0 to cancel the sending.
+ * The info pointer points the the message that will be sent.
+ */
+/**
+ * @def MIDI_DRIVER_WILL_RECEIVE_MESSAGE
+ * @brief MIDI driver will receive a message.
+ * This is called by the driver interface after it has been notified
+ * (by the implementation) that a new message was received. The interface
+ * will then deliver it to all connected devices unless the callback returned
+ * a value other than 0. The info pointer points to the message that will
+ * be received.
+ */
+
+/**
  * @struct MIDIDriverDelegate driver.h
  * @brief Delegate for driver communication.
  * Delegate for bi-directional communication between a MIDIDriver and
@@ -55,6 +78,42 @@ struct MIDIConnectorList;
  * @public @property MIDIDriverDelegate::observer
  * @brief The observer that manages event and status changes.
  */
+
+/**
+ * @brief Send a MIDIMessage.
+ * @public @memberof MIDIDriverDelegate
+ * @param delegate The delegate.
+ * @param message  The message.
+ */
+int MIDIDriverDelegateSendMessage( struct MIDIDriverDelegate * delegate, struct MIDIMessage * message ) {
+  if( delegate == NULL || delegate->send == NULL ) return 0;
+  return (*delegate->send)( delegate->implementation, message );
+}
+
+/**
+ * @brief Receive a MIDIMessage.
+ * @public @memberof MIDIDriverDelegate
+ * @param delegate The delegate.
+ * @param message  The message.
+ */
+int MIDIDriverDelegateReceiveMessage( struct MIDIDriverDelegate * delegate, struct MIDIMessage * message ) {
+  if( delegate == NULL || delegate->receive == NULL ) return 0;
+  return (*delegate->receive)( delegate->interface, message );
+}
+
+/**
+ * @brief Trigger any event.
+ * @public @memberof MIDIDriverDelegate
+ * @param delegate The delegate.
+ * @param event    The event.
+ * @param info     Ancillary info.
+ */
+int MIDIDriverDelegateTriggerEvent( struct MIDIDriverDelegate * delegate, int event, void * info ) {
+  if( delegate == NULL || delegate->event == NULL ) return 0;
+  return (*delegate->event)( delegate->observer, delegate->interface, delegate->implementation,
+                             event, info );
+}
+
 
 /**
  * @brief Interface to send MIDI messages with various drivers.
@@ -333,21 +392,6 @@ int MIDIDriverMakeLoopback( struct MIDIDriver * driver ) {
 }
 
 /**
- * @brief Trigger any event.
- * @public @memberof MIDIDriver
- * @param driver  The driver.
- * @param event   The event.
- * @param info    Ancillary info.
- */
-int MIDIDriverTriggerEvent( struct MIDIDriver * driver, int event, void * info ) {
-  if( driver->delegate == NULL || driver->delegate->event == NULL ) return 0;
-  return (*driver->delegate->event)( driver->delegate->observer,
-                                     driver->delegate->interface,
-                                     driver->delegate->implementation,
-                                     event, info );
-}
-
-/**
  * @brief Receive a generic MIDIMessage.
  * Relay an incoming message via all attached receiving connectors.
  * This should be called by the driver delegate whenever
@@ -361,7 +405,7 @@ int MIDIDriverTriggerEvent( struct MIDIDriver * driver, int event, void * info )
 int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message ) {
   struct MIDIConnectorList * item = driver->receivers;
   int result = 0;
-  result = MIDIDriverTriggerEvent( driver, MIDI_DRIVER_WILL_RECEIVE_MESSAGE, message );
+  result = MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_DRIVER_WILL_RECEIVE_MESSAGE, message );
   if( result != 0 ) return result;
   while( item != NULL ) {
     result += MIDIConnectorRelay( item->connector, message );
@@ -381,13 +425,8 @@ int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message 
  * @retval >0 if the message could not be sent.
  */
 int MIDIDriverSend( struct MIDIDriver * driver, struct MIDIMessage * message ) {
-  int result = 0;
-  if( driver->delegate == NULL || driver->delegate->send == NULL ) {
-    return 0;
-  }
-  result = MIDIDriverTriggerEvent( driver, MIDI_DRIVER_WILL_SEND_MESSAGE, message );
-  if( result != 0 ) return result;
-  return (*driver->delegate->send)( driver->delegate->implementation, message );
+  if( MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_DRIVER_WILL_SEND_MESSAGE, message ) ) return 1;
+  return MIDIDriverDelegateSendMessage( driver->delegate, message );
 }
 
 /** @} */

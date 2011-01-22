@@ -1,8 +1,10 @@
 #ifndef MIDIKIT_DRIVER_RTPMIDI_H
 #define MIDIKIT_DRIVER_RTPMIDI_H
 #include <stdlib.h>
-#include "rtp.h"
 #include "midi/message.h"
+
+struct RTPPeer;
+struct RTPSession;
 
 struct RTPMIDISession;
 
