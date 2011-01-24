@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "midi.h"
+#include "device.h"
 #include "controller.h"
 
 #define N_CONTROLS 128

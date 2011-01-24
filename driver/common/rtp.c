@@ -38,9 +38,6 @@ struct RTPSession {
   struct iovec iov[RTP_IOV_LEN];
   size_t buflen;
   void * buffer;
-
-  unsigned long timestamp_offset;
-  double        timestamp_divisor;
 };
 
 /**
@@ -410,23 +407,14 @@ static void _init_addr( struct RTPAddress * address, socklen_t size, struct sock
   memcpy( &(address->addr), addr, size );
 }
 
-static unsigned long long _session_get_timestamp( struct RTPSession * session ) {
-  struct timeval tv = { 0, 0 };
-  unsigned long long ts;
-  gettimeofday( &tv, NULL );
-
-  ts = (1000000.0 * tv.tv_sec + tv.tv_usec) / session->timestamp_divisor
-     + session->timestamp_offset;
-  return ts;
-}
-
 static void _session_randomize_ssrc( struct RTPSession * session ) {
-  unsigned char * ss_addr = (unsigned char *) &(session->self.addr);
-  unsigned long i, seed = _session_get_timestamp( session );
-  for( i=0; i<session->self.size; i++ ) {
-    seed = (seed * 7) + ss_addr[i];
+  static struct timeval tv = { 0, 0 };
+  unsigned long seed;
+  if( tv.tv_sec == 0 ) {
+    gettimeofday( &tv, NULL );
+    seed = tv.tv_sec * 1000000 + tv.tv_usec;
+    srandom( seed );
   }
-  srandom( seed );
   session->self.ssrc = random();
 }
 
@@ -461,9 +449,6 @@ struct RTPSession * RTPSessionCreate( int socket ) {
     session->iov[i].iov_base = NULL;
     session->iov[i].iov_len  = 0;
   }
-  
-  session->timestamp_offset  = 0;
-  session->timestamp_divisor = 1000000.0 / 44100.0;
 
   _session_randomize_ssrc( session );
   
@@ -548,56 +533,6 @@ int RTPSessionGetSSRC( struct RTPSession * session, unsigned long * ssrc ) {
 }
 
 /**
- * @brief Set the timestamp offset used by this session.
- * @public @memberof RTPSession
- * @param session The session.
- * @param offset The timestamp offset measured in RTP ticks.
- * @retval 0 on success.
- */
-int RTPSessionSetTimestampOffset( struct RTPSession * session, unsigned long offset ) {
-  session->timestamp_offset = offset;
-  return 0;
-}
-
-/**
- * @brief Get the timestamp offset used by this session.
- * @public @memberof RTPSession
- * @param session The session.
- * @param offset The timestamp offset measured in RTP ticks.
- * @retval 0 on success.
- */
-int RTPSessionGetTimestampOffset( struct RTPSession * session, unsigned long * offset ) {
-  if( offset == NULL ) return 1;
-  *offset = session->timestamp_offset;
-  return 0;
-}
-
-/**
- * @brief Set the timestamp rate used by this session.
- * @public @memberof RTPSession
- * @param session The session.
- * @param rate The timestamp rate (timestamp ticks per second)
- * @retval 0 on success.
- */
-int RTPSessionSetTimestampRate( struct RTPSession * session, double rate ) {
-  session->timestamp_divisor = 1000000.0 / rate;
-  return 0;
-}
-
-/**
- * @brief Get the timestamp rate used by this session.
- * @public @memberof RTPSession
- * @param session The session.
- * @param rate The timestamp rate (timestamp ticks per second)
- * @retval 0 on success.
- */
-int RTPSessionGetTimestampRate( struct RTPSession * session, double * rate ) {
-  if( rate == NULL ) return 1;
-  *rate = 1000000.0 / session->timestamp_divisor;
-  return 0;
-}
-
-/**
  * @brief Set the socket used to communicate with other clients.
  * @public @memberof RTPSession
  * @param session The session.
@@ -620,18 +555,6 @@ int RTPSessionSetSocket( struct RTPSession * session, int socket ) {
 int RTPSessionGetSocket( struct RTPSession * session, int * socket ) {
   if( socket == NULL ) return 1;
   *socket = session->socket;
-  return 0;
-}
-
-/**
- * @brief Get the current RTP timestamp.
- * @public @memberof RTPSession
- * @param session The session.
- * @param timestamp The timestamp in RTP ticks.
- * @retval 0 on success.
- */
-int RTPSessionGetTimestamp( struct RTPSession * session, unsigned long long * timestamp ) {
-  *timestamp = _session_get_timestamp( session );
   return 0;
 }
 
@@ -940,7 +863,6 @@ int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * in
 
   info->ssrc            = session->self.ssrc;
   info->sequence_number = info->peer->out_seqnum + 1;
-  info->timestamp       = _session_get_timestamp( session ) & 0xffffffff;
 
   info->total_size = 0;
   _rtp_encode_header( info, size, buffer, &written );

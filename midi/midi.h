@@ -2,7 +2,6 @@
 #define MIDIKIT_MIDI_H
 
 /**
- * @name MIDIStatus_ChannelVoice
  * Channel Voice Messages.
  * (Status has 4 bits & is followed by a 4 bit channel number.)
  * @{
@@ -57,7 +56,6 @@
 /** @} */
 
 /**
- * name MIDIStatus_SystemCommon
  * System Common Messages.
  * (Status has eight bits.)
  * @{
@@ -112,7 +110,6 @@
 /** @} */
 
 /**
- * @name MIDIStatus_RealTime
  * System Real-Time Messages.
  * (Status has eight bits, message has no data bytes.)
  * @{
@@ -175,8 +172,6 @@
 /** @} */
 
 /**
- * @name MIDIChannel
- * @see MIDIChannel
  * MIDI channel enumeration values.
  * Whenever a MIDIChannel is expected any of the MIDI
  * channels 1-16 can be specified. In some cases special
@@ -265,9 +260,6 @@
 #define MIDI_MANUFACTURER_ID_EXTENDED( v ) v | 0x80
 
 /**
- * @name MIDIBoolean
- * @brief MIDI Booleans.
- * @see MIDIBoolean
  * Whenever the type is MIDIBoolean you can expect them
  * to work like "real" booleans.
  * When the type is MIDIValue you can't expect them to be
@@ -282,8 +274,8 @@
 typedef unsigned char  MIDIByte;
 typedef unsigned short MIDIProperty;
 
-typedef unsigned int MIDISamplingRate;
-typedef long long    MIDITimestamp;
+typedef unsigned int   MIDISamplingRate;
+typedef long long      MIDITimestamp;
 
 typedef unsigned char  MIDIStatus;
 typedef unsigned char  MIDIRunningStatus;

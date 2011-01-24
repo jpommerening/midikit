@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/select.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -8,6 +9,7 @@
 #include "applemidi.h"
 #include "driver/common/rtp.h"
 #include "driver/common/rtpmidi.h"
+#include "midi/clock.h"
 #include "midi/driver.h"
 #include "midi/message.h"
 #include "midi/message_queue.h"
@@ -21,6 +23,8 @@
 #define APPLEMIDI_COMMAND_ENDSESSION          0x4259 /** "BY" on control port */
 #define APPLEMIDI_COMMAND_SYNCHRONIZATION     0x434b /** "CK" on rtp port */
 #define APPLEMIDI_COMMAND_RECEIVER_FEEDBACK   0x5253 /** "RS" on control port */
+
+#define APPLEMIDI_CLOCK_RATE 10000
 
 #define APPLEMIDI_CONTROL_SOCKET 0
 #define APPLEMIDI_RTP_SOCKET     1
@@ -81,6 +85,8 @@ struct MIDIDriverAppleMIDI {
   
   struct MIDIRunloopSource runloop_source;
   struct AppleMIDICommand  command;
+
+  struct MIDIClock * clock;
 
   struct RTPPeer * peer;
   struct RTPSession * rtp_session;
@@ -242,7 +248,8 @@ static int _driver_send( void * driverp, struct MIDIMessage * message ) {
  */
 struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegate * delegate, char * name, unsigned short port ) {
   struct MIDIDriverAppleMIDI * driver;
-  unsigned long long ts;
+  MIDISamplingRate rate;
+  MIDITimestamp    timestamp;
 
   driver = malloc( sizeof( struct MIDIDriverAppleMIDI ) );
   if( driver == NULL ) return NULL;
@@ -257,16 +264,24 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegat
   
   _applemidi_connect( driver );
 
+  MIDIClockGetGlobalClock( &(driver->clock) );
+  MIDIClockGetSamplingRate( driver->clock, &rate );
+
+  if( rate == APPLEMIDI_CLOCK_RATE ) {
+    MIDIClockRetain( driver->clock );
+  } else {
+    /* different sampling rate may cause jitter on apple devices */
+    driver->clock = MIDIClockCreate( APPLEMIDI_CLOCK_RATE );
+  }
+
   driver->peer = NULL;
   driver->rtp_session     = RTPSessionCreate( driver->rtp_socket );  
   driver->rtpmidi_session = RTPMIDISessionCreate( driver->rtp_session );
   driver->in_queue  = MIDIMessageQueueCreate();
   driver->out_queue = MIDIMessageQueueCreate();
-  
 
-  RTPSessionSetTimestampRate( driver->rtp_session, 44100.0 );
-  RTPSessionGetTimestamp( driver->rtp_session, &ts );
-  driver->token = ts;
+  MIDIClockGetNow( driver->clock, &timestamp );
+  driver->token = timestamp;
 
   memset( &(driver->command), 0, sizeof(driver->command) );
   driver->command.peer = NULL;
@@ -294,6 +309,7 @@ void MIDIDriverAppleMIDIDestroy( struct MIDIDriverAppleMIDI * driver ) {
   RTPSessionRelease( driver->rtp_session );
   MIDIMessageQueueRelease( driver->in_queue );
   MIDIMessageQueueRelease( driver->out_queue );
+  MIDIClockRelease( driver->clock );
   free( driver );
 }
 
@@ -422,9 +438,13 @@ int MIDIDriverAppleMIDIReceiveMessage( struct MIDIDriverAppleMIDI * driver, stru
  * @retval >0 if the message could not be processed.
  */
 int MIDIDriverAppleMIDISendMessage( struct MIDIDriverAppleMIDI * driver, struct MIDIMessage * message ) {
-  unsigned long long ts;
-  RTPSessionGetTimestamp( driver->rtp_session, &ts );
-  MIDIMessageSetTimestamp( message, ts );
+/* when midi messages get timestamped by global clock, do something different:
+ * - if we use the global clock (driver->clock == global_clock) do nothing
+ * - otherwise: convert timestamp between clocks
+ */
+  MIDITimestamp timestamp;
+  MIDIClockGetNow( driver->clock, &timestamp );
+  MIDIMessageSetTimestamp( message, timestamp );
   return MIDIMessageQueuePush( driver->out_queue, message );
 }
 
@@ -618,9 +638,9 @@ static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd,
  */
 static int _applemidi_sync( struct MIDIDriverAppleMIDI * driver, int fd, struct AppleMIDICommand * command ) {
   unsigned long ssrc;
-  unsigned long long timestamp, diff;
+  MIDITimestamp timestamp, diff;
   RTPSessionGetSSRC( driver->rtp_session, &ssrc );
-  RTPSessionGetTimestamp( driver->rtp_session, &timestamp );
+  MIDIClockGetNow( driver->clock, &timestamp );
 
   if( command->type != APPLEMIDI_COMMAND_SYNCHRONIZATION || 
       command->data.sync.ssrc == ssrc ||

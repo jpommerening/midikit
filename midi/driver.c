@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include "driver.h"
-#include "message.h"
+#include "clock.h"
 #include "connector.h"
 
 struct MIDIConnectorList;
@@ -132,14 +132,13 @@ int MIDIDriverDelegateTriggerEvent( struct MIDIDriverDelegate * delegate, int ev
  * to an underlying implementation. The communication between the interface
  * and it's implementation is estrablished using the delegate that is passed
  * on initialization.
- * 
  */
 struct MIDIDriver {
-  size_t refs;
-  struct MIDIDriverDelegate * delegate;
-  struct MIDIConnectorList  * receivers;
-  struct MIDIConnectorList  * senders;
-  struct MIDIClock * clock;
+  size_t refs;                           /**< @private */
+  struct MIDIDriverDelegate * delegate;  /**< @private */
+  struct MIDIConnectorList  * receivers; /**< @private */
+  struct MIDIConnectorList  * senders;   /**< @private */
+  struct MIDIClock * clock;              /**< @private */
 };
 
 #pragma mark Connector list management

@@ -85,17 +85,17 @@
  * that forwards every MIDIMessage received on the input.
  */
 struct MIDIDevice {
-  size_t refs;
-  struct MIDIConnector * in;
-  struct MIDIConnector * out;
-  struct MIDIConnector * thru;
-  struct MIDIDeviceDelegate * delegate;
-  MIDIChannel base_channel;
-  MIDIBoolean omni_mode;
-  MIDIBoolean poly_mode;
-  struct MIDITimer          * timer;
-/*struct MIDIInstrument     * instrument[N_CHANNEL]; */
-  struct MIDIController     * controller[N_CHANNEL];
+  size_t refs;                 /**< @private */
+  struct MIDIConnector * in;   /**< @private */
+  struct MIDIConnector * out;  /**< @private */
+  struct MIDIConnector * thru; /**< @private */
+  struct MIDIDeviceDelegate * delegate; /**< @private */
+  MIDIChannel base_channel; /**< @private */
+  MIDIBoolean omni_mode;    /**< @private */
+  MIDIBoolean poly_mode;    /**< @private */
+  struct MIDITimer      * timer;                 /**< @private */
+/*struct MIDIInstrument * instrument[N_CHANNEL];  **< @private */
+  struct MIDIController * controller[N_CHANNEL]; /**< @private */
 };
 
 #pragma mark Internal connector attachment.

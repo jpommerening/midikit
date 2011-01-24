@@ -1,7 +1,6 @@
 #ifndef MIDIKIT_MIDI_CONTROLLER_H
 #define MIDIKIT_MIDI_CONTROLLER_H
 #include "midi.h"
-#include "device.h"
 
 /**
  * @name MIDI control numbers.
@@ -122,6 +121,8 @@
 #define MIDI_CONTROL_RPN_COARSE_TUNING_MSB          4
 
 /** @} */
+
+struct MIDIDevice;
 
 struct MIDINonRegisteredParameter {
   MIDILongValue number;

@@ -6,6 +6,7 @@
 #include "test.h"
 #include "midi/driver.h"
 #include "midi/message.h"
+#include "midi/runloop.h"
 #include "driver/applemidi/applemidi.h"
 
 #define CLIENT_SSRC 0x5d72fb43
