@@ -66,6 +66,7 @@ struct AppleMIDIPeer {
 };
 
 /**
+ * @ingroup MIDI-driver
  * @brief MIDIDriver implementation using Apple's network MIDI protocol.
  */
 struct MIDIDriverAppleMIDI {

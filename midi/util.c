@@ -2,6 +2,12 @@
 #include "util.h"
 
 /**
+ * @defgroup MIDI-fnc Utility functions
+ * @ingroup MIDI
+ * @{
+ */
+ 
+/**
  * @brief Read an encoded number with a variable number of bytes.
  * @param value  The location to store the read number in.
  * @param size   The number of available bytes in the buffer.
@@ -54,3 +60,5 @@ int MIDIUtilWriteVarLen( MIDIVarLen * value, size_t size, unsigned char * buffer
   if( written != NULL ) *written = p;
   return 0;
 }
+
+/** @} */

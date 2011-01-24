@@ -6,15 +6,19 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+/**
+ * @ingroup MIDI-driver
+ * @brief MIDIDriver implementation using the opensoundcontrol protocol.
+ */
 struct MIDIDriverOSC {
   size_t refs;
   int    socket;
+  struct MIDIDriverDelegate * delegate;
   struct MIDIMessageQueue * in_queue;
   struct MIDIMessageQueue * out_queue;
-  struct MIDIDriverOSCDelegate * delegate;
 };
 
-struct MIDIDriverOSC * MIDIDriverOSCCreate( struct MIDIDriverOSCDelegate * delegate ) {
+struct MIDIDriverOSC * MIDIDriverOSCCreate( struct MIDIDriverDelegate * delegate ) {
   struct MIDIDriverOSC * driver = malloc( sizeof( struct MIDIDriverOSC ) );
   struct sockaddr_in addr;
   
@@ -27,9 +31,9 @@ struct MIDIDriverOSC * MIDIDriverOSCCreate( struct MIDIDriverOSCDelegate * deleg
   
   bind( driver->socket, (struct sockaddr *) &addr, sizeof(addr) );
   
+  driver->delegate  = delegate;
   driver->in_queue  = MIDIMessageQueueCreate();
   driver->out_queue = MIDIMessageQueueCreate();
-  driver->delegate  = delegate;
   return driver;
 }
 

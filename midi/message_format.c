@@ -3,6 +3,7 @@
 #include "message_format.h"
 
 /**
+ * @ingroup MIDI
  * @struct MIDIMessageData message_format.h
  * @brief Store any kind of MIDI message.
  * Usually the message data only makes sense in combination with a message format.
@@ -17,6 +18,7 @@
  */
  
 /**
+ * @ingroup MIDI
  * @struct MIDIMessageFormat message_format.h
  * Message format descriptor.
  * Contains pointers to functions that access messages of a certain type.

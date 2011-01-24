@@ -11,6 +11,7 @@
 
 
 /**
+ * @ingroup MIDI
  * @struct MIDIDeviceDelegate device.h
  * @brief Delegate to respond to received messages.
  * Every time the device receives a message, the device calls one of these
@@ -74,6 +75,7 @@
  */
 
 /**
+ * @ingroup MIDI
  * @struct MIDIDevice device.h
  * @brief An abstract MIDI device.
  * The MIDIDevice class provides a skeleton for customized MIDI devices.

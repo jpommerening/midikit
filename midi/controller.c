@@ -48,6 +48,7 @@ static char * _control_names[] = {
 struct MIDINRPList;
 
 /**
+ * @ingroup MIDI
  * @brief Convenience class to handle control changes.
  * The MIDIController implements the full set of controls
  * specified by the MIDI standard and can be attached to

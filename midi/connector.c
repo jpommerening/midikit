@@ -13,6 +13,7 @@ extern struct MIDIConnectorTargetDelegate MIDIDriverSendConnectorDelegate;
 extern struct MIDIConnectorSourceDelegate MIDIDriverReceiveConnectorDelegate;
 
 /**
+ * @ingroup MIDI
  * @brief A connection between two MIDI objects.
  * The MIDIConnector acts much like a MIDI cable. It passes MIDIMessages
  * between the collaborators of a MIDI session.

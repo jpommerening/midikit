@@ -31,12 +31,13 @@
 
 struct MIDIDriverOSC;
 
+/*
 struct MIDIDriverOSCDelegate {
   int (*encode)( struct MIDIDriverOSC * driver, struct MIDIMessage * message, size_t size, void * buffer );
   int (*decode)( struct MIDIDriverOSC * driver, struct MIDIMessage * message, size_t size, void * buffer );
-};
+};*/
 
-struct MIDIDriverOSC * MIDIDriverOSCCreate( struct MIDIDriverOSCDelegate * delegate );
+struct MIDIDriverOSC * MIDIDriverOSCCreate( struct MIDIDriverDelegate * delegate );
 void MIDIDriverOSCDestroy( struct MIDIDriverOSC * driver );
 void MIDIDriverOSCRetain( struct MIDIDriverOSC * driver );
 void MIDIDriverOSCRelease( struct MIDIDriverOSC * driver );

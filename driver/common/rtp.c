@@ -1,5 +1,4 @@
 #include "rtp.h"
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -11,21 +10,47 @@
 
 #define USEC_PER_SEC 1000000
 
-struct RTPHeader {
-  unsigned version         : 2;  /* automatic */
-  unsigned padding         : 1;  /* packet spec. */
-  unsigned extension       : 1;  /* packet spec. */
-  unsigned csrc_count      : 4;  /* packet spec. */
-  unsigned marker          : 1;  /* packet spec. */
-  unsigned payload_type    : 7;  /* packet spec. */
-  unsigned sequence_number : 16; /* automatic */
-  unsigned long timestamp;       /* automatic */
-  unsigned long ssrc;            /* automatic */
-  unsigned long * csrc_list;     /* packet spec. */
+struct RTPAddress {
+  unsigned long ssrc;
+  socklen_t size;
+  struct sockaddr_storage addr;
+};
+
+struct RTPPeer {
+  size_t refs;
+  struct RTPAddress address;
+  unsigned long in_timestamp;
+  unsigned long out_timestamp;
+  unsigned long in_seqnum;
+  unsigned long out_seqnum;
+  void * info;
+};
+
+struct RTPSession {
+  size_t refs;
+  
+  int socket;
+  
+  struct RTPAddress self;
+  struct RTPPeer *  peers[RTP_MAX_PEERS];
+  struct RTPPacketInfo info;
+  
+  struct iovec iov[RTP_IOV_LEN];
+  size_t buflen;
+  void * buffer;
+
+  unsigned long timestamp_offset;
+  double        timestamp_divisor;
 };
 
 /**
+ * @defgroup RTP RTP
+ * @{
+ */
+
+/**
  * @struct RTPPacketInfo rtp.h
+ * @ingroup RTP
  * @brief RTP packet information.
  * Hold information, data for one RTP packet. The RTP header has the
  * following format:
@@ -48,80 +73,47 @@ struct RTPHeader {
  * The first twelve octets are present in every RTP packet, while the
  * list of CSRC identifiers is present only when inserted by a mixer.
  *
- * Version (V): 2 bits.
- *
+ * @par Version (V): 2 bits.
  * The version field identifies the version of RTP. The version we use
  * and the one specified by RFC3550 is two (2). (The value 1 is used by
  * the first draft version of RTP and the value 0 is used by the
  * protocol initially implemented in the "vat" audio tool.)
  *
- * Padding (P): 1 bit. (RTPPacketInfo::padding)
+ * @par Padding (P): 1 bit.
+ * @copydetails RTPPacketInfo::padding
+ * (See @ref RTPPacketInfo::padding)
  *
- * If the padding bit is set, the packet contains one or more additional
- * padding octets at the end which are not part of the payload. The last
- * octet of the padding contains a count of how many padding octets
- * should be ignored, including itself.  Padding may be needed by some
- * encryption algorithms with fixed block sizes or for carrying several
- * RTP packets in a lower-layer protocol data unit.
+ * @par Extension (X): 1 bit.
+ * @copydetails RTPPacketInfo::extension
+ * (See @ref RTPPacketInfo::extension)
  *
- * Extension (X): 1 bit. (RTPPacketInfo::extension)
+ * @par CSRC count (CC): 4 bits.
+ * @copydetails RTPPacketInfo::csrc_count
+ * (See @ref RTPPacketInfo::csrc_count)
  *
- * If the extension bit is set, the fixed header MUST be followed by
- * exactly one header extension, with a format defined by
- * RTPHeaderExtension.
+ * @par Marker (M): 1 bit.
+ * @copydetails RTPPacketInfo::marker
+ * (See @ref RTPPacketInfo::marker)
  *
- * CSRC count (CC): 4 bits. (RTPPacketInfo::csrc_count)
+ * @par Payload type (PT): 7 bits.
+ * @copydetails RTPPacketInfo::payload_type
+ * (See @ref RTPPacketInfo::payload_type)
  *
- * The CSRC count contains the number of CSRC identifiers that follow
- * the fixed header.
+ * @par Sequence number: 16 bits.
+ * @copydetails RTPPacketInfo::sequence_number
+ * (See @ref RTPPacketInfo::sequence_number)
  *
- * Marker (M): 1 bit. (RTPPacketInfo::marker)
+ * @par Timestamp: 32 bits.
+ * @copydetails RTPPacketInfo::timestamp
+ * (See @ref RTPPacketInfo::timestamp)
  *
- * The interpretation of the marker is defined by a profile.  It is
- * intended to allow significant events such as frame boundaries to be
- * marked in the packet stream. A profile MAY define additional marker
- * bits or specify that there is no marker bit by changing the number
- * of bits in the payload type field.
+ * @par SSRC: 32 bits.
+ * @copydetails RTPPacketInfo::ssrc
+ * (See @ref RTPPacketInfo::ssrc)
  *
- * Payload type (PT): 7 bits. (RTPPacketInfo::payload_type)
- *
- * This field identifies the format of the RTP payload and determines
- * its interpretation by the application.  A profile MAY specify a
- * default static mapping of payload type codes to payload formats.
- *
- * Sequence number: 16 bits. (RTPPacketInfo::sequence_number)
- *
- * The sequence number increments by one for each RTP data packet sent,
- * and may be used by the receiver to detect packet loss and to restore
- * packet sequence. The initial value of the sequence number SHOULD be
- * random (unpredictable) to make known-plaintext attacks on encryption
- * more difficult, even if the source itself does not encrypt, because
- * the packets may flow through a translator that does.
- *
- * Timestamp: 32 bits. (RTPPacketInfo::timestamp)
- *
- * The timestamp reflects the sampling instant of the first octet in
- * the RTP data packet. The sampling instant MUST be derived from a
- * clock that increments monotonically and linearly in time to allow
- * synchronization and jitter calculations.
- *
- * SSRC: 32 bits. (RTPPacketInfo::ssrc)
- *
- * The SSRC field identifies the synchronization source.  This
- * identifier SHOULD be chosen randomly, with the intent that no two
- * synchronization sources within the same RTP session will have the
- * same SSRC identifier.
- *
- * CSRC list: 0 to 15 items, 32 bits each. (RTPPacketInfo::csrc_list)
- *
- * The CSRC list identifies the contributing sources for the payload
- * contained in this packet. The number of identifiers is given by the
- * CC field. If there are more than 15 contributing sources, only 15 can
- * can be identified. CSRC identifiers are inserted by mixers, using the
- * SSRC identifiers of contributing sources. For example, for audio
- * packets the SSRC identifiers of all sources that were mixed together
- * to create a packet are listed, allowing correct talker indication at
- * the receiver.
+ * @par CSRC list: 0 to 15 items, 32 bits each.
+ * @copydetails RTPPacketInfo::csrc
+ * (See @ref RTPPacketInfo::csrc)
  *
  * RTP header extension.
  *
@@ -156,50 +148,128 @@ struct RTPHeader {
  * which the implementations are operating.  This RTP specification does
  * not define any header extensions itself.
  *
- * Length: 16 bits.
- *
+ * @par Length: 16 bits.
  * The length field counts the number of 32-bit words in the extension,
  * excluding the four-octet extension header (therefore zero is a valid
  * length).
  *
- * Header extension.
- *
+ * @par Header extension.
  * The header extension may contain arbitary data defined by one or more
  * profiles.
  */
 
-struct RTPAddress {
-  unsigned long ssrc;
-  socklen_t size;
-  struct sockaddr_storage addr;
-};
+/**
+ * @struct RTPAddress
+ * An RTP address consisting of an internet-address (socket with length)
+ * and a synchronization source identifier.
+ */
 
-struct RTPPeer {
-  size_t refs;
-  struct RTPAddress address;
-  unsigned long in_timestamp;
-  unsigned long out_timestamp;
-  unsigned long in_seqnum;
-  unsigned long out_seqnum;
-  void * info;
-};
+/**
+ * @struct RTPPeer
+ * @brief A control structure to manage the connection to an RTP peer.
+ */
 
-struct RTPSession {
-  size_t refs;
-  
-  int socket;
-  
-  struct RTPAddress self;
-  struct RTPPeer *  peers[RTP_MAX_PEERS];
-  struct RTPPacketInfo info;
-  
-  struct iovec iov[RTP_IOV_LEN];
-  size_t buflen;
-  void * buffer;
+/**
+ * @struct RTPSession
+ * @brief An RTP session that may be connected to multiple peers.
+ */
 
-  unsigned long timestamp_offset;
-  double        timestamp_divisor;
-};
+/** @} */
+
+/**
+ * @property RTPPacketInfo::peer
+ * @brief The peer associated with the packet.
+ * This can either be the peer that originally sent the packet we did
+ * receive or it can be the peer that the packet should be sent to.
+ */
+/**
+ * @property RTPPacketInfo::padding
+ * @brief The number of padding bytes following the payload.
+ * If the padding bit is set, the packet contains one or more additional
+ * padding octets at the end which are not part of the payload. The last
+ * octet of the padding contains a count of how many padding octets
+ * should be ignored, including itself.  Padding may be needed by some
+ * encryption algorithms with fixed block sizes or for carrying several
+ * RTP packets in a lower-layer protocol data unit.
+ */
+/**
+ * @property RTPPacketInfo::extension
+ * @brief Set if the first @c iovec element is used as a header extension.
+ * If the extension bit is set, the fixed header MUST be followed by
+ * exactly one header extension.
+ */
+/**
+ * @property RTPPacketInfo::csrc_count
+ * The CSRC count contains the number of CSRC identifiers that follow
+ * the fixed header.
+ */
+/**
+ * @property RTPPacketInfo::marker
+ * The interpretation of the marker is defined by a profile.  It is
+ * intended to allow significant events such as frame boundaries to be
+ * marked in the packet stream. A profile MAY define additional marker
+ * bits or specify that there is no marker bit by changing the number
+ * of bits in the payload type field.
+ */
+/**
+ * @property RTPPacketInfo::payload_type
+ * This field identifies the format of the RTP payload and determines
+ * its interpretation by the application.  A profile MAY specify a
+ * default static mapping of payload type codes to payload formats.
+ */
+/**
+ * @property RTPPacketInfo::sequence_number
+ * The sequence number increments by one for each RTP data packet sent,
+ * and may be used by the receiver to detect packet loss and to restore
+ * packet sequence. The initial value of the sequence number SHOULD be
+ * random (unpredictable) to make known-plaintext attacks on encryption
+ * more difficult, even if the source itself does not encrypt, because
+ * the packets may flow through a translator that does.
+ */
+/**
+ * @property RTPPacketInfo::timestamp
+ * The timestamp reflects the sampling instant of the first octet in
+ * the RTP data packet. The sampling instant MUST be derived from a
+ * clock that increments monotonically and linearly in time to allow
+ * synchronization and jitter calculations.
+ */
+/**
+ * @property RTPPacketInfo::ssrc
+ * The SSRC field identifies the synchronization source.  This
+ * identifier SHOULD be chosen randomly, with the intent that no two
+ * synchronization sources within the same RTP session will have the
+ * same SSRC identifier.
+ */
+/**
+ * @property RTPPacketInfo::csrc
+ * The CSRC list identifies the contributing sources for the payload
+ * contained in this packet. The number of identifiers is given by the
+ * CC field. If there are more than 15 contributing sources, only 15 can
+ * can be identified. CSRC identifiers are inserted by mixers, using the
+ * SSRC identifiers of contributing sources. For example, for audio
+ * packets the SSRC identifiers of all sources that were mixed together
+ * to create a packet are listed, allowing correct talker indication at
+ * the receiver.
+ */
+/**
+ * @property RTPPacketInfo::total_size
+ * @brief The total size of the sent or received RTP packet.
+ * The total size includes all RTP-Header informatio and the padding.
+ * It only acts as an information for the payload implementation. It
+ * is never read or interpreted by the RTP session.
+ */
+/**
+ * @property RTPPacketInfo::payload_size
+ * @brief The total payload size including all @c iovec elements.
+ */
+/**
+ * @property RTPPacketInfo::iovlen
+ * @brief The number of elements in the @c iovec structure.
+ */
+/**
+ * @property RTPPacketInfo::iov
+ * @brief A number of iovec elements that belong to the packet.
+ */
 
 /**
  * @brief Create an RTPPeer instance.
@@ -449,6 +519,8 @@ void RTPSessionRelease( struct RTPSession * session ) {
     RTPSessionDestroy( session );
   }
 }
+
+/** @} */
 
 /**
  * @brief Set the SSRC used by this session.

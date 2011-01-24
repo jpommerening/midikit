@@ -2,6 +2,15 @@
 #include "rtp.h"
 #include "midi/util.h"
 
+/**
+ * @defgroup RTP-MIDI RTP-MIDI
+ * @ingroup RTP
+ * @{
+ */
+
+/**
+ * @brief RTP-MIDI payload header.
+ */
 struct RTPMIDIInfo {
   unsigned char journal;
   unsigned char zero;
@@ -83,6 +92,8 @@ struct RTPMIDISession {
   size_t size;
   void * buffer;
 };
+
+/** @} */
 
 #pragma mark Creation and destruction
 /**

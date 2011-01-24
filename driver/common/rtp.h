@@ -9,19 +9,19 @@ struct RTPSession;
 
 struct RTPPacketInfo {
   struct RTPPeer * peer;
-  unsigned char  padding;         /**< number of padding bytes */
-  unsigned char  extension;       /**< if set, use first iov element as header extension */
-  unsigned char  csrc_count;      /**< number of valid entries in csrc[] */
-  unsigned char  marker;          /**< set marker bit? */
-  unsigned char  payload_type;    /**< type of payload */
-  unsigned short sequence_number; /**< sequence number of the packet */
-  unsigned long  timestamp;       /**< timestamp (the time the packet was sent */
-  unsigned long  ssrc;            /**< sender ssrc identifier */
-  unsigned long  csrc[16];        /**< contributing sources */
-  size_t total_size;   /**< total packet size in bytes */
-  size_t payload_size; /**< size of payload */
-  size_t iovlen;       /**< numver of elements in iov[] */
-  struct iovec * iov;  /**< list of io vectors contianing pkg data */
+  unsigned char  padding;
+  unsigned char  extension;
+  unsigned char  csrc_count;
+  unsigned char  marker;
+  unsigned char  payload_type;
+  unsigned short sequence_number;
+  unsigned long  timestamp;
+  unsigned long  ssrc;
+  unsigned long  csrc[16];
+  size_t total_size;
+  size_t payload_size;
+  size_t iovlen;
+  struct iovec * iov;
 };
 
 struct RTPPeer * RTPPeerCreate( unsigned long ssrc, socklen_t size, struct sockaddr * addr );

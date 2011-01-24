@@ -502,7 +502,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "DOT_PATH=/usr/local/graphviz-2.14/bin\nDOXY_PATH=/Applications/Doxygen.app/Contents/Resources\nexport PATH=$PATH:$DOT_PATH:$DOXY_PATH\ncd $SRCROOT\n#doxygen\n#make -C documentation/html install";
+			shellScript = "DOT_PATH=/usr/local/graphviz-2.14/bin\nDOXY_PATH=/Applications/Doxygen.app/Contents/Resources\nexport PATH=$PATH:$DOT_PATH:$DOXY_PATH\ncd $SRCROOT\ndoxygen\nmake -C documentation/html install";
 		};
 /* End PBXShellScriptBuildPhase section */
 

@@ -6,12 +6,20 @@
 struct MIDIConnectorList;
 
 /**
+ * @defgroup MIDI-driver MIDI driver implementations
+ * @ingroup MIDI
+ * Implementations of the @ref MIDIDriver interface.
+ */
+
+/**
+ * @ingroup MIDI
  * @def MIDI_DRIVER_DELEGATE_INITIALIZER
  * @brief Initializer for MIDI driver delegates.
  * Assign to a delegate to initialize as empty.
  */
 
 /**
+ * @ingroup MIDI
  * @def MIDI_DRIVER_WILL_SEND_MESSAGE
  * @brief MIDI driver will send a message.
  * This is called by the driver interface before it will send a message to
@@ -19,6 +27,7 @@ struct MIDIConnectorList;
  * The info pointer points the the message that will be sent.
  */
 /**
+ * @ingroup MIDI
  * @def MIDI_DRIVER_WILL_RECEIVE_MESSAGE
  * @brief MIDI driver will receive a message.
  * This is called by the driver interface after it has been notified
@@ -29,6 +38,7 @@ struct MIDIConnectorList;
  */
 
 /**
+ * @ingroup MIDI
  * @struct MIDIDriverDelegate driver.h
  * @brief Delegate for driver communication.
  * Delegate for bi-directional communication between a MIDIDriver and
@@ -116,6 +126,7 @@ int MIDIDriverDelegateTriggerEvent( struct MIDIDriverDelegate * delegate, int ev
 
 
 /**
+ * @ingroup MIDI
  * @brief Interface to send MIDI messages with various drivers.
  * The MIDIDriver is an interface that can be used to pass messages
  * to an underlying implementation. The communication between the interface

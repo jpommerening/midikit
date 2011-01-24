@@ -34,6 +34,7 @@
 #define NSEC_PER_SEC 1000000000
 
 /**
+ * @ingroup MIDI
  * @brief Provider for accurate timestamps.
  * The MIDIClock provides accurate timestamps at any desired
  * rate with a selectable offset.

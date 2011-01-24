@@ -3,6 +3,7 @@
 #include "message_format.h"
 
 /**
+ * @ingroup MIDI
  * @struct MIDIMessage message.h
  * @brief Structure of MIDI message object.
  */

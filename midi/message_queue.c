@@ -2,7 +2,8 @@
 #include "message_queue.h"
 
 /**
- * Queue for MIDI message objects.
+ * @ingroup MIDI
+ * @brief Queue for MIDI message objects.
  */
 struct MIDIMessageQueue {
   size_t refs;
