@@ -1,13 +1,12 @@
 #include <stdio.h>
-
-extern int test_error;
+#include "midi/midi.h"
 
 #define _EXPAND( v ) v
 #define EXPAND( v ) _EXPAND( v )
 
 #define ASSERT_BASE( expr, message, print_expr ) \
   if( ! (expr) ) { \
-    printf( "%s:%i: error: assertion failed: %s\n  " print_expr "\n", __FILE__, __LINE__, message ); \
+    printf( "%s:%s:%i: error: assertion failed: %s\n  " print_expr "\n", SUBDIR, __FILE__, __LINE__, message ); \
     return 1; \
   }
 
@@ -33,6 +32,6 @@ extern int test_error;
 #define ASSERT_NEAR( x, y, message )         ASSERT_BASE( (x) >= ASSERT_NEAR_LESS_NUM(y) && (x) <= ASSERT_NEAR_GREATER_NUM(y), message, \
                                              #x " has to be near " #y "!")
 
-#define ASSERT_ERROR_CHECKER 0
+#define ASSERT_ERROR_CHECKER MIDIErrorNumber
 #define ASSERT_NO_ERROR( command, message )  ASSERT_BASE( (command) == 0 && ASSERT_ERROR_CHECKER == 0, message, #command " returned an error!" ) 
 #define ASSERT_ERROR( command, message )  ASSERT_BASE( (command) != 0 || ASSERT_ERROR_CHECKER != 0, message, #command " returned no error!" ) 

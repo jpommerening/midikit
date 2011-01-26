@@ -50,24 +50,22 @@ struct MIDIClock {
 static void _normalize_frac( unsigned long long * numer, unsigned long long * denom ) {
   static int prime[] = { 7, 5, 3, 2, 1 };
   int i;
-  printf( "Normalize: (%llu / %llu)\n", *numer, *denom );
+  MIDILog( "Normalize: (%llu / %llu)\n", *numer, *denom );
   for( i=0; prime[i] > 1; i++ ) {
     while( (*numer % prime[i] == 0) && (*denom % prime[i] == 0) ) {
       *numer /= prime[i];
       *denom /= prime[i];
     }
   }
-  printf( "Result: (%llu / %llu)\n", *numer, *denom );
+  MIDILog( "Result: (%llu / %llu)\n", *numer, *denom );
 }
 
 static void _divide_frac( unsigned long long * numer, unsigned long long * denom, unsigned long long fac ) {
   static int prime[] = { 7, 5, 3, 2, 1 };
   int i;
-  printf( "Divide: (%llu / %llu) by %llu\n", *numer, *denom, fac );
+  MIDILog( "Divide: (%llu / %llu) by %llu\n", *numer, *denom, fac );
   for( i=0; prime[i] > 1; i++ ) {
-    printf( "  - %i\n    ", prime[i] );
     while( (fac % prime[i]) == 0 ) {
-      printf( "." );
       if( (*numer % prime[i]) == 0 ) {
         *numer /= prime[i];
       } else {
@@ -75,10 +73,9 @@ static void _divide_frac( unsigned long long * numer, unsigned long long * denom
       }
       fac /= prime[i];
     }
-    printf( "\n    (%llu / %llu) factor: %llu\n", *numer, *denom, fac );
   }
   *denom *= fac;
-  printf( "Result: (%llu / %llu) with last factor: %llu\n", *numer, *denom, fac );
+  MIDILog( "Result: (%llu / %llu) with last factor: %llu\n", *numer, *denom, fac );
 }
 
 static void _multiply_frac( unsigned long long * numer, unsigned long long * denom, unsigned long long fac ) {
@@ -91,7 +88,7 @@ static void _init_clock_mach( struct MIDIClock * clock ) {
   static mach_timebase_info_data_t info = { 0, 0 };
   if( info.denom == 0 ) {
     mach_timebase_info( &info );
-    printf( "Timebase info: %i / %i\n", info.numer, info.denom );
+    MIDILog( "Timebase info: %i / %i\n", info.numer, info.denom );
   }
   clock->numer = info.numer;
   clock->denom = info.denom;
@@ -194,15 +191,12 @@ struct MIDIClock * MIDIClockCreate( MIDISamplingRate rate ) {
   }
   clock->refs = 1;
   (*_midi_clock[0].init)( clock );
-  if( rate == 0 ) {
-    rate = ( clock->denom / clock->numer );
-  } else {
-    _multiply_frac( &(clock->numer), &(clock->denom), rate );
-    _normalize_frac( &(clock->numer), &(clock->denom) );
-  }
+  if( rate == 0 ) rate = ( clock->denom / clock->numer );
+  _multiply_frac( &(clock->numer), &(clock->denom), rate );
+  _normalize_frac( &(clock->numer), &(clock->denom) );
   clock->rate   = rate;
   clock->offset = -1 * _get_real_time( clock );
-  printf( "Initialized clock:\n  rate: %u, offset: %lli\n  numer: %llu / denom: %llu\n",
+  MIDILog( "Initialized clock:\n  rate: %u, offset: %lli\n  numer: %llu / denom: %llu\n",
     clock->rate, clock->offset, clock->numer, clock->denom );
   return clock;
 }
@@ -214,6 +208,7 @@ struct MIDIClock * MIDIClockCreate( MIDISamplingRate rate ) {
  * @param clock The clock.
  */
 void MIDIClockDestroy( struct MIDIClock * clock ) {
+  MIDIAssert( clock != NULL );
   free( clock );
 }
 
@@ -224,6 +219,7 @@ void MIDIClockDestroy( struct MIDIClock * clock ) {
  * @param clock The clock.
  */
 void MIDIClockRetain( struct MIDIClock * clock ) {
+  MIDIAssert( clock != NULL );
   clock->refs++;
 }
 
@@ -235,6 +231,7 @@ void MIDIClockRetain( struct MIDIClock * clock ) {
  * @param clock The clock.
  */
 void MIDIClockRelease( struct MIDIClock * clock ) {
+  MIDIAssert( clock != NULL );
   if( ! --clock->refs ) {
     MIDIClockDestroy( clock );
   }

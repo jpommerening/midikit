@@ -271,6 +271,43 @@
 #define MIDI_BOOL( v ) (((v)>=64) ? MIDI_ON : MIDI_OFF)
 /** @} */
 
+typedef int (*MIDILogFunction)( const char *, ... );
+extern MIDILogFunction MIDILogger;
+extern int MIDIErrorNumber;
+
+#define MIDI_ERR_NO_ERROR 0
+#define MIDI_ERR_ERROR    1
+#define MIDI_ERR_ASSERT   2
+#define MIDI_ERR_EINVAL   3
+#define MIDI_ERR_ENOMEM   4
+#define MIDI_ERRNO( kind ) MIDI_ERR_ ## kind
+
+#ifndef NO_LOG
+#define MIDILog( ... ) do { (*MIDILogger)( __VA_ARGS__ ); } while( 0 )
+#else
+#define MIDILog( ... )
+#endif
+
+#ifndef NO_ERROR
+#define MIDIError( kind, msg ) do { MIDIErrorNumber = MIDI_ERRNO( kind ); \
+                                    MIDILog( "%s/%s:%i: [" #kind "] %s\n", SUBDIR, __FILE__, __LINE__, msg ); } while( 0 )
+#else
+#define MIDIError( kind, msg )
+#endif
+
+#ifndef NO_ASSERT
+#define MIDIAssert( expr ) do { if( !(expr) ) MIDIError( ASSERT, #expr ); } while( 0 )
+#else
+#define MIDIAssert( expr )
+#endif
+
+#ifndef NO_PRECOND
+#define MIDIPrecond( expr, kind ) do { if( !(expr) ) { MIDIError( kind, "Precondition failed (" #expr ")" ); \
+                                                       return MIDI_ERRNO( kind ); } } while( 0 )
+#else
+#define MIDIPrecond( expr, kind )
+#endif
+
 typedef unsigned char  MIDIByte;
 typedef unsigned short MIDIProperty;
 

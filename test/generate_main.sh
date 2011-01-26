@@ -24,16 +24,18 @@ fi
 exec >"${MAIN_C}"
 
 echo "#include <stdio.h>"
+echo "#include \"midi/midi.h\""
 echo "#define NL ((char)0x0a)"
 sed "s/${TEST_DECL_PATTERN}/extern \1 \2( void );/p;d" ${FILES}
 echo "int main( int argc, char *argv[] ) {"
-echo "  int i, j, failures = 0;"
+echo "  int i, failures = 0;"
 echo "  struct {"
 echo "    char * name;"
 echo "    int (*func)(void);"
 echo "  } tests[] = {"
 sed "s/${TEST_DECL_PATTERN}/    { \"\2\", \&\2 },/p;d" ${FILES}
 echo "  };"
+echo "  MIDILogger = &printf;"
 echo "  for( i=0; i<(sizeof(tests)/sizeof(tests[0])); i++ ) {"
 echo "    printf( \"> Running %s%c\", tests[i].name, NL );"
 echo "    if( (tests[i].func)() ) {"

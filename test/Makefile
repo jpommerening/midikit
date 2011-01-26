@@ -31,7 +31,7 @@ $(OBJDIR)/%.o:
 	$(CC) $(CFLAGS_OBJ) -o $@ $<
 
 $(BINDIR)/$(BIN): $(MAIN_C) $(OBJS)
-	$(CC) $(LDFLAGS_BIN) -o $@ $^
+	$(CC) $(LDFLAGS_BIN) $(CFLAGS) -o $@ $^
 
 $(BINDIR)/demo: demo.c
 	$(CC) $(LDFLAGS_BIN) -o $@ $^

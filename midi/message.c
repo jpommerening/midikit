@@ -66,6 +66,7 @@ struct MIDIMessage * MIDIMessageCreate( MIDIStatus status ) {
  * @param message The message.
  */
 void MIDIMessageDestroy( struct MIDIMessage * message ) {
+  MIDIAssert( message != NULL );
   if( message->data.data != NULL && ( message->data.bytes[3] & 1 ) ) free( message->data.data );
   free( message );
 }
@@ -77,6 +78,7 @@ void MIDIMessageDestroy( struct MIDIMessage * message ) {
  * @param message The message.
  */
 void MIDIMessageRetain( struct MIDIMessage * message ) {
+  MIDIAssert( message != NULL );
   message->refs++;
 }
 
@@ -88,6 +90,7 @@ void MIDIMessageRetain( struct MIDIMessage * message ) {
  * @param message The message.
  */
 void MIDIMessageRelease( struct MIDIMessage * message ) {
+  MIDIAssert( message != NULL );
   if( ! --message->refs ) {
     MIDIMessageDestroy( message );
   }
@@ -108,6 +111,7 @@ void MIDIMessageRelease( struct MIDIMessage * message ) {
  * @param status The MIDIStatus.
  */
 int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIStatus status ) {
+  MIDIAssert( message != NULL );
   struct MIDIMessageFormat * format = MIDIMessageFormatForStatus( status );
   if( format == NULL ) return 1;
   message->format = format;
@@ -120,6 +124,8 @@ int MIDIMessageSetStatus( struct MIDIMessage * message, MIDIStatus status ) {
  * @param status The MIDIStatus.
  */
 int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIStatus * status ) {
+  MIDIAssert( message != NULL );
+  MIDIPrecond( status != NULL , EINVAL);
   return MIDIMessageGet( message, MIDI_STATUS, sizeof( MIDIStatus ), status );
 }
 
@@ -129,7 +135,7 @@ int MIDIMessageGetStatus( struct MIDIMessage * message, MIDIStatus * status ) {
  * @param timestamp The MIDITimestamp.
  */
 int MIDIMessageSetTimestamp( struct MIDIMessage * message, MIDITimestamp timestamp ) {
-  if( message == NULL ) return 1;
+  MIDIAssert( message != NULL );
   message->timestamp = timestamp;
   return 0;
 }
@@ -140,7 +146,8 @@ int MIDIMessageSetTimestamp( struct MIDIMessage * message, MIDITimestamp timesta
  * @param timestamp The MIDITimestamp.
  */
 int MIDIMessageGetTimestamp( struct MIDIMessage * message, MIDITimestamp * timestamp ) {
-  if( message == NULL || timestamp == NULL ) return 1;
+  MIDIAssert( message != NULL );
+  MIDIPrecond( timestamp != NULL , EINVAL);
   *timestamp = message->timestamp;
   return 0;
 }
@@ -151,7 +158,8 @@ int MIDIMessageGetTimestamp( struct MIDIMessage * message, MIDITimestamp * times
  * @param size The size.
  */
 int MIDIMessageGetSize( struct MIDIMessage * message, size_t * size ) {
-  if( message == NULL || size == NULL ) return 1;
+  MIDIAssert( message != NULL );
+  MIDIPrecond( size != NULL , EINVAL);
   return MIDIMessageFormatGetSize( message->format, &(message->data), size );
 }
 
@@ -168,6 +176,7 @@ int MIDIMessageGetSize( struct MIDIMessage * message, size_t * size ) {
  * @retval 1 if the property was not set.
  */
 int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value ) {
+  MIDIAssert( message != NULL );
   return MIDIMessageFormatSet( message->format, &(message->data), property, size, value );
 }
 
@@ -184,6 +193,7 @@ int MIDIMessageSet( struct MIDIMessage * message, MIDIProperty property, size_t 
  * @retval 1 if the value was not set.
  */
 int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t size, void * value ) {
+  MIDIAssert( message != NULL );
   return MIDIMessageFormatGet( message->format, &(message->data), property, size, value );
 }
 
@@ -222,7 +232,8 @@ static void _check_release_data( struct MIDIMessage * message ) {
  * @retval 1 if the message could not be encoded.
  */
 int MIDIMessageEncode( struct MIDIMessage * message, size_t size, unsigned char * buffer, size_t * written ) {
-  if( size == 0 || buffer == NULL ) return 1;
+  MIDIAssert( message != NULL );
+  MIDIPrecond( size > 0 && buffer != NULL , EINVAL);
   return MIDIMessageFormatEncode( message->format, &(message->data), size, buffer, written );
 }
 
@@ -238,7 +249,8 @@ int MIDIMessageEncode( struct MIDIMessage * message, size_t size, unsigned char 
  * @retval 1 if the message could not be encoded.
  */
 int MIDIMessageDecode( struct MIDIMessage * message, size_t size, unsigned char * buffer, size_t * read ) {
-  if( size == 0 || buffer == NULL ) return 1;
+  MIDIAssert( message != NULL );
+  MIDIPrecond( size > 0 && buffer != NULL , EINVAL);
   _check_release_data( message );
   message->format = MIDIMessageFormatDetect( buffer );
   if( message->format == NULL ) return 1;
@@ -259,7 +271,8 @@ int MIDIMessageDecode( struct MIDIMessage * message, size_t size, unsigned char 
  */
 int MIDIMessageEncodeRunningStatus( struct MIDIMessage * message, MIDIRunningStatus * status,
                                     size_t size, unsigned char * buffer, size_t * written ) {
-  if( size == 0 || buffer == NULL ) return 1;
+  MIDIAssert( message != NULL );
+  MIDIPrecond( size > 0 && buffer != NULL , EINVAL);
   return MIDIMessageFormatEncodeRunningStatus( message->format, &(message->data), status, size, buffer, written );
 }
                                     
@@ -277,7 +290,8 @@ int MIDIMessageEncodeRunningStatus( struct MIDIMessage * message, MIDIRunningSta
  */
 int MIDIMessageDecodeRunningStatus( struct MIDIMessage * message, MIDIRunningStatus * status,
                                     size_t size, unsigned char * buffer, size_t * read ) {
-  if( size == 0 || buffer == NULL ) return 1;
+  MIDIAssert( message != NULL );
+  MIDIPrecond( size > 0 && buffer != NULL, EINVAL );
   _check_release_data( message );
   message->format = MIDIMessageFormatDetectRunningStatus( buffer, status );
   if( message->format == NULL ) return 1;

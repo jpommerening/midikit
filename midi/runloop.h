@@ -4,6 +4,7 @@
 
 struct MIDIRunloopSource {
   int nfds;
+  int flags;
   fd_set readfds;
   fd_set writefds;
   struct timespec timeout;
@@ -11,10 +12,14 @@ struct MIDIRunloopSource {
   int (*read)( void * info, int nfds, fd_set * readfds );
   int (*write)( void * info, int nfds, fd_set * writefds );
   int (*idle)( void * info, struct timespec * idletime );
+  int (*schedule)( struct MIDIRunloopSource * source, int event );
   void * info;
 };
 
 int MIDIRunloopSourceWait( struct MIDIRunloopSource * source );
+int MIDIRunloopSourceScheduleRead( struct MIDIRunloopSource * source );
+int MIDIRunloopSourceScheduleWrite( struct MIDIRunloopSource * source );
+int MIDIRunloopSourceScheduleIdle( struct MIDIRunloopSource * source );
 
 struct MIDIRunloop;
 

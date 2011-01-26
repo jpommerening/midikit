@@ -8,13 +8,14 @@
 int test001_clock( void ) {
   struct MIDIClock * clock = MIDIClockCreate( MIDI_SAMPLING_RATE_DEFAULT );
   MIDITimestamp start, ticks;
-  MIDISamplingRate default_rate;
+  MIDISamplingRate rate;
 
   ASSERT_NOT_EQUAL( clock, NULL, "Could not create MIDI clock." );
-  ASSERT_NO_ERROR( MIDIClockGetSamplingRate( clock, &default_rate ), "Could not get sampling rate." );
+  ASSERT_NO_ERROR( MIDIClockGetSamplingRate( clock, &rate ), "Could not get sampling rate." );
   ASSERT_NO_ERROR( MIDIClockGetNow( clock, &start ), "Could not get current clock time." );
-  usleep( 1000000 / default_rate + 100 );
+  usleep( 1000000 / rate + 10 );
   ASSERT_NO_ERROR( MIDIClockGetNow( clock, &ticks ), "Could not get current clock time." );
+/*printf( "Started at %lli with rate %u, ended at %lli\n", start, rate, ticks );*/
   ASSERT_GREATER_OR_EQUAL( ticks, start, "MIDIClock ticks backwards!" );
   ASSERT_NOT_EQUAL( ticks-start, 0, "MIDIClock does not tick." );
 

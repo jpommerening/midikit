@@ -6,6 +6,10 @@
 
 #define MAX_RUNLOOP_SOURCES 16 
 
+#define MIDI_RUNLOOP_READ  1
+#define MIDI_RUNLOOP_WRITE 2
+#define MIDI_RUNLOOP_IDLE  4
+
 static int _cmp_fds( fd_set * a, fd_set * b, int nfds ) {
   int fd;
   for( fd=0; fd<nfds; fd++ ) {
@@ -48,7 +52,7 @@ static int _cpy_fds( fd_set * lhs, fd_set * rhs, int nfds ) {
 }
 
 static void _timespec_sub( struct timespec * lhs, struct timespec * rhs ) {
-/*printf( "%ld.%06lds - %ld.%06lds\n", lhs->tv_sec, lhs->tv_nsec,
+/*MIDILog( "%ld.%06lds - %ld.%06lds\n", lhs->tv_sec, lhs->tv_nsec,
                                        rhs->tv_sec, rhs->tv_nsec );*/
   lhs->tv_sec  -= rhs->tv_sec;
   lhs->tv_nsec -= rhs->tv_nsec;
@@ -61,7 +65,7 @@ static void _timespec_sub( struct timespec * lhs, struct timespec * rhs ) {
       lhs->tv_nsec += 1000000000;
     }
   }
- /*printf( "=> %ld.%06lds\n", lhs->tv_sec, lhs->tv_nsec );*/
+ /*MIDILog( "=> %ld.%06lds\n", lhs->tv_sec, lhs->tv_nsec );*/
 }
 
 static void _timespec_get( struct timespec * ts ) {
@@ -86,6 +90,11 @@ static int _source_reset_remain( struct MIDIRunloopSource * source ) {
   return 0;
 }
 
+/**
+ * @brief Wait until any callback of the runloop source is triggered.
+ * @public @memberof MIDIRunloopSource
+ * @param source The runloop source.
+ */
 int MIDIRunloopSourceWait( struct MIDIRunloopSource * source ) {
   int result = 0, idle = 1;
   struct timeval  tv = { 0, 0 };
@@ -131,6 +140,62 @@ int MIDIRunloopSourceWait( struct MIDIRunloopSource * source ) {
   }
   return result;
 }
+
+/**
+ * @brief Schedule the read callback of a runloop source.
+ * Enable the read callback of a runloop source. The callback will be invoked the
+ * next time any of the runloop source's "read" file descriptors have new data to
+ * be read. After that the callback will be disabled until this function is called
+ * again.
+ * @public @memberof MIDIRunloopSource
+ * @param source The source that should be scheduled.
+ */
+int MIDIRunloopSourceScheduleRead( struct MIDIRunloopSource * source ) {
+
+  if( source->schedule != NULL ) {
+    (*source->schedule)( source, MIDI_RUNLOOP_READ );
+  }
+  return 0;
+}
+
+/**
+ * @brief Schedule the write callback of a runloop source.
+ * Enable the write callback of a runloop source. The callback will be invoked the
+ * next time any of the runloop source's "write" file descriptors can accept new
+ * data. After that the callback will be disabled until this function is called
+ * again.
+ * @public @memberof MIDIRunloopSource
+ * @param source The source that should be scheduled.
+ */
+int MIDIRunloopSourceScheduleWrite( struct MIDIRunloopSource * source ) {
+
+  if( source->schedule != NULL ) {
+    (*source->schedule)( source, MIDI_RUNLOOP_WRITE );
+  }
+  return 0;
+}
+
+/**
+ * @brief Schedule the idle callback of a runloop source.
+ * Enable the idle callback of a runloop source. The callback will be invoked the
+ * next time any of the runloop source's timeout expired. After that the callback
+ * will be disabled until this function is called again.
+ * @public @memberof MIDIRunloopSource
+ * @param source The source that should be scheduled.
+ */
+int MIDIRunloopSourceScheduleIdle( struct MIDIRunloopSource * source ) {
+
+  if( source->schedule != NULL ) {
+    (*source->schedule)( source, MIDI_RUNLOOP_IDLE );
+  }
+  return 0;
+}
+
+/**
+ * Reimplement the scheduling alltogether:
+ * Replace the "master runloop source" with the
+ * respective filedescriptors and a global timer.
+ */
 
 struct MIDIRunloop {
   size_t refs;
@@ -328,7 +393,7 @@ int MIDIRunloopAddSource( struct MIDIRunloop * runloop, struct MIDIRunloopSource
     runloop->master.write = &_runloop_master_write;
   }
   runloop->master.idle = &_runloop_master_idle;
-  /*printf( "master timeout %lu sec + %lu nsec\nnfds: %i\n", runloop->master.timeout.tv_sec, runloop->master.timeout.tv_nsec, runloop->master.nfds );*/
+  /*MIDILog( "master timeout %lu sec + %lu nsec\nnfds: %i\n", runloop->master.timeout.tv_sec, runloop->master.timeout.tv_nsec, runloop->master.nfds );*/
   return 0;
 }
 

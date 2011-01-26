@@ -16,12 +16,15 @@ LIB=$(LIBDIR)/libmidikit-driver$(LIB_SUFFIX)
 
 all: $(LIB)
 
-clean:
+clean: common-clean applemidi-clean osc-clean
 	rm $(LIB)
 
 common: $(OBJS_COMMON)
+common-clean: common/.make-clean
 applemidi: $(OBJS_APPLEMIDI)
+applemidi-clean: applemidi/.make-clean
 osc: $(OBJS_OSC)
+osc-clean: osc/.make-clean
 
 $(OBJS_COMMON): common/.make
 $(OBJS_APPLEMIDI): applemidi/.make
@@ -32,3 +35,6 @@ $(LIB): $(OBJS_COMMON) $(OBJS_APPLEMIDI) $(OBJS_OSC)
 
 %/.make:
 	cd $$(dirname $@) && $(MAKE)
+
+%/.make-clean:
+	cd $$(dirname $@) && $(MAKE) clean

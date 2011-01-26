@@ -888,10 +888,10 @@ int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * in
     info->total_size += written;
   }
   /*
-  printf( "Sending RTP message consisting of %i iovecs.\n", (int) iovlen );
+  MIDILog( "Sending RTP message consisting of %i iovecs.\n", (int) iovlen );
   for( int i=0; i<iovlen; i++ ) {
-    printf( "[%i] iov_len: %i, iov_base: %p\n", i, (int) iov[i].iov_len, iov[i].iov_base );
-    for( int j=0; j<iov[i].iov_len; j++ ) printf( " 0x%02x", *((char*)iov[i].iov_base+j) );
+    MIDILog( "[%i] iov_len: %i, iov_base: %p\n", i, (int) iov[i].iov_len, iov[i].iov_base );
+    for( int j=0; j<iov[i].iov_len; j++ ) MIDILog( " 0x%02x", *((char*)iov[i].iov_base+j) );
   }*/
 
   msg.msg_name       = &(info->peer->address.addr);
