@@ -417,10 +417,10 @@ int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message 
   int result = 0;
   result = MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_DRIVER_WILL_RECEIVE_MESSAGE, message );
   if( result != 0 ) return result;
-  while( item != NULL ) {
+/*while( item != NULL ) {
     result += MIDIConnectorRelay( item->connector, message );
     item = item->next;
-  }
+  }*/
   return result;
 }
 

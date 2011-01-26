@@ -116,9 +116,9 @@ static int _applemidi_init_runloop_source( struct MIDIDriverAppleMIDI * driver )
     source->nfds = driver->rtp_socket + 1;
   }
   source->timeout.tv_sec  = 1;
-  source->timeout.tv_nsec = 0;
+  source->timeout.tv_nsec = 500000;
   source->remain.tv_sec  = 1;
-  source->remain.tv_nsec = 0;
+  source->remain.tv_nsec = 500000;
   source->info = driver;
 
   source->read  = NULL;
@@ -160,7 +160,7 @@ static int _applemidi_update_runloop_source( struct MIDIDriverAppleMIDI * driver
 
 static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
   struct sockaddr_in addr;
-  int result;
+  int result = 0;
   
   if( driver->control_socket <= 0 ) {
     addr.sin_family = AF_INET;
@@ -281,6 +281,7 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegat
   driver->out_queue = MIDIMessageQueueCreate();
 
   MIDIClockGetNow( driver->clock, &timestamp );
+  printf( "initial timestamp: %lli\n", timestamp );
   driver->token = timestamp;
 
   memset( &(driver->command), 0, sizeof(driver->command) );
@@ -445,7 +446,8 @@ int MIDIDriverAppleMIDISendMessage( struct MIDIDriverAppleMIDI * driver, struct 
   MIDITimestamp timestamp;
   MIDIClockGetNow( driver->clock, &timestamp );
   MIDIMessageSetTimestamp( message, timestamp );
-  return MIDIMessageQueuePush( driver->out_queue, message );
+  MIDIMessageQueuePush( driver->out_queue, message );
+  return MIDIDriverAppleMIDISend( driver );
 }
 
 
