@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include "runloop.h"
+#include "midi.h"
 
 #define MAX_RUNLOOP_SOURCES 16 
 
@@ -52,8 +53,10 @@ static int _cpy_fds( fd_set * lhs, fd_set * rhs, int nfds ) {
 }
 
 static void _timespec_sub( struct timespec * lhs, struct timespec * rhs ) {
-/*MIDILog( "%ld.%06lds - %ld.%06lds\n", lhs->tv_sec, lhs->tv_nsec,
-                                       rhs->tv_sec, rhs->tv_nsec );*/
+  MIDILog( DEVELOP, "%ld.%06lds - %ld.%06lds\n",
+    lhs->tv_sec, lhs->tv_nsec,
+    rhs->tv_sec, rhs->tv_nsec );
+
   lhs->tv_sec  -= rhs->tv_sec;
   lhs->tv_nsec -= rhs->tv_nsec;
   if( lhs->tv_nsec >= 1000000000 ) {
@@ -65,7 +68,7 @@ static void _timespec_sub( struct timespec * lhs, struct timespec * rhs ) {
       lhs->tv_nsec += 1000000000;
     }
   }
- /*MIDILog( "=> %ld.%06lds\n", lhs->tv_sec, lhs->tv_nsec );*/
+  MIDILog( DEVELOP, "=> %ld.%06lds\n", lhs->tv_sec, lhs->tv_nsec );
 }
 
 static void _timespec_get( struct timespec * ts ) {
@@ -393,7 +396,8 @@ int MIDIRunloopAddSource( struct MIDIRunloop * runloop, struct MIDIRunloopSource
     runloop->master.write = &_runloop_master_write;
   }
   runloop->master.idle = &_runloop_master_idle;
-  /*MIDILog( "master timeout %lu sec + %lu nsec\nnfds: %i\n", runloop->master.timeout.tv_sec, runloop->master.timeout.tv_nsec, runloop->master.nfds );*/
+  MIDILog( DEVELOP, "master timeout %lu sec + %lu nsec\nnfds: %i\n",
+    runloop->master.timeout.tv_sec, runloop->master.timeout.tv_nsec, runloop->master.nfds );
   return 0;
 }
 

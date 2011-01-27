@@ -281,7 +281,7 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegat
   driver->out_queue = MIDIMessageQueueCreate();
 
   MIDIClockGetNow( driver->clock, &timestamp );
-  MIDILog( "initial timestamp: %lli\n", timestamp );
+  MIDILog( DEBUG, "initial timestamp: %lli\n", timestamp );
   driver->token = timestamp;
 
   memset( &(driver->command), 0, sizeof(driver->command) );
@@ -546,9 +546,9 @@ static int _applemidi_send_command( struct MIDIDriverAppleMIDI * driver, int fd,
 
   if( command->addr.ss_family == AF_INET ) {
     struct sockaddr_in * a = (struct sockaddr_in *) &(command->addr);
-    MIDILog( "send %i bytes to %s:%i on s(%i)\n", len, inet_ntoa( a->sin_addr ), ntohs( a->sin_port ), fd );
+    MIDILog( DEBUG, "send %i bytes to %s:%i on s(%i)\n", len, inet_ntoa( a->sin_addr ), ntohs( a->sin_port ), fd );
   } else {
-    MIDILog( "send %i bytes to <unknown addr family> on s(%i)\n", len, fd );
+    MIDILog( DEBUG, "send %i bytes to <unknown addr family> on s(%i)\n", len, fd );
   }
   if( sendto( fd, &msg[0], len, 0,
               (struct sockaddr *) &(command->addr), command->size ) != len ) {
@@ -578,9 +578,9 @@ static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd,
                   (struct sockaddr *) &(command->addr), &(command->size) );
   if( command->addr.ss_family == AF_INET ) {
     struct sockaddr_in * a = (struct sockaddr_in *) &(command->addr);
-    MIDILog( "recv %i bytes from %s:%i on s(%i)\n", len, inet_ntoa( a->sin_addr ), ntohs( a->sin_port ), fd );
+    MIDILog( DEBUG, "recv %i bytes from %s:%i on s(%i)\n", len, inet_ntoa( a->sin_addr ), ntohs( a->sin_port ), fd );
   } else {
-    MIDILog( "recv %i bytes from <unknown addr family> on s(%i)\n", len, fd );
+    MIDILog( DEBUG, "recv %i bytes from <unknown addr family> on s(%i)\n", len, fd );
   }
 
   command->type = ntohl( msg[0] ) & 0xffff;

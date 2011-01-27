@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "connector.h"
+#include "midi/midi.h"
 
 typedef int (*RelayFn)( void *, struct MIDIMessage *  );
 typedef int (*ConnectFn)( void *, struct MIDIConnector * );
@@ -78,13 +79,13 @@ static int _source_disconnect( struct MIDIConnector * connector ) {
  */
 struct MIDIConnector * MIDIConnectorCreate() {
   struct MIDIConnector * connector = malloc( sizeof( struct MIDIConnector ) );
-  if( connector != NULL ) {
-    connector->refs = 1;
-    connector->target = NULL;
-    connector->source = NULL;
-    connector->target_delegate = NULL;
-    connector->source_delegate = NULL;
-  }
+  MIDIPrecondReturn( connector != NULL, ENOMEM, NULL );
+
+  connector->refs = 1;
+  connector->target = NULL;
+  connector->source = NULL;
+  connector->target_delegate = NULL;
+  connector->source_delegate = NULL;
   return connector;
 }
 
@@ -96,6 +97,7 @@ struct MIDIConnector * MIDIConnectorCreate() {
  * @param connector The connector.
  */
 void MIDIConnectorDestroy( struct MIDIConnector * connector ) {
+  MIDIPrecondReturn( connector != NULL, EFAULT, (void)0 );
   _source_disconnect( connector );
   _target_disconnect( connector );
   free( connector );
@@ -108,6 +110,7 @@ void MIDIConnectorDestroy( struct MIDIConnector * connector ) {
  * @param connector The connector.
  */
 void MIDIConnectorRetain( struct MIDIConnector * connector ) {
+  MIDIPrecondReturn( connector != NULL, EFAULT, (void)0 );
   connector->refs++;
 }
 
@@ -119,6 +122,7 @@ void MIDIConnectorRetain( struct MIDIConnector * connector ) {
  * @param connector The connector.
  */
 void MIDIConnectorRelease( struct MIDIConnector * connector ) {
+  MIDIPrecondReturn( connector != NULL, EFAULT, (void)0 );
   if( ! --connector->refs ) {
     MIDIConnectorDestroy( connector );
   }
@@ -141,6 +145,7 @@ void MIDIConnectorRelease( struct MIDIConnector * connector ) {
  * @retval >0 if the target could not be detached.
  */
 int MIDIConnectorDetachTarget( struct MIDIConnector * connector ) {
+  MIDIPrecond( connector != NULL, EFAULT );
   return _target_disconnect( connector );
 }
 
@@ -155,6 +160,7 @@ int MIDIConnectorDetachTarget( struct MIDIConnector * connector ) {
  */
 int MIDIConnectorAttachTargetWithDelegate( struct MIDIConnector * connector, void * target,
                                            struct MIDIConnectorTargetDelegate * delegate ) {
+  MIDIPrecond( connector != NULL, EFAULT );
   _target_disconnect( connector );
   connector->target = target;
   connector->target_delegate = delegate;
@@ -169,6 +175,7 @@ int MIDIConnectorAttachTargetWithDelegate( struct MIDIConnector * connector, voi
  * @retval >0 if the source could not be detached.
  */
 int MIDIConnectorDetachSource( struct MIDIConnector * connector ) {
+  MIDIPrecond( connector != NULL, EFAULT );
   return _source_disconnect( connector );
 }
 
@@ -183,6 +190,7 @@ int MIDIConnectorDetachSource( struct MIDIConnector * connector ) {
  */
 int MIDIConnectorAttachSourceWithDelegate( struct MIDIConnector * connector, void * source,
                                            struct MIDIConnectorSourceDelegate * delegate ) {
+  MIDIPrecond( connector != NULL, EFAULT );
   _source_disconnect( connector );
   connector->source = source;
   connector->source_delegate = delegate;
@@ -201,6 +209,7 @@ int MIDIConnectorAttachSourceWithDelegate( struct MIDIConnector * connector, voi
  * @retval >0 if the device could not be attached.
  */
 int MIDIConnectorAttachToDeviceIn( struct MIDIConnector * connector, struct MIDIDevice * device ) {
+  MIDIPrecond( connector != NULL, EFAULT );
   return MIDIConnectorAttachTargetWithDelegate( connector, device,
                                                 &MIDIDeviceInConnectorDelegate );
 }
@@ -217,6 +226,7 @@ int MIDIConnectorAttachToDeviceIn( struct MIDIConnector * connector, struct MIDI
  * @retval >0 if the driver could not be attached.
  */
 int MIDIConnectorAttachToDriver( struct MIDIConnector * connector, struct MIDIDriver * driver ) {
+  MIDIPrecond( connector != NULL, EFAULT );
   return MIDIConnectorAttachTargetWithDelegate( connector, driver,
                                                 &MIDIDriverSendConnectorDelegate );
 }
@@ -233,6 +243,7 @@ int MIDIConnectorAttachToDriver( struct MIDIConnector * connector, struct MIDIDr
  * @retval >0 if the device could not be attached.
  */
 int MIDIConnectorAttachFromDeviceOut( struct MIDIConnector * connector, struct MIDIDevice * device ) {
+  MIDIPrecond( connector != NULL, EFAULT );
   return MIDIConnectorAttachSourceWithDelegate( connector, device,
                                                 &MIDIDeviceOutConnectorDelegate );
 }
@@ -249,6 +260,7 @@ int MIDIConnectorAttachFromDeviceOut( struct MIDIConnector * connector, struct M
  * @retval >0 if the device could not be attached.
  */
 int MIDIConnectorAttachFromDeviceThru( struct MIDIConnector * connector, struct MIDIDevice * device ) {
+  MIDIPrecond( connector != NULL, EFAULT );
   return MIDIConnectorAttachSourceWithDelegate( connector, device,
                                                 &MIDIDeviceThruConnectorDelegate );
 }
@@ -265,6 +277,7 @@ int MIDIConnectorAttachFromDeviceThru( struct MIDIConnector * connector, struct 
  * @retval >0 if the driver could not be attached.
  */
 int MIDIConnectorAttachFromDriver( struct MIDIConnector * connector, struct MIDIDriver * driver ) {
+  MIDIPrecond( connector != NULL, EFAULT );
   return MIDIConnectorAttachSourceWithDelegate( connector, driver,
                                                 &MIDIDriverReceiveConnectorDelegate );
 }
@@ -289,6 +302,7 @@ int MIDIConnectorAttachFromDriver( struct MIDIConnector * connector, struct MIDI
  * @retval >0 if the message could not be relayed.
  */
 int MIDIConnectorRelay( struct MIDIConnector * connector, struct MIDIMessage * message ) {
+  MIDIPrecond( connector != NULL, EFAULT );
   if( connector->target == NULL ||
       connector->target_delegate == NULL ||
       connector->target_delegate->relay == NULL )

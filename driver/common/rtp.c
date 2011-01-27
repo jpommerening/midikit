@@ -4,6 +4,10 @@
 #include <sys/time.h>
 #include <arpa/inet.h>
 
+#ifndef NO_LOG
+#include "midi/midi.h"
+#endif
+
 #define RTP_MAX_PEERS 16
 #define RTP_BUF_LEN   512
 #define RTP_IOV_LEN   16
@@ -887,12 +891,21 @@ int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * in
     _advance_buffer( &size, &buffer, written );
     info->total_size += written;
   }
-  /*
-  MIDILog( "Sending RTP message consisting of %i iovecs.\n", (int) iovlen );
+
+#ifndef NO_LOG
+  MIDILogLocation( DEBUG, "Sending RTP message consisting of %i iovecs.\n", (int) iovlen );
   for( int i=0; i<iovlen; i++ ) {
-    MIDILog( "[%i] iov_len: %i, iov_base: %p\n", i, (int) iov[i].iov_len, iov[i].iov_base );
-    for( int j=0; j<iov[i].iov_len; j++ ) MIDILog( " 0x%02x", *((char*)iov[i].iov_base+j) );
-  }*/
+    MIDILog( DEBUG, "[%i] iov_len: %i, iov_base: %p\n", i, (int) iov[i].iov_len, iov[i].iov_base );
+    for( int j=0; j<iov[i].iov_len; j++ ) {
+      unsigned char c = *((unsigned char*)iov[i].iov_base+j);
+      if( (j+1) % 8 == 0 || j+1 == iov[i].iov_len ) {
+        MIDILog( DEBUG, "0x%02x\n", c );
+      } else {
+        MIDILog( DEBUG, "0x%02x ", c );
+      }
+    }
+  }
+#endif
 
   msg.msg_name       = &(info->peer->address.addr);
   msg.msg_namelen    = info->peer->address.size;
@@ -959,13 +972,30 @@ int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo *
   }
   info->payload_size = size - info->padding;
   if( info->extension ) {
+    info->iovlen = 2;
     info->iov[1].iov_base = buffer;
     info->iov[1].iov_len  = info->payload_size;
   } else {
+    info->iovlen = 1;
     info->iov[0].iov_base = buffer;
     info->iov[0].iov_len  = info->payload_size;
   }
   
+#ifndef NO_LOG
+  MIDILogLocation( DEBUG, "Received RTP message consisting of %i iovecs.\n", (int) info->iovlen );
+  for( int i=0; i<info->iovlen; i++ ) {
+    MIDILog( DEBUG, "[%i] iov_len: %i, iov_base: %p\n", i, (int) info->iov[i].iov_len, info->iov[i].iov_base );
+    for( int j=0; j<info->iov[i].iov_len; j++ ) {
+      unsigned char c = *((unsigned char*)info->iov[i].iov_base+j);
+      if( (j+1) % 8 == 0 || j+1 == info->iov[i].iov_len ) {
+        MIDILog( DEBUG, "0x%02x\n", c );
+      } else {
+        MIDILog( DEBUG, "0x%02x ", c );
+      }
+    }
+  }
+#endif
+
   info->peer = NULL;
   RTPSessionFindPeerBySSRC( session, &(info->peer), info->ssrc );
   if( info->peer == NULL ) {

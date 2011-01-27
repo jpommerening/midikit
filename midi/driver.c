@@ -245,6 +245,7 @@ static int _driver_receive( void * driverp, struct MIDIMessage * message ) {
  */
 struct MIDIDriver * MIDIDriverCreate( struct MIDIDriverDelegate * delegate ) {
   struct MIDIDriver * driver = malloc( sizeof( struct MIDIDriver ) );
+  MIDIPrecondReturn( driver != NULL, ENOMEM, NULL );
   driver->refs = 1;
   driver->delegate  = delegate;
   driver->receivers = NULL;
@@ -265,11 +266,14 @@ struct MIDIDriver * MIDIDriverCreate( struct MIDIDriverDelegate * delegate ) {
  * @param driver The driver.
  */
 void MIDIDriverDestroy( struct MIDIDriver * driver ) {
+  MIDIPrecondReturn( driver != NULL, EFAULT, (void)0 );
   if( driver->clock != NULL ) {
     MIDIClockRelease( driver->clock );
   }
   _list_destroy( &(driver->receivers), &MIDIConnectorDetachSource );
   _list_destroy( &(driver->senders), &MIDIConnectorDetachTarget );
+  driver->delegate->receive   = NULL;
+  driver->delegate->interface = NULL;
   free( driver );
 }
 
@@ -280,6 +284,7 @@ void MIDIDriverDestroy( struct MIDIDriver * driver ) {
  * @param driver The driver.
  */
 void MIDIDriverRetain( struct MIDIDriver * driver ) {
+  MIDIPrecondReturn( driver != NULL, EFAULT, (void)0 );
   driver->refs++;
 }
 
@@ -291,6 +296,7 @@ void MIDIDriverRetain( struct MIDIDriver * driver ) {
  * @param driver The driver.
  */
 void MIDIDriverRelease( struct MIDIDriver * driver ) {
+  MIDIPrecondReturn( driver != NULL, EFAULT, (void)0 );
   if( ! --driver->refs ) {
     MIDIDriverDestroy( driver );
   }

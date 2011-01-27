@@ -28,9 +28,8 @@ struct MIDIMessageQueue {
  */
 struct MIDIMessageQueue * MIDIMessageQueueCreate() {
   struct MIDIMessageQueue * queue = malloc( sizeof( struct MIDIMessageQueue ) );
-  if( queue == NULL ) {
-    return NULL;
-  }
+  MIDIPrecondReturn( queue != NULL, ENOMEM, NULL );
+
   queue->refs   = 1;
   queue->length = 0;
   queue->first  = NULL;
@@ -45,8 +44,11 @@ struct MIDIMessageQueue * MIDIMessageQueueCreate() {
  * @param queue The message queue.
  */
 void MIDIMessageQueueDestroy( struct MIDIMessageQueue * queue ) {
-  struct MIDIMessageList * item = queue->first;
+  struct MIDIMessageList * item;
   struct MIDIMessageList * next;
+  MIDIPrecondReturn( queue != NULL, EFAULT, (void)0 );
+
+  item = queue->first;
   queue->first = NULL;
   while( item != NULL ) {
     MIDIMessageRelease( item->message );
@@ -65,6 +67,7 @@ void MIDIMessageQueueDestroy( struct MIDIMessageQueue * queue ) {
  * @param queue The message queue.
  */
 void MIDIMessageQueueRetain( struct MIDIMessageQueue * queue ) {
+  MIDIPrecondReturn( queue != NULL, EFAULT, (void)0 );
   queue->refs++;
 }
 
@@ -76,6 +79,7 @@ void MIDIMessageQueueRetain( struct MIDIMessageQueue * queue ) {
  * @param queue The message queue.
  */
 void MIDIMessageQueueRelease( struct MIDIMessageQueue * queue ) {
+  MIDIPrecondReturn( queue != NULL, EFAULT, (void)0 );
   if( ! --queue->refs ) {
     MIDIMessageQueueDestroy( queue );
   }
@@ -99,7 +103,8 @@ void MIDIMessageQueueRelease( struct MIDIMessageQueue * queue ) {
  * @retval >0 if the length could not be determined.
  */
 int MIDIMessageQueueGetLength( struct MIDIMessageQueue * queue, size_t * length ) {
-  if( length == NULL ) return 1;
+  MIDIPrecond( queue != NULL, EFAULT );
+  MIDIPrecond( length != NULL, EINVAL );
   *length = queue->length;
   return 0;
 }
@@ -114,9 +119,10 @@ int MIDIMessageQueueGetLength( struct MIDIMessageQueue * queue, size_t * length 
  */
 int MIDIMessageQueuePush( struct MIDIMessageQueue * queue, struct MIDIMessage * message ) {
   struct MIDIMessageList * item;
-  if( message == NULL ) return 1;
+  MIDIPrecond( queue != NULL, EFAULT );
+  MIDIPrecond( message != NULL, EINVAL );
   item = malloc( sizeof( struct MIDIMessageList ) );
-  if( item == NULL ) return 2;
+  MIDIPrecond( item != NULL, ENOMEM );
   
   MIDIMessageRetain( message );
   item->message = message;
@@ -141,7 +147,9 @@ int MIDIMessageQueuePush( struct MIDIMessageQueue * queue, struct MIDIMessage * 
  * @retval >0 if the item could not be fetched.
  */
 int MIDIMessageQueuePeek( struct MIDIMessageQueue * queue, struct MIDIMessage ** message ) {
-  if( message == NULL ) return 1;
+  MIDIPrecond( queue != NULL, EFAULT );
+  MIDIPrecond( message != NULL, EINVAL );
+
   if( queue->first != NULL ) {
     *message = queue->first->message;
   } else {
@@ -160,7 +168,9 @@ int MIDIMessageQueuePeek( struct MIDIMessageQueue * queue, struct MIDIMessage **
  */
 int MIDIMessageQueuePop( struct MIDIMessageQueue * queue, struct MIDIMessage ** message ) {
   struct MIDIMessageList * item;
-  if( message == NULL ) return 1;
+  MIDIPrecond( queue != NULL, EFAULT );
+  MIDIPrecond( message != NULL, EINVAL );
+
   item = queue->first;
   if( item != NULL ) {
     *message     = item->message;

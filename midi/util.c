@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "util.h"
+#include "midi.h"
 
 /**
  * @defgroup MIDI-fnc Utility functions
@@ -20,7 +21,8 @@
 int MIDIUtilReadVarLen( MIDIVarLen * value, size_t size, unsigned char * buffer, size_t * read ) {
   MIDIVarLen v = 0;
   size_t p = 0;
-  if( buffer == NULL || value == NULL ) return 1;
+  MIDIPrecond( buffer != NULL && value != NULL, EINVAL );
+  MIDIPrecond( size > 0, EINVAL );
 
   do {
     if( p>=size ) return 1;
@@ -45,7 +47,9 @@ int MIDIUtilWriteVarLen( MIDIVarLen * value, size_t size, unsigned char * buffer
   MIDIVarLen v = 0;
   unsigned char tmp[4] = { 0x80, 0x80, 0x80, 0x00 };
   size_t p = 0, q = 0;
-  if( buffer == NULL || value == NULL ) return 1;
+  MIDIPrecond( buffer != NULL && value != NULL, EINVAL );
+  MIDIPrecond( size > 0, EINVAL );
+
   v = *value & 0x0fffffff;
   do {
     tmp[3-p] |= v & 0x7f;
