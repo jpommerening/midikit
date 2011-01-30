@@ -116,9 +116,9 @@ static int _applemidi_init_runloop_source( struct MIDIDriverAppleMIDI * driver )
     source->nfds = driver->rtp_socket + 1;
   }
   source->timeout.tv_sec  = 1;
-  source->timeout.tv_nsec = 500000;
+  source->timeout.tv_nsec = 500000000;
   source->remain.tv_sec  = 1;
-  source->remain.tv_nsec = 500000;
+  source->remain.tv_nsec = 500000000;
   source->info = driver;
 
   source->read  = NULL;
@@ -794,7 +794,9 @@ static int _applemidi_respond( struct MIDIDriverAppleMIDI * driver, int fd, stru
 
   switch( command->type ) {
     case APPLEMIDI_COMMAND_INVITATION:
-      MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_APPLEMIDI_PEER_DID_SEND_INVITATION, peer );
+      if( fd == driver->control_socket ) {
+        MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_APPLEMIDI_PEER_DID_SEND_INVITATION, peer );
+      }
       if( driver->accept ) {
         command->type = APPLEMIDI_COMMAND_INVITATION_ACCEPTED;
         if( fd == driver->rtp_socket ) {

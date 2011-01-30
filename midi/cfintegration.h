@@ -24,6 +24,12 @@ int MIDIDriverAppleMIDIRemovePeerWithCFNetService( struct MIDIDriverAppleMIDI * 
 
 #include "midi/runloop.h"
 
-void CFRunLoopAddMIDIRunloopSource( CFRunLoopRef rl, struct MIDIRunloopSource * source, CFStringRef mode );
+struct CFMIDIRunloopSource * CFMIDIRunloopSourceCreate( struct MIDIRunloopSource * source );
+void CFMIDIRunloopSourceDestroy( struct CFMIDIRunloopSource * source );
+/*void CFMIDIRunloopSourceRetain( struct CFMIDIRunloopSource * source );*/
+/*void CFMIDIRunloopSourceRelease( struct CFMIDIRunloopSource * source );*/
+
+void CFRunLoopAddMIDIRunloopSource( CFRunLoopRef rl, struct CFMIDIRunloopSource * source, CFStringRef mode );
+void CFRunLoopRemoveMIDIRunloopSource( CFRunLoopRef rl, struct CFMIDIRunloopSource * source, CFStringRef mode );
 
 #endif

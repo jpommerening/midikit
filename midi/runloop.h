@@ -13,6 +13,7 @@ struct MIDIRunloopSource {
   int (*write)( void * info, int nfds, fd_set * writefds );
   int (*idle)( void * info, struct timespec * idletime );
   int (*schedule)( struct MIDIRunloopSource * source, int event );
+  void * scheduler;
   void * info;
 };
 
@@ -20,6 +21,7 @@ int MIDIRunloopSourceWait( struct MIDIRunloopSource * source );
 int MIDIRunloopSourceScheduleRead( struct MIDIRunloopSource * source );
 int MIDIRunloopSourceScheduleWrite( struct MIDIRunloopSource * source );
 int MIDIRunloopSourceScheduleIdle( struct MIDIRunloopSource * source );
+int MIDIRunloopSourceInvalidate( struct MIDIRunloopSource * source );
 
 struct MIDIRunloop;
 

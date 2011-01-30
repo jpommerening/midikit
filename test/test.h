@@ -4,9 +4,12 @@
 #define _EXPAND( v ) v
 #define EXPAND( v ) _EXPAND( v )
 
+#ifndef SUBDIR
+#define SUBDIR "test"
+#endif
 #define ASSERT_BASE( expr, message, print_expr ) \
   if( ! (expr) ) { \
-    printf( "%s:%s:%i: error: assertion failed: %s\n  " print_expr "\n", SUBDIR, __FILE__, __LINE__, message ); \
+    printf( "%s/%s:%i: error: assertion failed: %s\n  " print_expr "\n", SUBDIR, __FILE__, __LINE__, message ); \
     return 1; \
   }
 

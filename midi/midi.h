@@ -280,22 +280,31 @@ extern int MIDIErrorNumber;
 #define MIDI_ERR_ERROR    1
 #define MIDI_ERR_ASSERT   2
 #define MIDI_ERR_EINVAL   3
-#define MIDI_ERR_ENOMEM   4
-#define MIDI_ERR_EFAULT   5
+#define MIDI_ERR_12 ENOMEM
+#define MIDI_ERR_ENOMEM   12
+#define MIDI_ERR_14 EFAULT
+#define MIDI_ERR_EFAULT   14
 #define MIDI_ERRNO( kind ) MIDI_ERR_ ## kind
 
-#define MIDI_LOG_DEVELOP  0x01
-#define MIDI_LOG_DEBUG    0x02
-#define MIDI_LOG_INFO     0x04
-#define MIDI_LOG_ERROR    0x08
+#define MIDI_LOG_1        0x01
+#define MIDI_LOG_DEVELOP  0x02
+#define MIDI_LOG_DEBUG    0x04
+#define MIDI_LOG_INFO     0x08
+#define MIDI_LOG_ERROR    0x10
+
 #ifndef MIDI_LOG_CHANNELS
-#define MIDI_LOG_CHANNELS 0x0f
+#define MIDI_LOG_CHANNELS 0xff
 #endif
-#define MIDI_LOG_CH( channels ) ( MIDI_LOG_ ## channels & MIDI_LOG_CHANNELS )
+
+#define MIDI_LOG_CH( channels ) ( (MIDI_LOG_ ## channels) & MIDI_LOG_CHANNELS )
 
 #ifndef NO_LOG
 #define MIDILog( channels, ... ) do { if( MIDI_LOG_CH( channels ) ) { (*MIDILogger)( __VA_ARGS__ ); } } while( 0 )
+#ifdef SUBDIR
 #define MIDILogLocation( channels, fmt, ... ) MIDILog( channels, "%s/%s:%i: " fmt, SUBDIR, __FILE__, __LINE__, __VA_ARGS__ );
+#else
+#define MIDILogLocation( channels, fmt, ... ) MIDILog( channels, "%s:%i: " fmt, __FILE__, __LINE__, __VA_ARGS__ );
+#endif
 #else
 #define MIDILog( channels, fmt, ... )
 #define MIDILogLocation( channels, fmt, ... )

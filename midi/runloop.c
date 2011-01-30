@@ -7,9 +7,10 @@
 
 #define MAX_RUNLOOP_SOURCES 16 
 
-#define MIDI_RUNLOOP_READ  1
-#define MIDI_RUNLOOP_WRITE 2
-#define MIDI_RUNLOOP_IDLE  4
+#define MIDI_RUNLOOP_READ       1
+#define MIDI_RUNLOOP_WRITE      2
+#define MIDI_RUNLOOP_IDLE       4
+#define MIDI_RUNLOOP_INVALIDATE 8
 
 static int _cmp_fds( fd_set * a, fd_set * b, int nfds ) {
   int fd;
@@ -156,7 +157,7 @@ int MIDIRunloopSourceWait( struct MIDIRunloopSource * source ) {
 int MIDIRunloopSourceScheduleRead( struct MIDIRunloopSource * source ) {
 
   if( source->schedule != NULL ) {
-    (*source->schedule)( source, MIDI_RUNLOOP_READ );
+    return (*source->schedule)( source, MIDI_RUNLOOP_READ );
   }
   return 0;
 }
@@ -173,7 +174,7 @@ int MIDIRunloopSourceScheduleRead( struct MIDIRunloopSource * source ) {
 int MIDIRunloopSourceScheduleWrite( struct MIDIRunloopSource * source ) {
 
   if( source->schedule != NULL ) {
-    (*source->schedule)( source, MIDI_RUNLOOP_WRITE );
+    return (*source->schedule)( source, MIDI_RUNLOOP_WRITE );
   }
   return 0;
 }
@@ -189,7 +190,21 @@ int MIDIRunloopSourceScheduleWrite( struct MIDIRunloopSource * source ) {
 int MIDIRunloopSourceScheduleIdle( struct MIDIRunloopSource * source ) {
 
   if( source->schedule != NULL ) {
-    (*source->schedule)( source, MIDI_RUNLOOP_IDLE );
+    return (*source->schedule)( source, MIDI_RUNLOOP_IDLE );
+  }
+  return 0;
+}
+
+/**
+ * @brief Mark a runloop source as invalid.
+ * Disable all callbacks of a runloop source and remove it from the runloop it is
+ * scheduled in.
+ * @public @memberof MIDIRunloopSource
+ * @param source The source the should be invalidated.
+ */
+int MIDIRunloopSourceInvalidate( struct MIDIRunloopSource * source ) {
+  if( source->schedule != NULL ) {
+    return (*source->schedule)( source, MIDI_RUNLOOP_INVALIDATE );
   }
   return 0;
 }
