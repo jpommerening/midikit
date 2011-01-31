@@ -6,7 +6,7 @@
  * @defgroup MIDI MIDI
  */
 
-int MIDIErrorNumber = MIDI_ERR_NO_ERROR;
+int MIDIErrorNumber = 0;
 
 #ifdef DEBUG
 
