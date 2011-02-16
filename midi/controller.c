@@ -278,6 +278,128 @@ void MIDIControllerRelease( struct MIDIController * controller ) {
 
 /** @} */
 
+#pragma mark Controller interface
+/**
+ * @name Controller interface
+ * Atomically read, edit, load and save controller values.
+ * @{
+ */
+
+/**
+ * @brief Set a controller value.
+ * Set the value of a controller and send the control change
+ * message to the connected device.
+ * @public @memberof MIDIController
+ * @param controller The controller.
+ * @param control    The control number.
+ * @param size       The size of the buffer pointed to by @c value.
+ * @param value      The value to store. The type may vary depending on the
+ *                   kind of control.
+ */
+int MIDIControllerSetControl( struct MIDIController * controller, MIDIControl control, size_t size,  void * value ) {
+  return 0;
+}
+
+/**
+ * @brief Get a controller value.
+ * Get the value of a controller.
+ * @public @memberof MIDIController
+ * @param controller The controller.
+ * @param control    The control number.
+ * @param size       The size of the buffer pointed to by @c value.
+ * @param value      The value to store. The type may vary depending on the
+ *                   kind of control.
+ */
+int MIDIControllerGetControl( struct MIDIController * controller, MIDIControl control, size_t size,  void * value ) {
+  return 0;
+}
+
+/**
+ * @brief Atomically set a registered parameter.
+ * Set the value of a registered parameter, change the current registered
+ * parameter "pointer" accordingly. Send any required messages to keep
+ * connected devices in sync.
+ * @public @memberof MIDIController
+ * @param controller The controller.
+ * @param parameter  The registered parameter number number.
+ * @param size       The size of the buffer pointed to by @c value.
+ * @param value      The value to store. The type may vary depending on the
+ *                   kind of parameter.
+ */
+int MIDIControllerSetRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value ) {
+  return 0;
+}
+
+/**
+ * @brief Get a registered parameter.
+ * Get the value of a registered parameter.
+ * @public @memberof MIDIController
+ * @param controller The controller.
+ * @param parameter  The registered parameter number number.
+ * @param size       The size of the buffer pointed to by @c value.
+ * @param value      The value to store. The type may vary depending on the
+ *                   kind of parameter.
+ */
+int MIDIControllerGetRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value ) {
+  return 0;
+}
+
+/**
+ * @brief Atomically set a non-registered parameter.
+ * Set the value of a non-registered parameter, change the current non-registered
+ * parameter "pointer" accordingly. Send any required messages to keep
+ * connected devices in sync.
+ * @public @memberof MIDIController
+ * @param controller The controller.
+ * @param parameter  The non-registered parameter number number.
+ * @param size       The size of the buffer pointed to by @c value.
+ * @param value      The value to store. The type may vary depending on the
+ *                   kind of parameter.
+ */
+int MIDIControllerSetNonRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value ) {
+  return 0;
+}
+
+/**
+ * @brief Get a non-registered parameter.
+ * Get the value of a non-registered parameter.
+ * @public @memberof MIDIController
+ * @param controller The controller.
+ * @param parameter  The non-registered parameter number number.
+ * @param size       The size of the buffer pointed to by @c value.
+ * @param value      The value to store. The type may vary depending on the
+ *                   kind of parameter.
+ */
+int MIDIControllerGetNonRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value ) {
+  return 0;
+}
+
+/**
+ * @brief Store control values.
+ * @public @memberof MIDIController
+ * @param controller The controller.
+ * @param size       The size of the buffer pointed to by @c buffer.
+ * @param buffer     The buffer to store the controller values in.
+ * @param written    The number of bytes written to the buffer.
+ */
+int MIDIControllerStore( struct MIDIController * controller, size_t size, void * buffer, size_t * written ) {
+  return 0;
+}
+
+/**
+ * @brief Recall the values of previously stored controls.
+ * @public @memberof MIDIController
+ * @param controller The controller.
+ * @param size       The size of the buffer pointed to by @c buffer.
+ * @param buffer     The buffer to store the controller values in.
+ * @param written    The number of bytes read from the buffer.
+ */
+int MIDIControllerRecall( struct MIDIController * controller, size_t size, void * buffer, size_t * read ) {
+  return 0;
+}
+
+/** @} */
+
 #pragma mark Message passing
 /**
  * @name Message passing

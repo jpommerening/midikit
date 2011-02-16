@@ -338,6 +338,7 @@ typedef char           MIDIKey;
 typedef char           MIDIVelocity;
 typedef char           MIDIPressure;
 typedef char           MIDIControl;
+typedef short          MIDIControlParameter;
 typedef char           MIDIProgram;
 typedef short          MIDIManufacturerId;
 

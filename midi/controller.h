@@ -140,7 +140,19 @@ void MIDIControllerDestroy( struct MIDIController * controller );
 void MIDIControllerRetain( struct MIDIController * controller );
 void MIDIControllerRelease( struct MIDIController * controller );
 
+int MIDIControllerSetControl( struct MIDIController * controller, MIDIControl control, size_t size,  void * value );
+int MIDIControllerGetControl( struct MIDIController * controller, MIDIControl control, size_t size,  void * value );
+int MIDIControllerSetRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value );
+int MIDIControllerGetRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value );
+int MIDIControllerSetNonRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value );
+int MIDIControllerGetNonRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value );
+
+int MIDIControllerStore( struct MIDIController * controller, size_t size, void * buffer, size_t * written );
+int MIDIControllerRecall( struct MIDIController * controller, size_t size, void * buffer, size_t * read );
+
 int MIDIControllerReceiveControlChange( struct MIDIController * controller, struct MIDIDevice * device,
                                         MIDIChannel channel, MIDIControl control, MIDIValue value );
+int MIDIControllerSendControlChange( struct MIDIController * controller, struct MIDIDevice * device,
+                                     MIDIChannel channel, MIDIControl control, MIDIValue value );
 
 #endif
