@@ -2,8 +2,7 @@
 #include "driver.h"
 #include "clock.h"
 #include "connector.h"
-
-struct MIDIConnectorList;
+#include "list.h"
 
 /**
  * @defgroup MIDI-driver MIDI driver implementations
@@ -136,8 +135,8 @@ int MIDIDriverDelegateTriggerEvent( struct MIDIDriverDelegate * delegate, int ev
 struct MIDIDriver {
   size_t refs;                           /**< @private */
   struct MIDIDriverDelegate * delegate;  /**< @private */
-  struct MIDIConnectorList  * receivers; /**< @private */
-  struct MIDIConnectorList  * senders;   /**< @private */
+  struct MIDIList  * receivers;          /**< @private */
+  struct MIDIList  * senders;            /**< @private */
   struct MIDIClock * clock;              /**< @private */
 };
 
@@ -148,61 +147,25 @@ struct MIDIDriver {
  * @{
  */
 
-struct MIDIConnectorList {
-  struct MIDIConnector     * connector;
-  struct MIDIConnectorList * next;
-};
-
-static void _list_destroy( struct MIDIConnectorList ** list, int (*fn)( struct MIDIConnector * ) ) {
-  struct MIDIConnectorList * item;
-  struct MIDIConnectorList * next;
-  item = *list;
-  *list = NULL;
-  while( item != NULL ) {
-    if( fn != NULL ) (*fn)( item->connector );
-    MIDIConnectorRelease( item->connector );
-    next = item->next;
-    free( item );
-    item = next;
-  }
+static void _detach_source_and_release( void * connector ) {
+  MIDIConnectorDetachSource( connector );
+  MIDIConnectorRelease( connector );
 }
 
-static void _list_push( struct MIDIConnectorList ** list, struct MIDIConnector * connector ) {
-  struct MIDIConnectorList * item = malloc( sizeof( struct MIDIConnectorList ) );
-  if( list == NULL ) return;
-  if( item == NULL ) return;
-  item->connector = connector;
-  item->next = *list;
-  MIDIConnectorRetain( connector );
-  *list = item;
-}
-
-static void _list_remove( struct MIDIConnectorList ** list, struct MIDIConnector * connector, int (*fn)( struct MIDIConnector * ) ) {
-  struct MIDIConnectorList * item;
-  struct MIDIConnectorList * release;
-  if( list == NULL || *list==NULL ) return;
-  while( *list != NULL ) {
-    item = *list;
-    if( item->connector == connector ) {
-      *list = item->next;
-      free( item );
-      _list_push( &release, connector );
-    } else {
-      list = &(item->next);
-    }
-  }
-  _list_destroy( &release, fn );
+static void _detach_target_and_release( void * connector ) {
+  MIDIConnectorDetachTarget( connector );
+  MIDIConnectorRelease( connector );
 }
 
 static int _receiver_connect( void * driverp, struct MIDIConnector * receiver ) {
   struct MIDIDriver * driver = driverp;
-  _list_push( &(driver->receivers), receiver );
+  MIDIListAdd( driver->receivers, receiver );
   return 0;
 }
 
 static int _receiver_disconnect( void * driverp, struct MIDIConnector * receiver ) {
   struct MIDIDriver * driver = driverp;
-  _list_remove( &(driver->receivers), receiver, &MIDIConnectorDetachSource );
+  MIDIListRemove( driver->receivers, receiver );
   return 0;
 }
 
@@ -212,13 +175,13 @@ static int _sender_relay( void * driverp, struct MIDIMessage * message ) {
 
 static int _sender_connect( void * driverp, struct MIDIConnector * sender ) {
   struct MIDIDriver * driver = driverp;
-  _list_push( &(driver->senders), sender );
+  MIDIListAdd( driver->senders, sender );
   return 0;
 }
 
 static int _sender_disconnect( void * driverp, struct MIDIConnector * sender ) {
   struct MIDIDriver * driver = driverp;
-  _list_remove( &(driver->senders), sender, &MIDIConnectorDetachTarget );
+  MIDIListRemove( driver->senders, sender );
   return 0;
 }
 
@@ -248,8 +211,8 @@ struct MIDIDriver * MIDIDriverCreate( struct MIDIDriverDelegate * delegate ) {
   MIDIPrecondReturn( driver != NULL, ENOMEM, NULL );
   driver->refs = 1;
   driver->delegate  = delegate;
-  driver->receivers = NULL;
-  driver->senders   = NULL;
+  driver->receivers = MIDIListCreate( &MIDIConnectorRetain, &_detach_source_and_release );
+  driver->senders   = MIDIListCreate( &MIDIConnectorRetain, &_detach_target_and_release );
   driver->clock     = NULL;
 
   if( delegate != NULL ) {
@@ -270,8 +233,8 @@ void MIDIDriverDestroy( struct MIDIDriver * driver ) {
   if( driver->clock != NULL ) {
     MIDIClockRelease( driver->clock );
   }
-  _list_destroy( &(driver->receivers), &MIDIConnectorDetachSource );
-  _list_destroy( &(driver->senders), &MIDIConnectorDetachTarget );
+  MIDIListRelease( driver->receivers );
+  MIDIListRelease( driver->senders );
   driver->delegate->receive   = NULL;
   driver->delegate->interface = NULL;
   free( driver );
@@ -351,7 +314,7 @@ int MIDIDriverProvideSendConnector( struct MIDIDriver * driver, struct MIDIConne
   connector = MIDIConnectorCreate();
   if( connector == NULL ) return 1;
   MIDIConnectorAttachToDriver( connector, driver );
-  _list_push( &(driver->senders), connector );
+  MIDIListAdd( driver->senders, connector );
   *send = connector;
   MIDIConnectorRelease( connector ); /* retained by list */
   return 0;
@@ -376,7 +339,7 @@ int MIDIDriverProvideReceiveConnector( struct MIDIDriver * driver, struct MIDICo
   connector = MIDIConnectorCreate();
   if( connector == NULL ) return 1;
   MIDIConnectorAttachFromDriver( connector, driver );
-  _list_push( &(driver->receivers), connector );
+  MIDIListAdd( driver->receivers, connector );
   *receive = connector;
   MIDIConnectorRelease( connector ); /* retained by list */
   return 0;
@@ -419,7 +382,6 @@ int MIDIDriverMakeLoopback( struct MIDIDriver * driver ) {
  * @retval >0 if the message could not be relayed.
  */
 int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message ) {
-  struct MIDIConnectorList * item = driver->receivers;
   int result = 0;
   result = MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_DRIVER_WILL_RECEIVE_MESSAGE, message );
   if( result != 0 ) return result;
