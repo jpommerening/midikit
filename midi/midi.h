@@ -278,6 +278,7 @@ extern int MIDIErrorNumber;
 
 #define EASSERT -1
 
+#define MIDI_LOG_1        0x01
 #define MIDI_LOG_DEVELOP  0x02
 #define MIDI_LOG_DEBUG    0x04
 #define MIDI_LOG_INFO     0x08

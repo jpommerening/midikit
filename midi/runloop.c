@@ -7,11 +7,6 @@
 
 #define MAX_RUNLOOP_SOURCES 16 
 
-#define MIDI_RUNLOOP_READ       1
-#define MIDI_RUNLOOP_WRITE      2
-#define MIDI_RUNLOOP_IDLE       4
-#define MIDI_RUNLOOP_INVALIDATE 8
-
 static int _cmp_fds( fd_set * a, fd_set * b, int nfds ) {
   int fd;
   for( fd=0; fd<nfds; fd++ ) {

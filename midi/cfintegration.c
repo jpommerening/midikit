@@ -71,12 +71,19 @@ static void _cf_timer_callback( CFRunLoopTimerRef timer, void *info ) {
 
 static int _cf_source_schedule( struct MIDIRunloopSource * source, int event ) {
   int i, created;
-  struct CFMIDIRunLoopSource * cf_source = source->scheduler;
-  CFOptionFlags socket_cb_types = kCFSocketNoCallBack;
-  CFSocketRef   socket;
+  struct CFMIDIRunLoopSource * cf = source->scheduler;
+  CFSocketContext socket_context;
+  CFOptionFlags   socket_cb_types = kCFSocketNoCallBack;
+  CFSocketRef     socket;
 
   if( event & MIDI_RUNLOOP_READ )  socket_cb_types |= kCFSocketReadCallBack;
   if( event & MIDI_RUNLOOP_WRITE ) socket_cb_types |= kCFSocketWriteCallBack;
+
+  socket_context.version = 0;
+  socket_context.info = source;
+  socket_context.release = NULL;
+  socket_context.retain  = NULL;
+  socket_context.copyDescription = NULL;
 
   for( i=0; i<source->nfds; i++ ) {
     created = 0;
@@ -107,13 +114,13 @@ struct CFMIDIRunLoopSource {
   CFRunLoopSourceRef cfrls[1];
 };
 
-struct CFMIDIRunLoopSource * CFMIDIRunloopSourceCreate( struct MIDIRunloopSource * source ) {
+struct CFMIDIRunLoopSource * CFMIDIRunLoopSourceCreate( struct MIDIRunloopSource * source ) {
   int i, create;
   CFRunLoopTimerContext timer_context;
   CFSocketContext       socket_context;
-  CFSocketOptionFlags   socket_cb_types;
+  CFOptionFlags         socket_cb_types;
   CFSocketRef           socket;
-  struct CFMIDIRunLoopSource * cf = malloc( sizeof(struct CFMIDIRunloopSource)
+  struct CFMIDIRunLoopSource * cf = malloc( sizeof(struct CFMIDIRunLoopSource)
                                           + sizeof(CFRunLoopSourceRef)*(source->nfds-1) );
   MIDIPrecondReturn( cf != NULL, ENOMEM, NULL );
   
@@ -167,7 +174,7 @@ struct CFMIDIRunLoopSource * CFMIDIRunloopSourceCreate( struct MIDIRunloopSource
  * @public @memberof CFMIDIRunLoopSource
  * @param source The runloop source.
  */
-void CFMIDIRunLoopSourceDestroy( struct CFMIDIRunloopSource * source ) {
+void CFMIDIRunLoopSourceDestroy( struct CFMIDIRunLoopSource * source ) {
   int i;
   MIDIPrecondReturn( source != NULL, EFAULT, (void)0 );
   if( source->cfrlt != NULL ) {
@@ -189,7 +196,7 @@ void CFMIDIRunLoopSourceDestroy( struct CFMIDIRunloopSource * source ) {
  * @public @memberof CFMIDIRunLoopSource
  * @param source The runloop source.
  */
-void CFMIDIRunLoopSourceRetain( struct CFMIDIRunloopSource * source ) {
+void CFMIDIRunLoopSourceRetain( struct CFMIDIRunLoopSource * source ) {
   MIDIPrecondReturn( source != NULL, EFAULT, (void)0 );
   source->refs++;
 }
@@ -201,14 +208,14 @@ void CFMIDIRunLoopSourceRetain( struct CFMIDIRunloopSource * source ) {
  * @public @memberof CFMIDIRunLoopSource
  * @param source The runloop source.
  */
-void CFMIDIRunLoopSourceRelease( struct CFMIDIRunloopSource * source ) {
+void CFMIDIRunLoopSourceRelease( struct CFMIDIRunLoopSource * source ) {
   MIDIPrecondReturn( source != NULL, EFAULT, (void)0 );
   if( ! --source->refs ) {
     CFMIDIRunLoopSourceDestroy( source );
   }
 }
 
-void CFRunLoopAddMIDIRunloopSource( CFRunLoopRef rl, struct CFMIDIRunLoopSource * source, CFStringRef mode ) {
+void CFRunLoopAddMIDIRunLoopSource( CFRunLoopRef rl, struct CFMIDIRunLoopSource * source, CFStringRef mode ) {
   int i;
   if( source->cfrlt != NULL ) CFRunLoopAddTimer( rl, source->cfrlt, mode );
   for( i=0; i<source->length; i++ ) {
@@ -216,7 +223,7 @@ void CFRunLoopAddMIDIRunloopSource( CFRunLoopRef rl, struct CFMIDIRunLoopSource 
   }
 }
 
-void CFRunLoopRemoveMIDIRunloopSource( CFRunLoopRef rl, struct CFMIDIRunLoopSource * source, CFStringRef mode ) {
+void CFRunLoopRemoveMIDIRunLoopSource( CFRunLoopRef rl, struct CFMIDIRunLoopSource * source, CFStringRef mode ) {
   int i;
   if( source->cfrlt != NULL ) CFRunLoopRemoveTimer( rl, source->cfrlt, mode );
   for( i=0; i<source->length; i++ ) {

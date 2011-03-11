@@ -100,8 +100,7 @@ struct MIDIDevice {
 
 #pragma mark Internal connector attachment.
 /**
- * @internal
- * Methods that solve recurring tasks, especially when attaching
+ * @internal Methods that solve recurring tasks, especially when attaching
  * and detaching connectors.
  * @{
  */
