@@ -2,7 +2,7 @@
 #include "device.h"
 #include "controller.h"
 
-#define N_CONTROLS 128
+#define N_CONTROLS MIDI_CONTROL_ALL_NOTES_OFF
 #define N_LV_CONTROLS 32
 #define N_BV_CONTROLS 6
 #define N_SV_CONTROLS 26
@@ -71,14 +71,19 @@ struct MIDIController {
  * @{
  */
 
+struct MIDINonRegisteredParameter {
+  MIDILongValue number;
+  MIDILongValue value;
+};
+
 struct MIDINRPList {
   struct MIDINonRegisteredParameter * parameter;
   struct MIDINRPList * next;
 };
 
 static int _load_non_registered_parameter( struct MIDIController * controller ) {
-  MIDILongValue parameter = MIDI_LONG_VALUE( controller->controls[MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER+1],
-                                             controller->controls[MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER] );
+  MIDILongValue parameter = MIDI_LONG_VALUE( controller->controls[MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER_MSB],
+                                             controller->controls[MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER_LSB] );
   struct MIDINRPList * list = controller->list;
   if( controller->current_parameter_registered == MIDI_ON ) return 1;
   if( parameter == controller->current_parameter )          return 0;
@@ -116,8 +121,8 @@ static int _store_non_registered_parameter( struct MIDIController * controller )
 }
 
 static int _load_registered_parameter( struct MIDIController * controller ) {
-  MIDILongValue parameter = MIDI_LONG_VALUE( controller->controls[MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER+1],
-                                             controller->controls[MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER] );
+  MIDILongValue parameter = MIDI_LONG_VALUE( controller->controls[MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER_MSB],
+                                             controller->controls[MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER_LSB] );
   if( controller->current_parameter_registered == MIDI_OFF ) return 1;
   if( parameter == controller->current_parameter )           return 0;
   if( parameter == MIDI_CONTROL_RPN_RESET ) {
@@ -165,7 +170,7 @@ static int _store_current_parameter( struct MIDIController * controller ) {
   }
 }
 
-static int _reset_controls_for_gm( struct MIDIController * controller ) {
+static int _initialize_controls_for_gm( struct MIDIController * controller ) {
   controller->controls[MIDI_CONTROL_CHANNEL_VOLUME]        = 100;
   controller->controls[MIDI_CONTROL_EXPRESSION_CONTROLLER] = 127;
   controller->controls[MIDI_CONTROL_PAN]                   =  64;
@@ -173,24 +178,29 @@ static int _reset_controls_for_gm( struct MIDIController * controller ) {
 }
 
 static int _reset_controls( struct MIDIController * controller ) {
+  controller->controls[MIDI_CONTROL_MODULATION_WHEEL]      = 0;
   controller->controls[MIDI_CONTROL_EXPRESSION_CONTROLLER] = 127;
+  controller->controls[MIDI_CONTROL_DAMPER_PEDAL]          = 0;
+  controller->controls[MIDI_CONTROL_PORTAMENTO]            = 0;
+  controller->controls[MIDI_CONTROL_SOSTENUTO]             = 0;
+  controller->controls[MIDI_CONTROL_SOFT_PEDAL]            = 0;
 
   controller->controls[MIDI_CONTROL_DATA_ENTRY]    = 0x7f;
   controller->controls[MIDI_CONTROL_DATA_ENTRY+32] = 0x7f;
-  controller->controls[MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER]   = 0x7f;
-  controller->controls[MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER+1] = 0x7f;
-  controller->controls[MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER]       = 0x7f;
-  controller->controls[MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER+1]     = 0x7f;
+  controller->controls[MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER_MSB] = 0x7f;
+  controller->controls[MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER_LSB] = 0x7f;
+  controller->controls[MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER_MSB]     = 0x7f;
+  controller->controls[MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER_LSB]     = 0x7f;
 
-  controller->current_parameter             = MIDI_CONTROL_RPN_RESET;
-  controller->current_parameter_registered  = MIDI_OFF;
+  controller->current_parameter            = MIDI_CONTROL_RPN_RESET;
+  controller->current_parameter_registered = MIDI_OFF;
 
   controller->registered_parameters[MIDI_CONTROL_RPN_PITCH_BEND_RANGE_SEMITONES] = 2;
   controller->registered_parameters[MIDI_CONTROL_RPN_PITCH_BEND_RANGE_CENTS]     = 0;
   controller->registered_parameters[MIDI_CONTROL_RPN_FINE_TUNING_MSB]            = 0x40;
   controller->registered_parameters[MIDI_CONTROL_RPN_FINE_TUNING_LSB]            = 0;
-  controller->registered_parameters[MIDI_CONTROL_RPN_COARSE_TUNING]              = 0x40;
-  controller->registered_parameters[MIDI_CONTROL_RPN_COARSE_TUNING+1]            = 0;
+  controller->registered_parameters[MIDI_CONTROL_RPN_COARSE_TUNING_MSB]          = 0x40;
+  controller->registered_parameters[MIDI_CONTROL_RPN_COARSE_TUNING_LSB]          = 0;
   return 0;
 }
 
@@ -199,7 +209,7 @@ static int _initialize_controls( struct MIDIController * controller ) {
   for( i=0; i<N_CONTROLS; i++ ) {
     controller->controls[i] = 0;
   }
-  return _reset_controls( controller ) + _reset_controls_for_gm( controller );
+  return _reset_controls( controller ) + _initialize_controls_for_gm( controller );
 }
 
 static int _all_sound_off( struct MIDIController * controller ) {
@@ -215,6 +225,10 @@ static int _all_notes_off( struct MIDIController * controller ) {
 }
 
 static int _omni_mode( struct MIDIController * controller, MIDIBoolean value ) {
+  return 0;
+}
+
+static int _poly_mode( struct MIDIController * controller, MIDIBoolean value ) {
   return 0;
 }
 
@@ -237,6 +251,7 @@ static int _omni_mode( struct MIDIController * controller, MIDIBoolean value ) {
  */
 struct MIDIController * MIDIControllerCreate( struct MIDIControllerDelegate * delegate ) {
   struct MIDIController * controller = malloc( sizeof( struct MIDIController ) );
+  MIDIPrecondReturn( controller != NULL, ENOMEM, NULL );
   controller->refs = 1;
   controller->delegate = delegate;
   _initialize_controls( controller );
@@ -250,6 +265,7 @@ struct MIDIController * MIDIControllerCreate( struct MIDIControllerDelegate * de
  * @param controller The controller.
  */
 void MIDIControllerDestroy( struct MIDIController * controller ) {
+  MIDIPrecondReturn( controller != NULL, EFAULT, (void)0 );
   free( controller );
 }
 
@@ -260,6 +276,7 @@ void MIDIControllerDestroy( struct MIDIController * controller ) {
  * @param controller The controller.
  */
 void MIDIControllerRetain( struct MIDIController * controller ) {
+  MIDIPrecondReturn( controller != NULL, EFAULT, (void)0 );
   controller->refs++;
 }
 
@@ -271,6 +288,7 @@ void MIDIControllerRetain( struct MIDIController * controller ) {
  * @param controller The controller.
  */
 void MIDIControllerRelease( struct MIDIController * controller ) {
+  MIDIPrecondReturn( controller != NULL, EFAULT, (void)0 );
   if( ! --controller->refs ) {
     MIDIControllerDestroy( controller );
   }
@@ -297,6 +315,33 @@ void MIDIControllerRelease( struct MIDIController * controller ) {
  *                   kind of control.
  */
 int MIDIControllerSetControl( struct MIDIController * controller, MIDIControl control, size_t size,  void * value ) {
+  MIDIPrecond( controller != NULL, EFAULT );
+  MIDIPrecond( size > 0 && value != NULL, EINVAL );
+  MIDIPrecond( size == sizeof(MIDIValue) || size == sizeof(MIDILongValue), EINVAL );
+  MIDIValue v1, v2;
+
+  if( size == sizeof(MIDIValue) ) {
+    v1 = *((MIDIValue*)value);
+    if( controller->controls[(int)control] != v1 ) {
+      controller->controls[(int)control] = v1;
+      /* send control change */
+    }
+  } else if( size == sizeof(MIDILongValue) ) {
+    v1 = MIDI_MSB( *((MIDILongValue*)value) );
+    v2 = MIDI_LSB( *((MIDILongValue*)value) );
+    if( control >= MIDI_CONTROL_BANK_SELECT && control <= MIDI_CONTROL_UNDEFINED15 ) {
+      return MIDIControllerSetControl( controller, control,    sizeof(MIDIValue), &v1 )
+           + MIDIControllerSetControl( controller, control+32, sizeof(MIDIValue), &v2 );
+    } else if( control == MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER ) {
+      return MIDIControllerSetControl( controller, MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER_MSB, sizeof(MIDIValue), &v1 )
+           + MIDIControllerSetControl( controller, MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER_LSB, sizeof(MIDIValue), &v2 );
+    } else if( control == MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER ) {
+      return MIDIControllerSetControl( controller, MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER_MSB, sizeof(MIDIValue), &v1 )
+           + MIDIControllerSetControl( controller, MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER_LSB, sizeof(MIDIValue), &v2 );
+    } else {
+      MIDIPrecond( 0, EINVAL );
+    }
+  }
   return 0;
 }
 
@@ -311,6 +356,29 @@ int MIDIControllerSetControl( struct MIDIController * controller, MIDIControl co
  *                   kind of control.
  */
 int MIDIControllerGetControl( struct MIDIController * controller, MIDIControl control, size_t size,  void * value ) {
+  MIDIPrecond( controller != NULL, EFAULT );
+  MIDIPrecond( size > 0 && value != NULL, EINVAL );
+  MIDIValue v1, v2;
+  int result;
+
+  if( size == sizeof(MIDIValue) ) {
+    *((MIDIValue*)value) = controller->controls[(int)control];
+  } else if( size == sizeof(MIDILongValue) ) {
+    if( control >= MIDI_CONTROL_BANK_SELECT && control <= MIDI_CONTROL_UNDEFINED15 ) {
+      result = MIDIControllerGetControl( controller, control,    sizeof(MIDIValue), &v1 )
+             + MIDIControllerGetControl( controller, control+32, sizeof(MIDIValue), &v2 );
+    } else if( control == MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER ) {
+      result = MIDIControllerGetControl( controller, MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER_MSB, sizeof(MIDIValue), &v1 )
+             + MIDIControllerGetControl( controller, MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER_LSB, sizeof(MIDIValue), &v2 );
+    } else if( control == MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER ) {
+      result = MIDIControllerGetControl( controller, MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER_MSB, sizeof(MIDIValue), &v1 )
+             + MIDIControllerGetControl( controller, MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER_LSB, sizeof(MIDIValue), &v2 );
+    } else {
+      MIDIPrecond( 0, EINVAL );
+    }
+    if( result != 0 ) return result;
+    *((MIDILongValue*)value) = MIDI_LONG_VALUE( v1, v2 );
+  }
   return 0;
 }
 
@@ -327,6 +395,11 @@ int MIDIControllerGetControl( struct MIDIController * controller, MIDIControl co
  *                   kind of parameter.
  */
 int MIDIControllerSetRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value ) {
+  MIDIPrecond( controller != NULL, EFAULT );
+  MIDIPrecond( size > 0 && value != NULL, EINVAL );
+
+  MIDIControllerSetControl( controller, MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER, sizeof(MIDILongValue), &parameter );
+  /* set registered parameter */
   return 0;
 }
 
@@ -341,6 +414,9 @@ int MIDIControllerSetRegisteredParameter( struct MIDIController * controller, MI
  *                   kind of parameter.
  */
 int MIDIControllerGetRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value ) {
+  MIDIPrecond( controller != NULL, EFAULT );
+  MIDIPrecond( size > 0 && value != NULL, EINVAL );
+
   return 0;
 }
 
@@ -357,6 +433,11 @@ int MIDIControllerGetRegisteredParameter( struct MIDIController * controller, MI
  *                   kind of parameter.
  */
 int MIDIControllerSetNonRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value ) {
+  MIDIPrecond( controller != NULL, EFAULT );
+  MIDIPrecond( size > 0 && value != NULL, EINVAL );
+
+  MIDIControllerSetControl( controller, MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER, sizeof(MIDILongValue), &parameter );
+  /* set non-registered parameter */
   return 0;
 }
 
@@ -371,6 +452,9 @@ int MIDIControllerSetNonRegisteredParameter( struct MIDIController * controller,
  *                   kind of parameter.
  */
 int MIDIControllerGetNonRegisteredParameter( struct MIDIController * controller, MIDIControlParameter parameter, size_t size,  void * value ) {
+  MIDIPrecond( controller != NULL, EFAULT );
+  MIDIPrecond( size > 0 && value != NULL, EINVAL );
+
   return 0;
 }
 
@@ -383,6 +467,8 @@ int MIDIControllerGetNonRegisteredParameter( struct MIDIController * controller,
  * @param written    The number of bytes written to the buffer.
  */
 int MIDIControllerStore( struct MIDIController * controller, size_t size, void * buffer, size_t * written ) {
+  MIDIPrecond( controller != NULL, EFAULT );
+  MIDIPrecond( size > 0 && buffer != NULL, EINVAL );
   return 0;
 }
 
@@ -395,6 +481,8 @@ int MIDIControllerStore( struct MIDIController * controller, size_t size, void *
  * @param written    The number of bytes read from the buffer.
  */
 int MIDIControllerRecall( struct MIDIController * controller, size_t size, void * buffer, size_t * read ) {
+  MIDIPrecond( controller != NULL, EFAULT );
+  MIDIPrecond( size > 0 && buffer != NULL, EINVAL );
   return 0;
 }
 
@@ -422,29 +510,36 @@ int MIDIControllerRecall( struct MIDIController * controller, size_t size, void 
  */
 int MIDIControllerReceiveControlChange( struct MIDIController * controller, struct MIDIDevice * device,
                                         MIDIChannel channel, MIDIControl control, MIDIValue value ) {
-  if( control == MIDI_CONTROL_DATA_ENTRY ||
-      control == MIDI_CONTROL_DATA_ENTRY+32 ||
-      control == MIDI_CONTROL_DATA_INCREMENT ||
-      control == MIDI_CONTROL_DATA_DECREMENT ) {
-    _load_current_parameter( controller );
-    if( control == MIDI_CONTROL_DATA_INCREMENT ) {
-      controller->controls[MIDI_CONTROL_DATA_ENTRY+32]++;
-    } else if( control == MIDI_CONTROL_DATA_DECREMENT ) {
-      controller->controls[MIDI_CONTROL_DATA_ENTRY+32]--;
-    } else {
-      controller->controls[(int)control] = value;
+  MIDIPrecond( controller != NULL, EFAULT );
+  if( control < MIDI_CONTROL_ALL_SOUND_OFF ) {
+    switch( control ) {
+      case MIDI_CONTROL_DATA_INCREMENT:
+        controller->controls[MIDI_CONTROL_DATA_ENTRY+32]++;
+        if( controller->controls[MIDI_CONTROL_DATA_ENTRY+32] & 0x80 ) {
+          controller->controls[MIDI_CONTROL_DATA_ENTRY+32] &= 0x7f;
+          controller->controls[MIDI_CONTROL_DATA_ENTRY]++;
+        }
+        break;
+      case MIDI_CONTROL_DATA_DECREMENT:
+        controller->controls[MIDI_CONTROL_DATA_ENTRY+32]--;
+        if( controller->controls[MIDI_CONTROL_DATA_ENTRY+32] & 0x80 ) {
+          controller->controls[MIDI_CONTROL_DATA_ENTRY+32] &= 0x7f;
+          controller->controls[MIDI_CONTROL_DATA_ENTRY]--;
+        }
+        break;
+      case MIDI_CONTROL_DATA_ENTRY:
+      case MIDI_CONTROL_DATA_ENTRY+32:
+        break;
+      case MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER_MSB:
+      case MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER_LSB:
+        break;
+      case MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER_MSB:
+      case MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER_LSB:
+        break;
+      default:
+        break;
     }
-    _store_current_parameter( controller );
-  } else if( control < MIDI_CONTROL_ALL_SOUND_OFF ) {
     controller->controls[(int)control] = value;
-    if( control == MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER ||
-        control == MIDI_CONTROL_NON_REGISTERED_PARAMETER_NUMBER+1 ) {
-      controller->current_parameter_registered = MIDI_OFF;
-    }
-    if( control == MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER ||
-        control == MIDI_CONTROL_REGISTERED_PARAMETER_NUMBER+1 ) {
-      controller->current_parameter_registered = MIDI_ON;
-    }
   } else {
     switch( control ) {
       case  MIDI_CONTROL_ALL_SOUND_OFF:
@@ -459,6 +554,11 @@ int MIDIControllerReceiveControlChange( struct MIDIController * controller, stru
         return _omni_mode( controller, MIDI_OFF ) + _all_notes_off( controller );
       case MIDI_CONTROL_OMNI_MODE_ON:
         return _omni_mode( controller, MIDI_ON )  + _all_notes_off( controller );
+      case MIDI_CONTROL_MONO_MODE_ON:
+        return _poly_mode( controller, MIDI_OFF ) + _all_notes_off( controller );
+      case MIDI_CONTROL_POLY_MODE_ON:
+        return _poly_mode( controller, MIDI_ON )  + _all_notes_off( controller );
+        break;
     }
   }
   return 0;
@@ -478,6 +578,7 @@ int MIDIControllerReceiveControlChange( struct MIDIController * controller, stru
  */
 int MIDIControllerSendControlChange( struct MIDIController * controller, struct MIDIDevice * device,
                                      MIDIChannel channel, MIDIControl control, MIDIValue value ) {
+  MIDIPrecond( controller != NULL, EFAULT );
   return 0;
 }
 

@@ -87,6 +87,7 @@ static int _check_socket_in( int fd ) {
 static int _n_msg = 0;
 static int _receive( void * interface, struct MIDIMessage * message ) {
   printf( "Received message!\n" );
+  MIDIMessageRelease( message );
   _n_msg++;
   return 0;
 }

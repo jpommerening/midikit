@@ -108,3 +108,21 @@ int MIDIListRemove( struct MIDIList * list, void * item ) {
   return 0;
 }
 
+
+int MIDIListApply( struct MIDIList * list, void * info, int (*func)( void *, void * ) ) {
+  struct MIDIListEntry * entry;
+  void * item;
+  MIDIPrecond( list != NULL, EFAULT );
+  MIDIPrecond( func != NULL, EINVAL );
+
+  entry = list->data;
+  while( entry != NULL ) {
+    item  = entry->item;
+    entry = entry->next;
+    if( item != NULL ) {
+      (*func)( item, info );
+    }
+  }
+
+  return 0;
+}

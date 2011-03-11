@@ -2,6 +2,11 @@
 #define MIDIKIT_MIDI_RUNLOOP_H
 #include <sys/select.h>
 
+#define MIDI_RUNLOOP_READ       1
+#define MIDI_RUNLOOP_WRITE      2
+#define MIDI_RUNLOOP_IDLE       4
+#define MIDI_RUNLOOP_INVALIDATE 8
+
 struct MIDIRunloopSource {
   int nfds;
   int flags;

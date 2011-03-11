@@ -30,7 +30,7 @@ int test001_list( void ) {
   ASSERT_EQUAL( _testitem_refs, 1, "Item was not released." );
   ASSERT_NO_ERROR( MIDIListAdd( list, &_testitem_refs ), "Could not add item." );
   ASSERT_EQUAL( _testitem_refs, 2, "Item was not retained." );
-  MIDIListDestroy( list );
+  MIDIListRelease( list );
   ASSERT_EQUAL( _testitem_refs, 1, "Item was not released on destruction." );
   return 0;
 }
