@@ -38,7 +38,7 @@ $(OBJDIR)/message.o: message.c message.h midi.h clock.h message_format.h
 $(OBJDIR)/message_format.o: message_format.c message_format.h midi.h
 $(OBJDIR)/message_queue.o: message_queue.c message_queue.h midi.h message.h clock.h
 $(OBJDIR)/midi.o: midi.c midi.h
-$(OBJDIR)/port.o: port.c list.h
+$(OBJDIR)/port.o: port.c port.h list.h
 $(OBJDIR)/runloop.o: runloop.c runloop.h
 $(OBJDIR)/timer.o: timer.c timer.h midi.h clock.h device.h message.h
 $(OBJDIR)/util.o: util.c util.h

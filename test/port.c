@@ -40,7 +40,6 @@ int test001_port( void ) {
   ASSERT_NO_ERROR( MIDIPortInvalidate( port_a ), "Could not invalidate MIDI port!" );
 
   MIDIPortRelease( port_a );
-  printf( "release port b\n" );
   MIDIPortRelease( port_b );
 
   return 0;
