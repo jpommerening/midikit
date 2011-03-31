@@ -264,13 +264,37 @@ int MIDIClockGetSamplingRate( struct MIDIClock * clock, MIDISamplingRate * rate 
 }
 
 int MIDIClockTimestampToSeconds( struct MIDIClock * clock, MIDITimestamp timestamp, double * seconds ) {
+  MIDIPrecond( seconds != NULL, EINVAL );
   if( clock == NULL ) clock = _get_global_clock();
   *seconds = timestamp / clock->rate;
   return 0;
 }
 
 int MIDIClockTimestampFromSeconds( struct MIDIClock * clock, MIDITimestamp * timestamp, double seconds ) {
+  MIDIPrecond( timestamp != NULL, EINVAL );
   if( clock == NULL ) clock = _get_global_clock();
   *timestamp = seconds * clock->rate;
+  return 0;
+}
+
+int MIDIClockConvertTimestamp( struct MIDIClock * clock, struct MIDIClock * source, MIDITimestamp * timestamp ) {
+  long long tmp;
+  unsigned long long numer, denom;
+
+  MIDIPrecond( timestamp != NULL, EINVAL );
+  if( clock == NULL )   clock  = _get_global_clock();
+  if( source == NULL )  source = _get_global_clock();
+  if( clock == source ) return 0;
+
+  numer = clock->numer * source->denom;
+  denom = clock->denom * source->numer;
+  _normalize_frac( &numer, &denom );
+
+  /* printf( "Rate: %u->%u, *%llu/%llu\n", source->rate, clock->rate, numer, denom ); */
+  tmp = ( *timestamp - source->offset );
+  /* printf( "tmp:%lli\n", tmp ); */
+  tmp = ( tmp * numer ) / denom;
+  /* printf( "tmp:%lli\n", tmp ); */
+  *timestamp = ( tmp + clock->offset );
   return 0;
 }

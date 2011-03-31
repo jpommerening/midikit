@@ -31,4 +31,6 @@ int MIDIClockGetSamplingRate( struct MIDIClock * clock, MIDISamplingRate * rate 
 int MIDIClockTimestampToSeconds( struct MIDIClock * clock, MIDITimestamp timestamp, double * seconds );
 int MIDIClockTimestampFromSeconds( struct MIDIClock * clock, MIDITimestamp * timestamp, double seconds );
 
+int MIDIClockConvertTimestamp( struct MIDIClock * clock, struct MIDIClock * source, MIDITimestamp * timestamp );
+
 #endif

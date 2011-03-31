@@ -98,3 +98,30 @@ int test005_clock( void ) {
   MIDIClockRelease( clock );
   return 0;
 }
+
+/**
+ * Test that timestamp conversion works.
+ */
+int test006_clock( void ) {
+  struct MIDIClock * clock = MIDIClockCreate( MIDI_SAMPLING_RATE_192KHZ );
+  MIDITimestamp a, b, c;
+
+  ASSERT_NOT_EQUAL( clock, NULL, "Could not create MIDI clock." );
+
+  /* create 2 timestamps using different clocks. */
+  ASSERT_NO_ERROR( MIDIClockGetNow( NULL,  &a ), "Could not get current global clock time." );
+  ASSERT_NO_ERROR( MIDIClockGetNow( clock, &b ), "Could not get current local clock time." );
+  c = a; /* backup global timestamp, convert global timestamp to local */
+  ASSERT_NO_ERROR( MIDIClockConvertTimestamp( clock, NULL, &a ), "Could not convert from global clock timestamp." );
+
+  /* check that global and local timestamp are about equal */
+  ASSERT_GREATER( a, b-5, "Single conversion did break timestamp." );
+  ASSERT_GREATER( b, a-5, "Single conversion did break timestamp." );
+
+  ASSERT_NO_ERROR( MIDIClockConvertTimestamp( NULL, clock, &a ), "Could not convert to global clock timestamp." );
+
+  /* be a little more tolerant. at 192KHZ 10 ticks are little more than 0.05ms */
+  ASSERT_GREATER( a, b-10, "Roundtrip conversion did break timestamp." );
+  ASSERT_GREATER( b, a-10, "Roundtrip conversion did break timestamp." );
+  return 0;
+}
