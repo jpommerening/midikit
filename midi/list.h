@@ -1,11 +1,11 @@
 #ifndef MIDIKIT_MIDI_LIST_H
 #define MIDIKIT_MIDI_LIST_H
 
-typedef void (*MIDIRefFn)( void * );
+typedef void MIDIRefFn( void * );
 
 struct MIDIList;
 
-struct MIDIList * MIDIListCreate( void (*retain)( void * ), void (*release)( void * ) );
+struct MIDIList * MIDIListCreate( MIDIRefFn * retain, MIDIRefFn * release );
 void MIDIListDestroy( struct MIDIList * list );
 void MIDIListRetain( struct MIDIList * list );
 void MIDIListRelease( struct MIDIList * list );

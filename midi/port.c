@@ -99,7 +99,7 @@ struct MIDIPort * MIDIPortCreate( char * name, void * target, int (*receive)( vo
   port->name    = name;
   port->target  = target;
   port->receive = receive;
-  port->ports   = MIDIListCreate( (MIDIRefFn) &MIDIPortRetain, (MIDIRefFn) &MIDIPortRelease );
+  port->ports   = MIDIListCreate( (MIDIRefFn*) &MIDIPortRetain, (MIDIRefFn*) &MIDIPortRelease );
 
   if( port->ports == NULL ) {
     /* probably ENOMEM, in that case, error code is already set by MIDIList */

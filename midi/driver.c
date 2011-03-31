@@ -211,8 +211,8 @@ struct MIDIDriver * MIDIDriverCreate( struct MIDIDriverDelegate * delegate ) {
   MIDIPrecondReturn( driver != NULL, ENOMEM, NULL );
   driver->refs = 1;
   driver->delegate  = delegate;
-  driver->receivers = MIDIListCreate( &MIDIConnectorRetain, &_detach_source_and_release );
-  driver->senders   = MIDIListCreate( &MIDIConnectorRetain, &_detach_target_and_release );
+  driver->receivers = MIDIListCreate( (MIDIRefFn*) &MIDIConnectorRetain, (MIDIRefFn*) &_detach_source_and_release );
+  driver->senders   = MIDIListCreate( (MIDIRefFn*) &MIDIConnectorRetain, (MIDIRefFn*) &_detach_target_and_release );
   driver->clock     = NULL;
 
   if( delegate != NULL ) {
