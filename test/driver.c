@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "test.h"
+#define MIDI_DRIVER_INTERNALS
 #include "midi/message.h"
 #include "midi/connector.h"
 #include "midi/device.h"
@@ -29,8 +30,6 @@ static int _send( void * implementation, struct MIDIMessage * message ) {
   return 0;
 }
 
-static struct MIDIDriverDelegate _test_driver = MIDI_DRIVER_DELEGATE_INITIALIZER;
-
 /**
  * Test that a MIDI driver can receive messages.
  */
@@ -43,7 +42,6 @@ int test001_driver( void ) {
   MIDIKey key = 60;
   MIDIVelocity velocity = 123;    
 
-  _test_driver.send = &_send;
 
   message = MIDIMessageCreate( MIDI_STATUS_NOTE_ON );
   ASSERT_NOT_EQUAL( message, NULL, "Could not create note on message!" );
@@ -53,8 +51,9 @@ int test001_driver( void ) {
                    "Could not set message key." );
   ASSERT_NO_ERROR( MIDIMessageSet( message, MIDI_VELOCITY, sizeof(MIDIVelocity), &velocity ),
                    "Could not set message velocity." );
-  driver = MIDIDriverCreate( &_test_driver );
+  driver = MIDIDriverCreate( "test driver", MIDI_SAMPLING_RATE_DEFAULT );
   ASSERT_NOT_EQUAL( driver, NULL, "Could not create driver!" );
+  driver->send = &_send;
   ASSERT_NO_ERROR( MIDIDriverProvideSendConnector( driver, &connector ), "Could not provide send connector." );
   ASSERT_NOT_EQUAL( connector, NULL, "Could not provide connector!" );
 
@@ -85,7 +84,7 @@ int test002_driver( void ) {
   size_t sysex_size = sizeof( sysex_data );
   unsigned char sysex_fragment = 0;
 
-  driver = MIDIDriverCreate( &_test_driver );
+  driver = MIDIDriverCreate( "test driver", MIDI_SAMPLING_RATE_DEFAULT );
   ASSERT_NOT_EQUAL( driver, NULL, "Could not create driver!" );
   device = MIDIDeviceCreate( NULL );
   ASSERT_NOT_EQUAL( device, NULL, "Could not create device!" );

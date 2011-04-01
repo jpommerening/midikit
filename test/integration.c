@@ -1,4 +1,5 @@
 #include <stdint.h>
+#define MIDI_DRIVER_INTERNALS
 #include "test.h"
 #include "midi/midi.h"
 #include "midi/connector.h"
@@ -128,8 +129,6 @@ static int _send( void * implementation, struct MIDIMessage * message ) {
   return MIDIDriverReceive( driver, message );
 }
 
-static struct MIDIDriverDelegate _test_driver = MIDI_DRIVER_DELEGATE_INITIALIZER;
-
 /**
  * Integration test.
  * Create a (first) device that is used as input & sends messages to another device.
@@ -154,9 +153,8 @@ int test001_integration( void ) {
   
   device_1 = MIDIDeviceCreate( &_test_device );
   device_2 = MIDIDeviceCreate( &_test_device );
-  driver = MIDIDriverCreate( &_test_driver );
-  _test_driver.send = &_send;
-  _test_driver.implementation = driver;
+  driver = MIDIDriverCreate( "test driver", MIDI_SAMPLING_RATE_DEFAULT );
+  driver->send = &_send;
   connector = MIDIConnectorCreate();
   
   ASSERT_NOT_EQUAL( device_1,  NULL, "Could not create device 1." );

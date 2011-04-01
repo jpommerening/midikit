@@ -1,4 +1,7 @@
 #include "osc.h"
+#define MIDI_DRIVER_INTERNALS
+#include "midi/runloop.h"
+#include "midi/driver.h"
 #include "midi/message_queue.h"
 #include "midi/controller.h"
 #include <unistd.h>
@@ -12,6 +15,7 @@
  * @brief MIDIDriver implementation using the opensoundcontrol protocol.
  */
 struct MIDIDriverOSC {
+  struct MIDIDriver super;
   size_t refs;
   int    socket;
   struct MIDIDriverDelegate * delegate;
@@ -19,7 +23,7 @@ struct MIDIDriverOSC {
   struct MIDIMessageQueue * out_queue;
 };
 
-struct MIDIDriverOSC * MIDIDriverOSCCreate( struct MIDIDriverDelegate * delegate ) {
+struct MIDIDriverOSC * MIDIDriverOSCCreate( /*struct MIDIDriverDelegate * delegate*/ ) {
   struct MIDIDriverOSC * driver = malloc( sizeof( struct MIDIDriverOSC ) );
   struct sockaddr_in addr;
   
@@ -32,7 +36,7 @@ struct MIDIDriverOSC * MIDIDriverOSCCreate( struct MIDIDriverDelegate * delegate
   
   bind( driver->socket, (struct sockaddr *) &addr, sizeof(addr) );
   
-  driver->delegate  = delegate;
+/*driver->delegate  = delegate;*/
   driver->in_queue  = MIDIMessageQueueCreate();
   driver->out_queue = MIDIMessageQueueCreate();
   return driver;

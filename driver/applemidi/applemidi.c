@@ -6,14 +6,15 @@
 #include <netdb.h>
 #include <errno.h>
 
+#define MIDI_DRIVER_INTERNALS
 #include "applemidi.h"
 #include "driver/common/rtp.h"
 #include "driver/common/rtpmidi.h"
+#include "midi/runloop.h"
 #include "midi/clock.h"
 #include "midi/driver.h"
 #include "midi/message.h"
 #include "midi/message_queue.h"
-#include "midi/runloop.h"
 
 #define APPLEMIDI_PROTOCOL_SIGNATURE          0xffff
 
@@ -74,7 +75,7 @@ struct AppleMIDIPeer {
  * @brief MIDIDriver implementation using Apple's network MIDI protocol.
  */
 struct MIDIDriverAppleMIDI {
-  size_t refs;
+  struct MIDIDriver base;
   int control_socket;
   int rtp_socket;
   unsigned short port;
@@ -83,16 +84,13 @@ struct MIDIDriverAppleMIDI {
   unsigned long  token;
   char name[32];
   
-  struct MIDIRunloopSource runloop_source;
+  struct MIDIRunloopSource runloop_source; /** @todo: use base runloop source */
   struct AppleMIDICommand  command;
-
-  struct MIDIClock * clock;
 
   struct RTPPeer * peer;
   struct RTPSession * rtp_session;
   struct RTPMIDISession * rtpmidi_session;
 
-  struct MIDIDriverDelegate * delegate;
   struct MIDIMessageQueue * in_queue;
   struct MIDIMessageQueue * out_queue;
 };
@@ -228,8 +226,14 @@ static int _applemidi_disconnect( struct MIDIDriverAppleMIDI * driver, int fd ) 
   return 0;
 }
 
+int MIDIDriverAppleMIDISendMessage( struct MIDIDriverAppleMIDI * driver, struct MIDIMessage * message );
 static int _driver_send( void * driverp, struct MIDIMessage * message ) {
   return MIDIDriverAppleMIDISendMessage( driverp, message );
+}
+
+void MIDIDriverAppleMIDIDestroy( struct MIDIDriverAppleMIDI * driver );
+static void _driver_destroy( void * driverp ) {
+  MIDIDriverAppleMIDIDestroy( driverp );
 }
 
 #pragma mark Creation and destruction
@@ -246,15 +250,14 @@ static int _driver_send( void * driverp, struct MIDIMessage * message ) {
  * @return a pointer to the created driver structure on success.
  * @return a @c NULL pointer if the driver could not created.
  */
-struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegate * delegate, char * name, unsigned short port ) {
+struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned short port ) {
   struct MIDIDriverAppleMIDI * driver;
-  MIDISamplingRate rate;
   MIDITimestamp    timestamp;
 
   driver = malloc( sizeof( struct MIDIDriverAppleMIDI ) );
-  if( driver == NULL ) return NULL;
-  
-  driver->refs = 1;
+  MIDIPrecondReturn( driver != NULL, ENOMEM, NULL );
+  MIDIDriverInit( &(driver->base), name, APPLEMIDI_CLOCK_RATE );
+ 
   driver->control_socket = 0;
   driver->rtp_socket     = 0;
   driver->port           = port;
@@ -264,23 +267,13 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegat
   
   _applemidi_connect( driver );
 
-  MIDIClockGetGlobalClock( &(driver->clock) );
-  MIDIClockGetSamplingRate( driver->clock, &rate );
-
-  if( rate == APPLEMIDI_CLOCK_RATE ) {
-    MIDIClockRetain( driver->clock );
-  } else {
-    /* different sampling rate may cause jitter on apple devices */
-    driver->clock = MIDIClockCreate( APPLEMIDI_CLOCK_RATE );
-  }
-
   driver->peer = NULL;
   driver->rtp_session     = RTPSessionCreate( driver->rtp_socket );  
   driver->rtpmidi_session = RTPMIDISessionCreate( driver->rtp_session );
   driver->in_queue  = MIDIMessageQueueCreate();
   driver->out_queue = MIDIMessageQueueCreate();
 
-  MIDIClockGetNow( driver->clock, &timestamp );
+  MIDIClockGetNow( driver->base.clock, &timestamp );
   MIDILog( DEBUG, "initial timestamp: %lli\n", timestamp );
   driver->token = timestamp;
 
@@ -289,12 +282,9 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegat
 
   _applemidi_init_runloop_source( driver );
 
-  driver->delegate = delegate;
+  driver->base.send    = &_driver_send;
+  driver->base.destroy = &_driver_destroy;
 
-  if( delegate != NULL ) {
-    delegate->send = &_driver_send;
-    delegate->implementation = driver;
-  }
   return driver;
 }
 
@@ -310,31 +300,6 @@ void MIDIDriverAppleMIDIDestroy( struct MIDIDriverAppleMIDI * driver ) {
   RTPSessionRelease( driver->rtp_session );
   MIDIMessageQueueRelease( driver->in_queue );
   MIDIMessageQueueRelease( driver->out_queue );
-  MIDIClockRelease( driver->clock );
-  free( driver );
-}
-
-/**
- * @brief Retain a MIDIDriverAppleMIDI instance.
- * Increment the reference counter of a driver so that it won't be destroyed.
- * @public @memberof MIDIDriverAppleMIDI
- * @param driver The driver.
- */
-void MIDIDriverAppleMIDIRetain( struct MIDIDriverAppleMIDI * driver ) {
-  driver->refs++;
-}
-
-/**
- * @brief Release a MIDIDriverAppleMIDI instance.
- * Decrement the reference counter of a driver. If the reference count
- * reached zero, destroy the driver.
- * @public @memberof MIDIDriverAppleMIDI
- * @param driver The driver.
- */
-void MIDIDriverAppleMIDIRelease( struct MIDIDriverAppleMIDI * driver ) {
-  if( ! --driver->refs ) {
-    MIDIDriverAppleMIDIDestroy( driver );
-  }
 }
 
 /** @} */
@@ -425,7 +390,7 @@ int MIDIDriverAppleMIDIGetControlSocket( struct MIDIDriverAppleMIDI * driver, in
  * @retval >0 if the message could not be processed.
  */
 int MIDIDriverAppleMIDIReceiveMessage( struct MIDIDriverAppleMIDI * driver, struct MIDIMessage * message ) {
-  return MIDIDriverDelegateReceiveMessage( driver->delegate, message );
+  return MIDIDriverReceive( &(driver->base), message );
 }
 
 /**
@@ -439,14 +404,15 @@ int MIDIDriverAppleMIDIReceiveMessage( struct MIDIDriverAppleMIDI * driver, stru
  * @retval >0 if the message could not be processed.
  */
 int MIDIDriverAppleMIDISendMessage( struct MIDIDriverAppleMIDI * driver, struct MIDIMessage * message ) {
-/* when midi messages get timestamped by global clock, do something different:
+/**
+ * @todo: when midi messages get timestamped by global clock, do something different:
  * - if we use the global clock (driver->clock == global_clock) do nothing
  * - otherwise: convert timestamp between clocks
  */
   MIDITimestamp timestamp;
-  MIDIClockGetNow( driver->clock, &timestamp );
+  MIDIClockGetNow( driver->base.clock, &timestamp );
   MIDIMessageSetTimestamp( message, timestamp );
-  MIDIMessageQueuePush( driver->out_queue, message );
+/*MIDIMessageQueuePush( driver->out_queue, message );*/
   return MIDIDriverAppleMIDISend( driver );
 }
 
@@ -642,7 +608,7 @@ static int _applemidi_sync( struct MIDIDriverAppleMIDI * driver, int fd, struct 
   unsigned long ssrc;
   MIDITimestamp timestamp, diff;
   RTPSessionGetSSRC( driver->rtp_session, &ssrc );
-  MIDIClockGetNow( driver->clock, &timestamp );
+  MIDIClockGetNow( driver->base.clock, &timestamp );
 
   if( command->type != APPLEMIDI_COMMAND_SYNCHRONIZATION || 
       command->data.sync.ssrc == ssrc ||
@@ -795,7 +761,7 @@ static int _applemidi_respond( struct MIDIDriverAppleMIDI * driver, int fd, stru
   switch( command->type ) {
     case APPLEMIDI_COMMAND_INVITATION:
       if( fd == driver->control_socket ) {
-        MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_APPLEMIDI_PEER_DID_SEND_INVITATION, peer );
+        MIDIDriverTriggerEvent( &(driver->base), MIDI_APPLEMIDI_PEER_DID_SEND_INVITATION, sizeof(command->data.session.name), &(command->data.session.name) );
       }
       if( driver->accept ) {
         command->type = APPLEMIDI_COMMAND_INVITATION_ACCEPTED;
@@ -817,18 +783,18 @@ static int _applemidi_respond( struct MIDIDriverAppleMIDI * driver, int fd, stru
         } else {
           peer = RTPPeerCreate( command->data.session.ssrc, command->size, (struct sockaddr *) &(command->addr) );
           RTPSessionAddPeer( driver->rtp_session, peer );
-          MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_APPLEMIDI_PEER_DID_ACCEPT_INVITATION, peer );
+          MIDIDriverTriggerEvent( &(driver->base), MIDI_APPLEMIDI_PEER_DID_ACCEPT_INVITATION, sizeof(command->data.session.name), &(command->data.session.name) );
           RTPPeerRelease( peer );
           return _applemidi_start_sync( driver, driver->rtp_socket, command->size, (struct sockaddr *) &(command->addr) );
         }
       }
       break;
     case APPLEMIDI_COMMAND_INVITATION_REJECTED:
-      MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_APPLEMIDI_PEER_DID_REJECT_INVITATION, NULL );
+      MIDIDriverTriggerEvent( &(driver->base), MIDI_APPLEMIDI_PEER_DID_REJECT_INVITATION, sizeof(command->data.session.name), &(command->data.session.name) );
       break;
     case APPLEMIDI_COMMAND_ENDSESSION:
       RTPSessionFindPeerBySSRC( driver->rtp_session, &peer, command->data.session.ssrc );
-      MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_APPLEMIDI_PEER_DID_END_SESSION, peer );
+      MIDIDriverTriggerEvent( &(driver->base), MIDI_APPLEMIDI_PEER_DID_END_SESSION, sizeof(command->data.session.name), &(command->data.session.name) );
       if( peer != NULL ) {
         RTPSessionRemovePeer( driver->rtp_session, peer );
       }

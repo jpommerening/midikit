@@ -4,6 +4,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include "test.h"
+#include "midi/port.h"
 #include "midi/driver.h"
 #include "midi/message.h"
 #include "midi/runloop.h"
@@ -85,27 +86,53 @@ static int _check_socket_in( int fd ) {
 }
 
 static int _n_msg = 0;
-static int _receive( void * interface, struct MIDIMessage * message ) {
-  printf( "Received message!\n" );
-  MIDIMessageRelease( message );
-  _n_msg++;
+static int _receive( void * target, void * source, int type, size_t size, void * data ) {
+  struct MIDIMessage * message;
+  char * buffer;
+  if( target != &_n_msg ) {
+    printf( "Incorrect port target.\n" );
+  }
+  if( type == 0 ) {
+    message = data;
+    printf( "Received message!\n" );
+    MIDIMessageRelease( message );
+    _n_msg++;
+  } else {
+    buffer = data;
+    printf( "Received unknown type '%i':\n", type );
+    for( int i=0; i<size; i++ ) {
+      if( (i+1)%8 == 0 || (i+1) == size ) {
+        if( buffer[i-(i%8)] < 128 ) {
+          printf( "0x%02x | %s\n", buffer[i], buffer+i-(i%8) );
+        } else {
+          printf( "0x%02x\n", buffer[i] );
+        }
+      } else {
+        printf( "0x%02x ", buffer[i] );
+      }
+    }
+  }
   return 0;
 }
 
-struct MIDIDriverDelegate _test_driver = {
-  NULL,
-  &_receive,
-  NULL,
-  NULL
-};
+static struct MIDIPort * _port;
 
 /**
  * Test that AppleMIDI sessions can be created.
  */
 int test001_applemidi( void ) {
   unsigned char buf[32];
+  struct MIDIPort * port;
 
-  driver = MIDIDriverAppleMIDICreate( &_test_driver, "My MIDI Session", SERVER_CONTROL_PORT );
+  driver = MIDIDriverAppleMIDICreate( "My MIDI Session", SERVER_CONTROL_PORT );
+  ASSERT_NOT_EQUAL( driver, NULL, "Could not create AppleMIDI driver." );
+
+  ASSERT_NO_ERROR( MIDIDriverGetInputPort( driver, &port ), "Could not get driver port." );
+
+  _port = MIDIPortCreate( "AppleMIDI test port", MIDI_PORT_RECEIVE, &_n_msg, &_receive );
+  ASSERT_NOT_EQUAL( _port, NULL, "Could not create test port." );
+
+  ASSERT_NO_ERROR( MIDIPortConnect( port, _port ), "Could not connect ports." );
 
   client_control_socket = socket( PF_INET, SOCK_DGRAM, 0 );
   ASSERT_NOT_EQUAL( client_control_socket, 0, "Could not create control socket." );
@@ -123,7 +150,6 @@ int test001_applemidi( void ) {
   ASSERT_NO_ERROR( bind( client_rtp_socket, (struct sockaddr *) &client_addr, sizeof(client_addr) ),
                    "Could not bind rtp socket." );
 
-  ASSERT_NOT_EQUAL( driver, NULL, "Could not create AppleMIDI driver." );
 
   ASSERT_NO_ERROR( MIDIDriverAppleMIDIAddPeer( driver, CLIENT_ADDRESS, CLIENT_CONTROL_PORT ),
                    "Could not add client." );
@@ -297,7 +323,7 @@ int test004_applemidi( void ) {
  */
 int test005_applemidi( void ) {
 
-  MIDIDriverAppleMIDIRelease( driver );
+  MIDIDriverRelease( driver );
 
   close( client_control_socket );
   close( client_rtp_socket );

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "midi.h"
 #include "list.h"
 #include "port.h"
@@ -87,25 +88,35 @@ static int _port_apply_check( void * item, void * info ) {
  * @return a pointer to the created port structure on success.
  * @return a @c NULL pointer if the port could not created.
  */
-struct MIDIPort * MIDIPortCreate( char * name, void * target, int (*receive)( void *, void *, int, size_t, void * ) ) {
+struct MIDIPort * MIDIPortCreate( char * name, int mode, void * target, int (*receive)( void *, void *, int, size_t, void * ) ) {
   MIDIPrecondReturn( name != NULL, EINVAL, NULL );
   MIDIPrecondReturn( target != NULL, EINVAL, NULL );
   MIDIPrecondReturn( receive != NULL, EINVAL, NULL );
   struct MIDIPort * port = malloc( sizeof( struct MIDIPort ) );
+  size_t namelen;
   MIDIPrecondReturn( port != NULL, ENOMEM, NULL );
+
+  namelen = strlen( name );
+  if( namelen > 128 ) namelen = 128;
 
   port->refs    = 1;
   port->valid   = 1;
-  port->name    = name;
+  port->name    = malloc( namelen );
   port->target  = target;
   port->receive = receive;
   port->ports   = MIDIListCreate( (MIDIRefFn*) &MIDIPortRetain, (MIDIRefFn*) &MIDIPortRelease );
 
+  if( port->name == NULL ) {
+    free( port );
+    return NULL;
+  }
   if( port->ports == NULL ) {
     /* probably ENOMEM, in that case, error code is already set by MIDIList */
     free( port );
     return NULL;
   }
+
+  strncpy( port->name, name, namelen );
 
   return port;
 }

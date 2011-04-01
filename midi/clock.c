@@ -240,11 +240,13 @@ void MIDIClockRelease( struct MIDIClock * clock ) {
 
 int MIDIClockSetNow( struct MIDIClock * clock, MIDITimestamp now ) {
   if( clock == NULL ) clock = _get_global_clock();
+  MIDIPrecond( clock->refs == 1, EFAULT );
   clock->offset = now - _get_real_time( clock );
   return 0;
 }
 
 int MIDIClockGetNow( struct MIDIClock * clock, MIDITimestamp * now ) {
+  MIDIPrecond( now != NULL, EINVAL );
   if( clock == NULL ) clock = _get_global_clock();
   *now = _get_real_time( clock ) + clock->offset;
   return 0;
@@ -252,12 +254,14 @@ int MIDIClockGetNow( struct MIDIClock * clock, MIDITimestamp * now ) {
 
 int MIDIClockSetSamplingRate( struct MIDIClock * clock, MIDISamplingRate rate ) {
   if( clock == NULL ) clock = _get_global_clock();
+  MIDIPrecond( clock->refs == 1, EFAULT );
   clock->numer = ( clock->numer / clock->rate ) * rate;
   clock->rate  = rate;
   return 0;
 }
 
 int MIDIClockGetSamplingRate( struct MIDIClock * clock, MIDISamplingRate * rate ) {
+  MIDIPrecond( rate != NULL, EINVAL );
   if( clock == NULL ) clock = _get_global_clock();
   *rate = clock->rate;
   return 0;

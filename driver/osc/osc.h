@@ -2,7 +2,6 @@
 #define MIDI_DRIVER_OSC_H
 #include <stdlib.h>
 #include "midi/message.h"
-#include "midi/driver.h"
 
 /*
  * Default OSC namespace
@@ -37,7 +36,7 @@ struct MIDIDriverOSCDelegate {
   int (*decode)( struct MIDIDriverOSC * driver, struct MIDIMessage * message, size_t size, void * buffer );
 };*/
 
-struct MIDIDriverOSC * MIDIDriverOSCCreate( struct MIDIDriverDelegate * delegate );
+struct MIDIDriverOSC * MIDIDriverOSCCreate( /*struct MIDIDriverDelegate * delegate*/ );
 void MIDIDriverOSCDestroy( struct MIDIDriverOSC * driver );
 void MIDIDriverOSCRetain( struct MIDIDriverOSC * driver );
 void MIDIDriverOSCRelease( struct MIDIDriverOSC * driver );
@@ -52,11 +51,12 @@ int MIDIDriverOSCEncodeMessageRaw( struct MIDIDriverOSC * driver, struct MIDIMes
 int MIDIDriverOSCDecodeMessageRaw( struct MIDIDriverOSC * driver, struct MIDIMessage * message,
                                    size_t size, void * buffer, size_t * bytes_read );
 
+/*
 int MIDIDriverOSCSendMessage( struct MIDIDriverOSC * driver, struct MIDIMessage * message );
 int MIDIDriverOSCReceiveMessage( struct MIDIDriverOSC * driver, struct MIDIMessage * message );
 
 int MIDIDriverOSCSend( struct MIDIDriverOSC * driver );
 int MIDIDriverOSCReceive( struct MIDIDriverOSC * driver );
 int MIDIDriverOSCIdle( struct MIDIDriverOSC * driver );
-
+*/
 #endif

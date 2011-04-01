@@ -1,10 +1,13 @@
 #ifndef MIDIKIT_MIDI_PORT_H
 #define MIDIKIT_MIDI_PORT_H
 
+#define MIDI_PORT_RECEIVE 1
+#define MIDI_PORT_SEND 2
+
 struct MIDIPort;
 typedef int MIDIPortReceiveFn( void * target, void * source, int type, size_t size, void * data );
 
-struct MIDIPort * MIDIPortCreate( char * name, void * target,
+struct MIDIPort * MIDIPortCreate( char * name, int mode, void * target,
                                   MIDIPortReceiveFn * receive );
 
 

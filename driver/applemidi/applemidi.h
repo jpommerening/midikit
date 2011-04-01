@@ -2,10 +2,18 @@
 #define MIDIKIT_DRIVER_APPLEMIDI_H
 #include <sys/socket.h>
 
-struct MIDIMessage;
-struct MIDIDriverDelegate;
-struct MIDIRunloopSource;
+/*struct MIDIDriverDelegate;
+struct MIDIRunloopSource;*/
 
+#ifndef MIDI_DRIVER_INTERNALS
+/**
+ * When used as an opaque pointer type, an instance of
+ * MIDIDriverAppleMIDI can be used as a MIDIDriver.
+ */
+#define MIDIDriverAppleMIDI MIDIDriver
+#endif
+
+struct MIDIMessage;
 struct MIDIDriverAppleMIDI;
 
 #define MIDI_APPLEMIDI_PEER_DID_SEND_INVITATION   3000
@@ -13,10 +21,10 @@ struct MIDIDriverAppleMIDI;
 #define MIDI_APPLEMIDI_PEER_DID_REJECT_INVITATION 3002
 #define MIDI_APPLEMIDI_PEER_DID_END_SESSION       3003
 
-struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( struct MIDIDriverDelegate * delegate, char * name, unsigned short port );
-void MIDIDriverAppleMIDIDestroy( struct MIDIDriverAppleMIDI * driver );
+struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( /*struct MIDIDriverDelegate * delegate,*/ char * name, unsigned short port );
+/*void MIDIDriverAppleMIDIDestroy( struct MIDIDriverAppleMIDI * driver );
 void MIDIDriverAppleMIDIRetain( struct MIDIDriverAppleMIDI * driver );
-void MIDIDriverAppleMIDIRelease( struct MIDIDriverAppleMIDI * driver );
+void MIDIDriverAppleMIDIRelease( struct MIDIDriverAppleMIDI * driver );*/
 
 int MIDIDriverAppleMIDISetPort( struct MIDIDriverAppleMIDI * driver, unsigned short port ); 
 int MIDIDriverAppleMIDIGetPort( struct MIDIDriverAppleMIDI * driver, unsigned short * port ); 
@@ -35,9 +43,7 @@ int MIDIDriverAppleMIDIGetRTPSocket( struct MIDIDriverAppleMIDI * driver, int * 
 int MIDIDriverAppleMIDISetControlSocket( struct MIDIDriverAppleMIDI * driver, int socket );
 int MIDIDriverAppleMIDIGetControlSocket( struct MIDIDriverAppleMIDI * driver, int * socket );
 
-int MIDIDriverAppleMIDIConnect( struct MIDIDriverAppleMIDI * driver );
-int MIDIDriverAppleMIDIDisconnect( struct MIDIDriverAppleMIDI * driver );
-
+/*
 int MIDIDriverAppleMIDIReceiveMessage( struct MIDIDriverAppleMIDI * driver, struct MIDIMessage * message );
 int MIDIDriverAppleMIDISendMessage( struct MIDIDriverAppleMIDI * driver, struct MIDIMessage * message );
 
@@ -46,5 +52,5 @@ int MIDIDriverAppleMIDISend( struct MIDIDriverAppleMIDI * driver );
 int MIDIDriverAppleMIDIIdle( struct MIDIDriverAppleMIDI * driver );
 
 int MIDIDriverAppleMIDIGetRunloopSource( struct MIDIDriverAppleMIDI * driver, struct MIDIRunloopSource ** source );
-
+*/
 #endif

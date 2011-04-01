@@ -15,8 +15,8 @@ int _receive( void * target, void * source, int type, size_t size, void * data )
  */
 int test001_port( void ) {
   int a, b, v;
-  struct MIDIPort * port_a = MIDIPortCreate( "port a", &a, &_receive );
-  struct MIDIPort * port_b = MIDIPortCreate( "port b", &b, &_receive );
+  struct MIDIPort * port_a = MIDIPortCreate( "port a", MIDI_PORT_RECEIVE | MIDI_PORT_SEND, &a, &_receive );
+  struct MIDIPort * port_b = MIDIPortCreate( "port b", MIDI_PORT_RECEIVE | MIDI_PORT_SEND, &b, &_receive );
 
   ASSERT_NOT_EQUAL( port_a, NULL, "Could not create port a!" );
   ASSERT_NOT_EQUAL( port_b, NULL, "Could not create port b!" );
