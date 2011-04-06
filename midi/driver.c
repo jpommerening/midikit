@@ -226,11 +226,8 @@ void MIDIDriverInit( struct MIDIDriver * driver, char * name, MIDISamplingRate r
   MIDIPrecondReturn( driver != NULL, EFAULT, (void)0 );
   MIDISamplingRate global_rate;
 
-  driver->refs = 1;
-/*driver->delegate  = delegate;*/
-  driver->receivers = MIDIListCreate( (MIDIRefFn*) &MIDIConnectorRetain, (MIDIRefFn*) &_detach_source_and_release );
-  driver->senders   = MIDIListCreate( (MIDIRefFn*) &MIDIConnectorRetain, (MIDIRefFn*) &_detach_target_and_release );
-  driver->port      = MIDIPortCreate( name, MIDI_PORT_RECEIVE | MIDI_PORT_SEND, driver, &_port_receive );
+  driver->port      = MIDIPortCreate( name, MIDI_PORT_IN | MIDI_PORT_OUT, driver, &_port_receive );
+  driver->clock     = NULL;
 
   MIDIClockGetGlobalClock( &(driver->clock) );
   MIDIClockGetSamplingRate( driver->clock, &global_rate );
@@ -243,13 +240,6 @@ void MIDIDriverInit( struct MIDIDriver * driver, char * name, MIDISamplingRate r
 
   driver->send    = NULL;
   driver->destroy = NULL;
-
-/*
-  if( delegate != NULL ) {
-    delegate->receive   = &_driver_receive;
-    delegate->interface = driver;
-  }
-  return driver;*/
 }
 
 /**

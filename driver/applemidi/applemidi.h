@@ -21,10 +21,7 @@ struct MIDIDriverAppleMIDI;
 #define MIDI_APPLEMIDI_PEER_DID_REJECT_INVITATION 3002
 #define MIDI_APPLEMIDI_PEER_DID_END_SESSION       3003
 
-struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( /*struct MIDIDriverDelegate * delegate,*/ char * name, unsigned short port );
-/*void MIDIDriverAppleMIDIDestroy( struct MIDIDriverAppleMIDI * driver );
-void MIDIDriverAppleMIDIRetain( struct MIDIDriverAppleMIDI * driver );
-void MIDIDriverAppleMIDIRelease( struct MIDIDriverAppleMIDI * driver );*/
+struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned short port );
 
 int MIDIDriverAppleMIDISetPort( struct MIDIDriverAppleMIDI * driver, unsigned short port ); 
 int MIDIDriverAppleMIDIGetPort( struct MIDIDriverAppleMIDI * driver, unsigned short * port ); 

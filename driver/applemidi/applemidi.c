@@ -282,9 +282,6 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned sh
 
   _applemidi_init_runloop_source( driver );
 
-  driver->base.send    = &_driver_send;
-  driver->base.destroy = &_driver_destroy;
-
   return driver;
 }
 

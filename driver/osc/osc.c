@@ -18,12 +18,11 @@ struct MIDIDriverOSC {
   struct MIDIDriver super;
   size_t refs;
   int    socket;
-  struct MIDIDriverDelegate * delegate;
   struct MIDIMessageQueue * in_queue;
   struct MIDIMessageQueue * out_queue;
 };
 
-struct MIDIDriverOSC * MIDIDriverOSCCreate( /*struct MIDIDriverDelegate * delegate*/ ) {
+struct MIDIDriverOSC * MIDIDriverOSCCreate( ) {
   struct MIDIDriverOSC * driver = malloc( sizeof( struct MIDIDriverOSC ) );
   struct sockaddr_in addr;
   
@@ -36,7 +35,6 @@ struct MIDIDriverOSC * MIDIDriverOSCCreate( /*struct MIDIDriverDelegate * delega
   
   bind( driver->socket, (struct sockaddr *) &addr, sizeof(addr) );
   
-/*driver->delegate  = delegate;*/
   driver->in_queue  = MIDIMessageQueueCreate();
   driver->out_queue = MIDIMessageQueueCreate();
   return driver;
