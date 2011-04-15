@@ -158,13 +158,13 @@ static void _detach_target_and_release( void * connector ) {
 
 static int _receiver_connect( void * driverp, struct MIDIConnector * receiver ) {
   struct MIDIDriver * driver = driverp;
-  MIDIListAdd( driver->receivers, receiver );
+  /*MIDIListAdd( driver->receivers, receiver );*/
   return 0;
 }
 
 static int _receiver_disconnect( void * driverp, struct MIDIConnector * receiver ) {
   struct MIDIDriver * driver = driverp;
-  MIDIListRemove( driver->receivers, receiver );
+  /*MIDIListRemove( driver->receivers, receiver );*/
   return 0;
 }
 
@@ -174,13 +174,13 @@ static int _sender_relay( void * driverp, struct MIDIMessage * message ) {
 
 static int _sender_connect( void * driverp, struct MIDIConnector * sender ) {
   struct MIDIDriver * driver = driverp;
-  MIDIListAdd( driver->senders, sender );
+  /*MIDIListAdd( driver->senders, sender );*/
   return 0;
 }
 
 static int _sender_disconnect( void * driverp, struct MIDIConnector * sender ) {
   struct MIDIDriver * driver = driverp;
-  MIDIListRemove( driver->senders, sender );
+  /*MIDIListRemove( driver->senders, sender );*/
   return 0;
 }
 
@@ -226,8 +226,10 @@ void MIDIDriverInit( struct MIDIDriver * driver, char * name, MIDISamplingRate r
   MIDIPrecondReturn( driver != NULL, EFAULT, (void)0 );
   MIDISamplingRate global_rate;
 
-  driver->port      = MIDIPortCreate( name, MIDI_PORT_IN | MIDI_PORT_OUT, driver, &_port_receive );
-  driver->clock     = NULL;
+  driver->refs  = 1;
+  driver->rls   = NULL;
+  driver->port  = MIDIPortCreate( name, MIDI_PORT_IN | MIDI_PORT_OUT, driver, &_port_receive );
+  driver->clock = NULL;
 
   MIDIClockGetGlobalClock( &(driver->clock) );
   MIDIClockGetSamplingRate( driver->clock, &global_rate );
@@ -257,10 +259,6 @@ void MIDIDriverDestroy( struct MIDIDriver * driver ) {
     MIDIClockRelease( driver->clock );
   }
   MIDIPortRelease( driver->port );
-  MIDIListRelease( driver->receivers );
-  MIDIListRelease( driver->senders );
-/*driver->delegate->receive   = NULL;
-  driver->delegate->interface = NULL;*/
   free( driver );
 }
 
@@ -362,9 +360,9 @@ int MIDIDriverProvideSendConnector( struct MIDIDriver * driver, struct MIDIConne
   connector = MIDIConnectorCreate();
   if( connector == NULL ) return 1;
   MIDIConnectorAttachToDriver( connector, driver );
-  MIDIListAdd( driver->senders, connector );
+  /*MIDIListAdd( driver->senders, connector );*/
   *send = connector;
-  MIDIConnectorRelease( connector ); /* retained by list */
+  /* MIDIConnectorRelease( connector ); retained by list */
   return 0;
 }
 
@@ -387,9 +385,9 @@ int MIDIDriverProvideReceiveConnector( struct MIDIDriver * driver, struct MIDICo
   connector = MIDIConnectorCreate();
   if( connector == NULL ) return 1;
   MIDIConnectorAttachFromDriver( connector, driver );
-  MIDIListAdd( driver->receivers, connector );
+  /*MIDIListAdd( driver->receivers, connector );*/
   *receive = connector;
-  MIDIConnectorRelease( connector ); /* retained by list */
+  /*MIDIConnectorRelease( connector ); retained by list */
   return 0;
 }
 

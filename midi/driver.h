@@ -25,10 +25,8 @@ struct MIDIDriverDelegate {
 #include "runloop.h"
 struct MIDIDriver {
   size_t refs;                             /**< @private */
-  struct MIDIRunloopSource runloop_source;
+  struct MIDIRunloopSource * rls;          /**< @private */
   struct MIDIPort * port;                  /**< @private */
-  struct MIDIList * receivers;             /**< @private */
-  struct MIDIList * senders;               /**< @private */
   struct MIDIClock * clock;                /**< @private */
   int (*send)( void * driver, struct MIDIMessage * message );
   void (*destroy)( void * driver );

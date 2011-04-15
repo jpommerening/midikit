@@ -7,7 +7,28 @@
 
 #define MAX_RUNLOOP_SOURCES 16 
 
-static int _cmp_fds( fd_set * a, fd_set * b, int nfds ) {
+struct MIDIRunloopSource {
+  int refs;
+  int nfds;
+  fd_set readfds;
+  fd_set writefds;
+  struct timespec timeout_start;
+  struct timespec timeout_time;
+  struct MIDIRunloop * runloop;
+  int (*read)( void * info, int nfds, fd_set * readfds );
+  int (*write)( void * info, int nfds, fd_set * writefds );
+  int (*timeout)( void * info, struct timespec * elapsed );
+  void * info;
+};
+
+struct MIDIRunloop {
+  size_t refs;
+  int active;
+  struct MIDIRunloopSource master;
+  struct MIDIRunloopSource * sources[MAX_RUNLOOP_SOURCES];
+};
+
+static int _fds_cmp( fd_set * a, fd_set * b, int nfds ) {
   int fd;
   for( fd=0; fd<nfds; fd++ ) {
     if( FD_ISSET( fd, a ) != FD_ISSET( fd, b ) ) {
@@ -17,13 +38,7 @@ static int _cmp_fds( fd_set * a, fd_set * b, int nfds ) {
   return 0;
 }
 
-static int _check_fds( fd_set * fds, int nfds ) {
-  fd_set empty;
-  FD_ZERO( &empty );
-  return _cmp_fds( fds, &empty, nfds );
-}
-
-static int _check_fds2( fd_set * fds, fd_set * chk, int nfds ) {
+static int _fds_check2( fd_set * fds, fd_set * chk, int nfds ) {
   int fd;
   for( fd=0; fd<nfds; fd++ ) {
     if( FD_ISSET( fd, chk ) && FD_ISSET( fd, fds ) ) {
@@ -33,7 +48,13 @@ static int _check_fds2( fd_set * fds, fd_set * chk, int nfds ) {
   return 0;
 }
 
-static int _cpy_fds2( fd_set * lhs, fd_set * rhs, int nfds ) {
+static int _fds_check( fd_set * fds, int nfds ) {
+  fd_set empty;
+  FD_ZERO( &empty );
+  return _fds_cmp( fds, &empty, nfds );
+}
+
+static int _fds_add( fd_set * lhs, fd_set * rhs, int nfds ) {
   int fd;
   for( fd=0; fd<nfds; fd++ ) {
     if( FD_ISSET( fd, rhs ) ) {
@@ -43,9 +64,60 @@ static int _cpy_fds2( fd_set * lhs, fd_set * rhs, int nfds ) {
   return 0;
 }
 
-static int _cpy_fds( fd_set * lhs, fd_set * rhs, int nfds ) {
+static int _fds_cpy( fd_set * lhs, fd_set * rhs, int nfds ) {
   FD_ZERO( lhs );
-  return _cpy_fds2( lhs, rhs, nfds );
+  return _fds_add( lhs, rhs, nfds );
+}
+
+static int _fds_sub( fd_set * lhs, fd_set * rhs, int nfds ) {
+  int fd;
+  for( fd=0; fd<nfds; fd++ ) {
+    if( FD_ISSET( fd, rhs ) ) {
+      FD_CLR( fd, lhs );
+    }
+  }
+  return 0;
+}
+
+static void _timespec_zero( struct timespec * ts ) {
+  ts->tv_sec  = 0;
+  ts->tv_nsec = 0;
+}
+
+static int _timespec_empty( struct timespec * ts ) {
+  return ts->tv_sec == 0 && ts->tv_nsec == 0;
+}
+
+static void _timespec_cpy( struct timespec * lhs, struct timespec * rhs ) {
+  if( lhs != rhs ) {
+    lhs->tv_sec  = rhs->tv_sec;
+    lhs->tv_nsec = rhs->tv_nsec;
+  }
+}
+
+static int _timespec_cmp( struct timespec * lhs, struct timespec * rhs ) {
+  if( lhs->tv_sec > rhs->tv_sec ) {
+    return 2;
+  } else if( lhs->tv_sec == rhs->tv_sec ) {
+    if( lhs->tv_nsec > rhs->tv_nsec ) {
+      return 1;
+    } else if( lhs->tv_nsec == rhs->tv_nsec ) {
+      return 0;
+    } else {
+      return -1;
+    }
+  } else {
+    return -2;
+  }
+}
+
+static void _timespec_add( struct timespec * lhs, struct timespec * rhs ) {
+  lhs->tv_sec  += rhs->tv_sec;
+  lhs->tv_nsec += rhs->tv_nsec;
+  while( lhs->tv_nsec > 1000000000 ) {
+    lhs->tv_sec  += 1;
+    lhs->tv_nsec -= 1000000000;
+  }
 }
 
 static void _timespec_sub( struct timespec * lhs, struct timespec * rhs ) {
@@ -67,93 +139,259 @@ static void _timespec_sub( struct timespec * lhs, struct timespec * rhs ) {
   MIDILog( DEVELOP, "=> %ld.%06lds\n", lhs->tv_sec, lhs->tv_nsec );
 }
 
-static void _timespec_get( struct timespec * ts ) {
+static void _timespec_now( struct timespec * ts ) {
   struct timeval  tv = { 0, 0 };
   gettimeofday( &tv, NULL );
   ts->tv_sec  = tv.tv_sec;
   ts->tv_nsec = tv.tv_usec * 1000;
+}
+
+static void _timespec_get( struct timespec * ts ) {
+  _timespec_now( ts );
 }
 
 static void _timespec_elapsed( struct timespec * ts ) {
-  struct timeval  tv = { 0, 0 };
-  struct timespec td = { ts->tv_sec, ts->tv_nsec };
-  gettimeofday( &tv, NULL );
-  ts->tv_sec  = tv.tv_sec;
-  ts->tv_nsec = tv.tv_usec * 1000;
-  _timespec_sub( ts, &td );
+  struct timespec since = { ts->tv_sec, ts->tv_nsec };
+  _timespec_now( ts );
+  _timespec_sub( ts, &since );
+}
+
+static void _timeval_from_timespec( struct timeval * tv, struct timespec * ts ) {
+  tv->tv_sec  = ts->tv_sec;
+  tv->tv_usec = ts->tv_nsec / 1000;
 }
 
 static int _source_reset_remain( struct MIDIRunloopSource * source ) {
-  source->remain.tv_sec  = source->timeout.tv_sec;
-  source->remain.tv_nsec = source->timeout.tv_nsec;
+  //source->remain.tv_sec  = source->timeout.tv_sec;
+  //source->remain.tv_nsec = source->timeout.tv_nsec;
+  return 0;
+}
+
+struct MIDIRunloopSource * MIDIRunloopSourceCreate( void * info,
+    int (*read)( void *, int, fd_set * ),
+    int (*write)( void *, int, fd_set * ),
+    int (*timeout)( void *, struct timespec * ) ) {
+  struct MIDIRunloopSource * source = malloc( sizeof( struct MIDIRunloopSource ) );
+
+  source->refs = 1;
+  source->nfds = 0;
+
+  FD_ZERO( &(source->readfds) );
+  FD_ZERO( &(source->writefds) );
+
+  _timespec_zero( &(source->timeout_start) );
+  _timespec_zero( &(source->timeout_time) );
+
+  source->runloop = NULL;
+
+  source->read    = read;
+  source->write   = write;
+  source->timeout = timeout;
+  source->info    = info;
+
+  return source;
+}
+
+void MIDIRunloopSourceDestroy( struct MIDIRunloopSource * source ) {
+  free( source );
+}
+
+void MIDIRunloopSourceRetain( struct MIDIRunloopSource * source ) {
+  MIDIPrecondReturn( source != NULL, EFAULT, (void)0 );
+  source->refs++;
+}
+
+void MIDIRunloopSourceRelease( struct MIDIRunloopSource * source ) {
+  MIDIPrecondReturn( source != NULL, EFAULT, (void)0 );
+  if( ! --source->refs ) {
+    MIDIRunloopSourceDestroy( source );
+  }
+}
+
+/**
+ * @brief Mark a runloop source as invalid.
+ * Disable all callbacks of a runloop source and remove it from the runloop it is
+ * scheduled in.
+ * @public @memberof MIDIRunloopSource
+ * @param source The source the should be invalidated.
+ */
+int MIDIRunloopSourceInvalidate( struct MIDIRunloopSource * source ) {
+  MIDIPrecond( source != NULL, EFAULT );
+  source->info    = NULL;
+  source->read    = NULL;
+  source->write   = NULL;
+  source->timeout = NULL;
+
+  if( source->runloop != NULL ) {
+    // remove from runloop
+  }
+  return 0;
+}
+
+/**
+ * @brief Start a new timeout.
+ * @private @memberof MIDIRunloopSource
+ * @param source The runloop source.
+ * @param now    Must be set to the current time.
+ */
+static void _runloop_source_timeout_start( struct MIDIRunloopSource * source, struct timespec * now ) {
+  _timespec_cpy( &(source->timeout_start), now );
+}
+
+/**
+ * @brief Get the remaining time of the current timeout.
+ * Zero if timeout is now set.
+ * @private @memberof MIDIRunloopSource
+ * @param source The runloop source.
+ * @param remain Will be set to the remaining time.
+ * @param now    Must be set to the current time.
+ */
+static void _runloop_source_timeout_remain( struct MIDIRunloopSource * source, struct timespec * remain, struct timespec * now ) {
+  if( _timespec_empty( &(source->timeout_time) ) ) {
+    _timespec_zero( remain );
+  } else {
+    _timespec_cpy( remain, now );
+    _timespec_add( remain, &(source->timeout_time) );
+    _timespec_sub( remain, &(source->timeout_start) );
+  }
+}
+
+/**
+ * @brief Check if the current timeout is over.
+ * @private @memberof MIDIRunloopSource
+ * @param source The runloop source.
+ * @param now    Must be set to the current time.
+ */
+static int _runloop_source_timeout_check( struct MIDIRunloopSource * source, struct timespec * now ) {
+  struct timespec ts; /* timeout limit */
+  if( _timespec_empty( &(source->timeout_time) ) ) return 0; /* no timeout set */
+  _timespec_cpy( &ts, &(source->timeout_start) );
+  _timespec_add( &ts, &(source->timeout_time)  );
+  return _timespec_cmp( now, &ts ) > 0; /* is "now" later/greater than "ts" ? */
+}
+
+/**
+ * @brief Trigger a timeout.
+ * @private @memberof MIDIRunloopSource
+ * @param source The runloop source.
+ * @param now    Must be set to the current time.
+ */
+static int _runloop_source_timeout( struct MIDIRunloopSource * source, struct timespec * now ) {
+  if( source->timeout == NULL || source->info == NULL ) return 0;
+  _runloop_source_timeout_start( source, now );
+  return (source->timeout)( source->info, now );
+}
+
+/**
+ * @brief Trigger a read operation.
+ * @private @memberof MIDIRunloopSource
+ * @param source The runloop source.
+ * @param now    Must be set to the current time.
+ * @param fds    The fd_set from which to read.
+ */
+static int _runloop_source_read( struct MIDIRunloopSource * source, struct timespec * now, fd_set * fds ) {
+  if( source->read == NULL || source->info == NULL ) return 0;
+  if( _fds_check( fds, source->nfds ) ) {
+    _runloop_source_timeout_start( source, now );
+    return (source->read)( source->info, source->nfds, fds );
+  }
+  return 0;
+}
+
+/**
+ * @brief Trigger a write operation.
+ * @private @memberof MIDIRunloopSource
+ * @param source The runloop source.
+ * @param now    Must be set to the current time.
+ * @param fds    The fd_set to which to write.
+ */
+static int _runloop_source_write( struct MIDIRunloopSource * source, struct timespec * now, fd_set * fds ) {
+  if( source->write == NULL || source->info == NULL ) return 0;
+  if( _fds_check( fds, source->nfds ) ) {
+    _fds_sub( &(source->writefds), fds, source->nfds );
+    _runloop_source_timeout_start( source, now );
+    return (source->write)( source->info, source->nfds, fds );
+  }
   return 0;
 }
 
 /**
  * @brief Wait until any callback of the runloop source is triggered.
+ * If no callbacks are scheduled return immediately.
  * @public @memberof MIDIRunloopSource
  * @param source The runloop source.
  */
 int MIDIRunloopSourceWait( struct MIDIRunloopSource * source ) {
-  int result = 0, idle = 1;
-  struct timeval  tv = { 0, 0 };
-  struct timespec ts = { 0, 0 };
+  int result = 0;
+  struct timespec now, remain;
+  struct timeval  remain_tv = { 0, 0 };
   fd_set readfds;
   fd_set writefds;
 
-  if( source->nfds > 0 ) {
+  /*printf( "RunloopSourceWait\n" );*/
+  _timespec_now( &now );
+  if( _runloop_source_timeout_check( source, &now ) ) {
+    /* timed out before check */
+    /*printf( "- timeout(sec:%li,nsec:%li)\n", source->timeout_time.tv_sec, source->timeout_time.tv_nsec );*/
+    return _runloop_source_timeout( source, &now );
+  } else if( source->nfds > 0 ) {
     /* select */
-    tv.tv_sec  = source->timeout.tv_sec;
-    tv.tv_usec = source->timeout.tv_nsec / 1000;
+    _runloop_source_timeout_remain( source, &remain, &now );
+    _timeval_from_timespec( &remain_tv, &remain );
+    _fds_cpy( &readfds, &(source->readfds), source->nfds );
+    _fds_cpy( &writefds, &(source->writefds), source->nfds );
 
-    _cpy_fds( &readfds, &(source->readfds), source->nfds );
-    _cpy_fds( &writefds, &(source->writefds), source->nfds );
-    _timespec_get( &ts );
-    result = select( source->nfds, &readfds, &writefds, NULL, &tv );
+    /*printf( "- select(nfds:%i)\n", source->nfds );*/
+    result = select( source->nfds, &readfds, &writefds, NULL, &remain_tv );
+    _timespec_now( &now );
     if( result > 0 ) {
-      result = 0;
-      if( source->read != NULL && _check_fds( &readfds, source->nfds ) ) {
-        idle = 0;
-        result += (source->read)( source->info, source->nfds, &readfds );
-      }
-      if( source->write != NULL && _check_fds( &writefds, source->nfds ) ) {
-        idle = 0;
-        result += (source->write)( source->info, source->nfds, &writefds );
-      }
+      /*printf( "- read/write\n" );*/
+      return _runloop_source_read( source, &now, &readfds )
+           + _runloop_source_write( source, &now, &writefds );
+    } else {
+      /*printf( "- timeout\n" );*/
+      return _runloop_source_timeout( source, &now );
     }
-    if( idle && source->idle != NULL ) {
-      _timespec_elapsed( &ts );
-      _source_reset_remain( source );
-      result += (source->idle)( source->info, &ts );
-    }
-  } else if( source->timeout.tv_sec > 0 || source->timeout.tv_nsec > 0 ) {
+  } else if( ! _timespec_empty( &(source->timeout_time) ) ) {
     /* nanosleep */
-    result = nanosleep( &(source->timeout), &(source->remain) );
-    if( result == 0 && source->idle != NULL ) {
-      ts.tv_sec  = source->timeout.tv_sec;
-      ts.tv_nsec = source->timeout.tv_nsec;
-      _timespec_sub( &ts, &(source->remain) );
-      _source_reset_remain( source );
-      result += (source->idle)( source->info, &ts );
-    }
+    /*printf( "- sleep\n" );*/
+    _runloop_source_timeout_remain( source, &remain, &now );
+    result = nanosleep( &remain, NULL );
+    _timespec_now( &now );
+    /*printf( "- timeout\n" );*/
+    return _runloop_source_timeout( source, &now );
   }
-  return result;
+  return 0;
 }
 
 /**
  * @brief Schedule the read callback of a runloop source.
  * Enable the read callback of a runloop source. The callback will be invoked the
  * next time any of the runloop source's "read" file descriptors have new data to
- * be read. After that the callback will be disabled until this function is called
- * again.
+ * be read. The read callback will stay enabled until it is cleared using
+ * MIDIRunloopSourceClearRead.
  * @public @memberof MIDIRunloopSource
  * @param source The source that should be scheduled.
+ * @param fd     The file descriptor from which to read.
  */
-int MIDIRunloopSourceScheduleRead( struct MIDIRunloopSource * source ) {
+int MIDIRunloopSourceScheduleRead( struct MIDIRunloopSource * source, int fd ) {
+  MIDIPrecond( source != NULL, EFAULT );
+  FD_SET( fd, &(source->readfds) );
+  if( source->nfds <= fd ) source->nfds = fd + 1;
+  if( source->runloop != NULL ) MIDIRunloopUpdateFromSource( source->runloop, source );
+  return 0;
+}
 
-  if( source->schedule != NULL ) {
-    return (*source->schedule)( source, MIDI_RUNLOOP_READ );
-  }
+/**
+ * @brief Stop a scheduled read callback of a runloop source.
+ * Unschedule a previously scheduled read operation.
+ * @public @memberof MIDIRunloopSource
+ * @param source The source that should be scheduled.
+ * @param fd     The file descriptor from which to read.
+ */
+int MIDIRunloopSourceClearRead( struct MIDIRunloopSource * source, int fd ) {
+  MIDIPrecond( source != NULL, EFAULT );
+  FD_CLR( fd, &(source->readfds) );
   return 0;
 }
 
@@ -165,12 +403,26 @@ int MIDIRunloopSourceScheduleRead( struct MIDIRunloopSource * source ) {
  * again.
  * @public @memberof MIDIRunloopSource
  * @param source The source that should be scheduled.
+ * @param fd     The file descriptor to which to write.
  */
-int MIDIRunloopSourceScheduleWrite( struct MIDIRunloopSource * source ) {
+int MIDIRunloopSourceScheduleWrite( struct MIDIRunloopSource * source, int fd ) {
+  MIDIPrecond( source != NULL, EFAULT );
+  FD_SET( fd, &(source->writefds) );
+  if( source->nfds <= fd ) source->nfds = fd + 1;
+  if( source->runloop != NULL ) MIDIRunloopUpdateFromSource( source->runloop, source );
+  return 0;
+}
 
-  if( source->schedule != NULL ) {
-    return (*source->schedule)( source, MIDI_RUNLOOP_WRITE );
-  }
+/**
+ * @brief Stop a scheduled write callback of a runloop source.
+ * Unschedule a previously scheduled write operation.
+ * @public @memberof MIDIRunloopSource
+ * @param source The source that should be scheduled.
+ * @param fd     The file descriptor to which to write.
+ */
+int MIDIRunloopSourceClearWrite( struct MIDIRunloopSource * source, int fd ) {
+  MIDIPrecond( source != NULL, EFAULT );
+  FD_CLR( fd, &(source->readfds) );
   return 0;
 }
 
@@ -180,63 +432,32 @@ int MIDIRunloopSourceScheduleWrite( struct MIDIRunloopSource * source ) {
  * next time any of the runloop source's timeout expired. After that the callback
  * will be disabled until this function is called again.
  * @public @memberof MIDIRunloopSource
+ * @param source  The source that should be scheduled.
+ * @param timeout The timeout to be scheduled.
+ */
+int MIDIRunloopSourceScheduleTimeout( struct MIDIRunloopSource * source, struct timespec * timeout ) {
+  MIDIPrecond( source != NULL, EFAULT );
+  MIDIPrecond( timeout != NULL, EINVAL );
+  _timespec_now( &(source->timeout_start) );
+  _timespec_cpy( &(source->timeout_time), timeout );
+  if( source->timeout_time.tv_sec == 0 && source->timeout_time.tv_nsec == 0 ) {
+    /* We use timeout == 0 to signal that no timeout was scheduled.
+     * Use a minimal timeout instead. */
+    source->timeout_time.tv_nsec = 1;
+  }
+  if( source->runloop != NULL ) MIDIRunloopUpdateFromSource( source->runloop, source );
+  return 0;
+}
+
+/**
+ * @brief Stop a scheduled write callback of a runloop source.
+ * Unschedule a previously scheduled write operation.
+ * @public @memberof MIDIRunloopSource
  * @param source The source that should be scheduled.
  */
-int MIDIRunloopSourceScheduleIdle( struct MIDIRunloopSource * source ) {
-
-  if( source->schedule != NULL ) {
-    return (*source->schedule)( source, MIDI_RUNLOOP_IDLE );
-  }
-  return 0;
-}
-
-/**
- * @brief Mark a runloop source as invalid.
- * Disable all callbacks of a runloop source and remove it from the runloop it is
- * scheduled in.
- * @public @memberof MIDIRunloopSource
- * @param source The source the should be invalidated.
- */
-int MIDIRunloopSourceInvalidate( struct MIDIRunloopSource * source ) {
-  if( source->schedule != NULL ) {
-    return (*source->schedule)( source, MIDI_RUNLOOP_INVALIDATE );
-  }
-  return 0;
-}
-
-/**
- * Reimplement the scheduling alltogether:
- * Replace the "master runloop source" with the
- * respective filedescriptors and a global timer.
- */
-
-struct MIDIRunloop {
-  size_t refs;
-  int active;
-  struct timespec ts;
-  struct MIDIRunloopSource master;
-  struct MIDIRunloopSource * sources[MAX_RUNLOOP_SOURCES];
-};
-
-static void _runloop_get_elapsed_time( struct MIDIRunloop * runloop, struct timespec * ts ) {
-  if( ts != NULL ) {
-    ts->tv_sec  = runloop->ts.tv_sec;
-    ts->tv_nsec = runloop->ts.tv_nsec;
-    _timespec_elapsed( ts );
-  }
-  _timespec_get( &(runloop->ts) );
-}
-
-static int _source_check_idle( struct MIDIRunloopSource * source, struct timespec * ts ) {
-  _timespec_sub( &(source->remain), ts );
-  if( ( source->remain.tv_sec < 0 ) ||
-      ( source->remain.tv_sec == 0 &&
-        source->remain.tv_nsec < 0 ) ) {
-    if( source->idle != NULL ) {
-      _source_reset_remain( source );
-      return (source->idle)( source->info, ts );
-    }
-  }
+int MIDIRunloopSourceClearTimeout( struct MIDIRunloopSource * source ) {
+  MIDIPrecond( source != NULL, EFAULT );
+  _timespec_zero( &(source->timeout_time) );
   return 0;
 }
 
@@ -244,23 +465,25 @@ static int _runloop_master_read( void * rl, int nfds, fd_set * readfds ) {
   int i, result = 0, cb = 0;
   struct MIDIRunloop * runloop = rl;
   struct MIDIRunloopSource * source;
-  struct timespec ts = { 0, 0 };
+  struct timespec now;
 
-  /* update internal idle timer(s) */
-  _runloop_get_elapsed_time( runloop, &ts );
+  /* _timespec_now( &now ); */
+  _timespec_cpy( &now, &(runloop->master.timeout_start) );
   
   for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
     source = runloop->sources[i];
     if( source == NULL ) continue;
-    /* update / decrement remaining time
-     * check if idle callback needs to be fired */
-    result += _source_check_idle( source, &ts );
+
     if( source->read != NULL ) {
       cb++;
-      if( _check_fds2( readfds, &(source->readfds), source->nfds ) ) {
-        /* reset remaining time */
-        _source_reset_remain( source );
-        result += (source->read)( source->info, source->nfds, readfds );
+      if( _fds_check2( readfds, &(source->readfds), source->nfds ) ) {
+        result += _runloop_source_read( source, &now, readfds );
+      } else if( _runloop_source_timeout_check( source, &now ) ) {
+        result += _runloop_source_timeout( source, &now );
+      }
+    } else {
+      if( _runloop_source_timeout_check( source, &now ) ) {
+        result += _runloop_source_timeout( source, &now );
       }
     }
   }
@@ -274,23 +497,25 @@ static int _runloop_master_write( void * rl, int nfds, fd_set * writefds ) {
   int i, result = 0, cb = 0;
   struct MIDIRunloop * runloop = rl;
   struct MIDIRunloopSource * source;  
-  struct timespec ts = { 0, 0 };
+  struct timespec now;
 
-  /* update internal idle timer(s) */
-  _runloop_get_elapsed_time( runloop, &ts );
+  /* _timespec_now( &now ); */
+  _timespec_cpy( &now, &(runloop->master.timeout_start) );
   
   for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
     source = runloop->sources[i];
     if( source == NULL ) continue;
-    /* update / decrement remaining time
-     * check if idle callback needs to be fired */
-    result += _source_check_idle( source, &ts );
+
     if( source->write != NULL ) {
       cb++;
-      if( _check_fds2( writefds, &(source->writefds), source->nfds ) ) {
-        /* reset remaining time */
-        _source_reset_remain( source );
-        result += (source->write)( source->info, source->nfds, writefds );
+      if( _fds_check2( writefds, &(source->writefds), source->nfds ) ) {
+        result += _runloop_source_write( source, &now, writefds );
+      } else if( _runloop_source_timeout_check( source, &now ) ) {
+        result += _runloop_source_timeout( source, &now );
+      }
+    } else {
+      if( _runloop_source_timeout_check( source, &now ) ) {
+        result += _runloop_source_timeout( source, &now );
       }
     }
   }
@@ -300,27 +525,22 @@ static int _runloop_master_write( void * rl, int nfds, fd_set * writefds ) {
   return result;
 }
 
-/* fix idle multiplexing:
- * the if *any* of the runloop sources fires (writefds) frequently,
- * no runloop source will ever be idle.
- * we should decrement the remaining time whenever the event
- * does not fire. whenever a callback is invoked we can reset
- * the remaining time. */
-
-static int _runloop_master_idle( void * rl, struct timespec * ts ) {
+static int _runloop_master_timeout( void * rl, struct timespec * ts ) {
   int i, result = 0;
   struct MIDIRunloop * runloop = rl;
   struct MIDIRunloopSource * source;
+  struct timespec now;
 
-  /* update internal idle timer(s) */
-  _runloop_get_elapsed_time( runloop, ts );
+  /* _timespec_now( &now ); */
+  _timespec_cpy( &now, &(runloop->master.timeout_start) );
   
   for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
     source = runloop->sources[i];
     if( source == NULL ) continue;
-    /* update / decrement remaining time
-     * check if idle callback needs to be fired */
-    result += _source_check_idle( source, ts );
+
+    if( _runloop_source_timeout_check( source, &now ) ) {
+      result += _runloop_source_timeout( source, &now );
+    }
     
     if( source->read != NULL ) {
       runloop->master.read  = &_runloop_master_read;
@@ -333,34 +553,35 @@ static int _runloop_master_idle( void * rl, struct timespec * ts ) {
 }
 
 struct MIDIRunloop * MIDIRunloopCreate() {
-  struct MIDIRunloop * runloop = malloc( sizeof( struct MIDIRunloop ) );
   int i;
-  if( runloop == NULL ) return NULL;
+  struct MIDIRunloop * runloop = malloc( sizeof( struct MIDIRunloop ) );
+  MIDIPrecondReturn( runloop != NULL, ENOMEM, NULL );
 
   runloop->refs   = 1;
   runloop->active = 0;
-  runloop->ts.tv_sec   = 0;
-  runloop->ts.tv_nsec  = 0;
   runloop->master.nfds = 0;
   FD_ZERO( &(runloop->master.readfds) );
   FD_ZERO( &(runloop->master.writefds) );
-  runloop->master.timeout.tv_sec  = 0;
-  runloop->master.timeout.tv_nsec = 10000000; /* 10 ms */
-  runloop->master.remain.tv_sec  = 0;
-  runloop->master.remain.tv_nsec = 10000000; /* 10 ms */
-  runloop->master.read  = NULL;
-  runloop->master.write = NULL;
-  runloop->master.idle  = NULL;
+  _timespec_now( &(runloop->master.timeout_start) );
+  _timespec_zero( &(runloop->master.timeout_time) );
+  runloop->master.read    = NULL;
+  runloop->master.write   = NULL;
+  runloop->master.timeout = NULL;
   runloop->master.info  = runloop;
 
   for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
     runloop->sources[i] = NULL;
   }
-  _runloop_get_elapsed_time( runloop, NULL );
   return runloop;
 }
 
 void MIDIRunloopDestroy( struct MIDIRunloop * runloop ) {
+  int i;
+  for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
+    if( runloop->sources[i] != NULL ) {
+      runloop->sources[i]->runloop = NULL;
+    }
+  }
   free( runloop );
 }
 
@@ -374,27 +595,22 @@ void MIDIRunloopRelease( struct MIDIRunloop * runloop ) {
   }
 }
 
-int MIDIRunloopAddSource( struct MIDIRunloop * runloop, struct MIDIRunloopSource * source ) {
-  int i;
-  for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
-    if( runloop->sources[i] == NULL ) {
-      runloop->sources[i] = source;
-      break;
+int MIDIRunloopUpdateFromSource( struct MIDIRunloop * runloop, struct MIDIRunloopSource * source ) {
+  if( ! _timespec_empty( &(source->timeout_time) ) ) {
+    if( (  _timespec_cmp( &(source->timeout_time), &(runloop->master.timeout_time) ) < 0 )
+        || _timespec_empty( &(runloop->master.timeout_time) ) ) {
+      /* fix this:
+       * The start time should not be changed. Instead the remaining time of the source
+       * timeout should be computed and checked against the remaining time of the master
+       * source.
+       */
+      _timespec_now( &(runloop->master.timeout_start) );
+      _timespec_cpy( &(runloop->master.timeout_time), &(source->timeout_time) );
     }
   }
-  if( i == MAX_RUNLOOP_SOURCES ) {
-    return 1;
-  }
-  if( ( source->timeout.tv_sec != 0 || source->timeout.tv_nsec != 0 ) &&
-      ( source->timeout.tv_sec < runloop->master.timeout.tv_sec ||
-      ( source->timeout.tv_sec == runloop->master.timeout.tv_sec &&
-        source->timeout.tv_nsec < runloop->master.timeout.tv_nsec ) ) ) {
-    runloop->master.timeout.tv_sec  = source->timeout.tv_sec;
-    runloop->master.timeout.tv_nsec = source->timeout.tv_nsec;
-  }
   if( source->nfds > 0 ) {
-    _cpy_fds2( &(runloop->master.readfds), &(source->readfds), source->nfds );
-    _cpy_fds2( &(runloop->master.writefds), &(source->writefds), source->nfds );
+    _fds_add( &(runloop->master.readfds), &(source->readfds), source->nfds );
+    _fds_add( &(runloop->master.writefds), &(source->writefds), source->nfds );
     if( source->nfds > runloop->master.nfds ) {
       runloop->master.nfds = source->nfds;
     }
@@ -405,9 +621,28 @@ int MIDIRunloopAddSource( struct MIDIRunloop * runloop, struct MIDIRunloopSource
   if( source->write != NULL ) {
     runloop->master.write = &_runloop_master_write;
   }
-  runloop->master.idle = &_runloop_master_idle;
+  if( source->timeout != NULL ) {
+    runloop->master.timeout = &_runloop_master_timeout;
+  }
+  return 0;
+}
+
+int MIDIRunloopAddSource( struct MIDIRunloop * runloop, struct MIDIRunloopSource * source ) {
+  int i;
+  for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
+    if( runloop->sources[i] == NULL ) {
+      runloop->sources[i] = source;
+      source->runloop = runloop;
+      MIDIRunloopSourceRetain( source );
+      break;
+    }
+  }
+  if( i == MAX_RUNLOOP_SOURCES ) {
+    return 1;
+  }
+  MIDIRunloopUpdateFromSource( runloop, source );
   MIDILog( DEVELOP, "master timeout %lu sec + %lu nsec\nnfds: %i\n",
-    runloop->master.timeout.tv_sec, runloop->master.timeout.tv_nsec, runloop->master.nfds );
+    runloop->master.timeout_time.tv_sec, runloop->master.timeout_time.tv_nsec, runloop->master.nfds );
   return 0;
 }
 
@@ -416,6 +651,7 @@ int MIDIRunloopRemoveSource( struct MIDIRunloop * runloop, struct MIDIRunloopSou
   for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
     if( runloop->sources[i] == source ) {
       runloop->sources[i] = NULL;
+      MIDIRunloopSourceRelease( source );
       return 0;
     }
   }

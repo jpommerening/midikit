@@ -84,7 +84,6 @@ struct MIDIDriverAppleMIDI {
   unsigned long  token;
   char name[32];
   
-  struct MIDIRunloopSource runloop_source; /** @todo: use base runloop source */
   struct AppleMIDICommand  command;
 
   struct RTPPeer * peer;
@@ -100,7 +99,18 @@ static int _applemidi_write_fds( void * drv, int nfsd, fd_set * fds );
 static int _applemidi_idle_timeout( void * drv, struct timespec * ts );
 
 static int _applemidi_init_runloop_source( struct MIDIDriverAppleMIDI * driver ) {
-  struct MIDIRunloopSource * source = &(driver->runloop_source);
+  driver->base.rls = MIDIRunloopSourceCreate(
+    driver,
+    &_applemidi_read_fds,
+    &_applemidi_write_fds,
+    &_applemidi_idle_timeout
+  );
+
+  MIDIRunloopSourceScheduleRead( driver->base.rls, driver->control_socket );
+  MIDIRunloopSourceScheduleRead( driver->base.rls, driver->rtp_socket );
+
+/*
+  struct MIDIRunloopSource * source = driver->runloop_source;
 
   FD_ZERO( &(source->readfds) );
   FD_ZERO( &(source->writefds) );
@@ -122,6 +132,7 @@ static int _applemidi_init_runloop_source( struct MIDIDriverAppleMIDI * driver )
   source->read  = NULL;
   source->write = NULL;
   source->idle  = NULL;
+*/
   return 0;
 }
 
@@ -135,22 +146,27 @@ static int _applemidi_init_runloop_source( struct MIDIDriverAppleMIDI * driver )
  */
 static int _applemidi_update_runloop_source( struct MIDIDriverAppleMIDI * driver ) {
   size_t in = 0, out = 0;
+  struct timespec ts = { 1, 500000000 };
+
   MIDIMessageQueueGetLength( driver->in_queue,  &in );
   MIDIMessageQueueGetLength( driver->out_queue, &out );
-  if( (in==0) || driver->accept || (driver->sync>0) ) {
-    driver->runloop_source.read = &_applemidi_read_fds;
+  if( in == 0 ) {
+    MIDIRunloopSourceScheduleRead( driver->base.rls, driver->rtp_socket );
   } else {
-    driver->runloop_source.read = NULL;
+    MIDIRunloopSourceClearRead( driver->base.rls, driver->rtp_socket );
   }
-  if( (out==0) ) {
-    driver->runloop_source.write = NULL;
+  if( driver->accept || (driver->sync>0) ) {
+    MIDIRunloopSourceScheduleRead( driver->base.rls, driver->control_socket );
+  }
+  if( out == 0 ) {
+    MIDIRunloopSourceClearWrite( driver->base.rls, driver->control_socket );
   } else {
-    driver->runloop_source.write = &_applemidi_write_fds;
+    MIDIRunloopSourceScheduleWrite( driver->base.rls, driver->control_socket );
   }
   if( (in==0) && (out==0) ) {
-    driver->runloop_source.idle = &_applemidi_idle_timeout;
+    MIDIRunloopSourceScheduleTimeout( driver->base.rls, &ts );
   } else {
-    driver->runloop_source.idle = NULL;
+    MIDIRunloopSourceClearTimeout( driver->base.rls );
   }
   return 0;
 }
@@ -177,6 +193,7 @@ static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
     driver->rtp_socket = socket( PF_INET, SOCK_DGRAM, 0 );
     result = bind( driver->rtp_socket, (struct sockaddr *) &addr, sizeof(addr) );
   }
+
   return result;
 }
 
@@ -206,6 +223,8 @@ static int _applemidi_disconnect( struct MIDIDriverAppleMIDI * driver, int fd ) 
     RTPSessionNextPeer( driver->rtp_session, &peer );
   }
   if( fd == driver->control_socket || fd == 0 ) {
+    MIDIRunloopSourceClearRead( driver->base.rls, driver->control_socket );
+    MIDIRunloopSourceClearWrite( driver->base.rls, driver->control_socket );
     if( driver->control_socket > 0 ) {
       if( close( driver->control_socket ) ) {
         return 1;
@@ -214,7 +233,9 @@ static int _applemidi_disconnect( struct MIDIDriverAppleMIDI * driver, int fd ) 
     }
   }
 
-  if( fd == driver->control_socket || fd == 0 ) {
+  if( fd == driver->rtp_socket || fd == 0 ) {
+    MIDIRunloopSourceClearRead( driver->base.rls, driver->rtp_socket );
+    MIDIRunloopSourceClearWrite( driver->base.rls, driver->rtp_socket );
     if( driver->rtp_socket > 0 ) {
       if( close( driver->rtp_socket ) ) {
         return 1;
@@ -264,14 +285,15 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned sh
   driver->accept         = 0;
   driver->sync           = 0;
   strncpy( &(driver->name[0]), name, sizeof(driver->name) );
+
+  driver->in_queue  = MIDIMessageQueueCreate();
+  driver->out_queue = MIDIMessageQueueCreate();
   
   _applemidi_connect( driver );
 
   driver->peer = NULL;
   driver->rtp_session     = RTPSessionCreate( driver->rtp_socket );  
   driver->rtpmidi_session = RTPMIDISessionCreate( driver->rtp_session );
-  driver->in_queue  = MIDIMessageQueueCreate();
-  driver->out_queue = MIDIMessageQueueCreate();
 
   MIDIClockGetNow( driver->base.clock, &timestamp );
   MIDILog( DEBUG, "initial timestamp: %lli\n", timestamp );
@@ -1103,6 +1125,6 @@ int MIDIDriverAppleMIDIIdle( struct MIDIDriverAppleMIDI * driver ) {
 int MIDIDriverAppleMIDIGetRunloopSource( struct MIDIDriverAppleMIDI * driver, struct MIDIRunloopSource ** source ) {
   if( source == NULL ) return 1;
   _applemidi_update_runloop_source( driver );
-  *source = &(driver->runloop_source);
+  *source = driver->base.rls;
   return 0;
 }
