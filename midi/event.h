@@ -5,7 +5,7 @@
 struct MIDIEvent;
 extern struct MIDITypeSpec * MIDIEventType;
 
-struct MIDIEvent * MIDIEventCreate( int id, void * info, char * message, ... );
+struct MIDIEvent * MIDIEventCreate( size_t id, void * info, char * message, ... );
 void MIDIEventDestroy( struct MIDIEvent * event );
 void MIDIEventRetain( struct MIDIEvent * event );
 void MIDIEventRelease( struct MIDIEvent * event );
