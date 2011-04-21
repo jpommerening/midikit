@@ -4,7 +4,9 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include "test.h"
+#include "midi/type.h"
 #include "midi/port.h"
+#include "midi/event.h"
 #include "midi/driver.h"
 #include "midi/message.h"
 #include "midi/runloop.h"
@@ -86,22 +88,25 @@ static int _check_socket_in( int fd ) {
 }
 
 static int _n_msg = 0;
-static int _receive( void * target, void * source, int type, size_t size, void * data ) {
+static int _receive( void * target, void * source, struct MIDITypeSpec * type, void * data ) {
   struct MIDIMessage * message;
   char * buffer;
   if( target != &_n_msg ) {
     printf( "Incorrect port target.\n" );
   }
-  if( type == 0 ) {
+  if( type == MIDIMessageType ) {
     message = data;
     printf( "Received message!\n" );
     MIDIMessageRelease( message );
     _n_msg++;
+  } else if( type == MIDIEventType ) {
+    printf( "Received event!\n" );
   } else {
     buffer = data;
-    printf( "Received unknown type '%i':\n", type );
-    for( int i=0; i<size; i++ ) {
-      if( (i+1)%8 == 0 || (i+1) == size ) {
+    printf( "Received unknown type '%p':\n", type );
+    if( type == NULL ) return 0;
+    for( int i=0; i<type->size; i++ ) {
+      if( (i+1)%8 == 0 || (i+1) == type->size ) {
         if( buffer[i-(i%8)] < 128 ) {
           printf( "0x%02x | %s\n", buffer[i], buffer+i-(i%8) );
         } else {
@@ -111,6 +116,7 @@ static int _receive( void * target, void * source, int type, size_t size, void *
         printf( "0x%02x ", buffer[i] );
       }
     }
+    return 1;
   }
   return 0;
 }
@@ -127,9 +133,9 @@ int test001_applemidi( void ) {
   driver = MIDIDriverAppleMIDICreate( "My MIDI Session", SERVER_CONTROL_PORT );
   ASSERT_NOT_EQUAL( driver, NULL, "Could not create AppleMIDI driver." );
 
-  ASSERT_NO_ERROR( MIDIDriverGetInputPort( driver, &port ), "Could not get driver port." );
+  ASSERT_NO_ERROR( MIDIDriverGetPort( driver, &port ), "Could not get driver port." );
 
-  _port = MIDIPortCreate( "AppleMIDI test port", MIDI_PORT_RECEIVE, &_n_msg, &_receive );
+  _port = MIDIPortCreate( "AppleMIDI test port", MIDI_PORT_IN, &_n_msg, &_receive );
   ASSERT_NOT_EQUAL( _port, NULL, "Could not create test port." );
 
   ASSERT_NO_ERROR( MIDIPortConnect( port, _port ), "Could not connect ports." );

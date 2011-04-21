@@ -1,18 +1,19 @@
 #include "test.h"
 #include "midi/list.h"
+#include "midi/type.h"
 
-static int _testitem_refs = 1;
+struct Test {
+  int refs;
+};
 
-static void _retain_item( void * item ) {
-  if( item == &_testitem_refs ) {
-    _testitem_refs++;
-  }
+static struct Test _testitem = { 1 };
+
+static void _retain_item( struct Test * item ) {
+  item->refs++;
 }
 
-static void _release_item( void * item ) {
-  if( item == &_testitem_refs ) {
-    _testitem_refs--;
-  }
+static void _release_item( struct Test * item ) {
+  item->refs--;
 }
 
 static int _apply_set( void * item, void * info ) {
@@ -20,23 +21,24 @@ static int _apply_set( void * item, void * info ) {
   return 0;
 }
 
+MIDI_TYPE_SPEC( Test, 0x0000, &_retain_item, &_release_item, NULL, NULL );
 
 /**
  * Test that lists can be created and items can be added and reference counting works.
  */
 int test001_list( void ) {
-  struct MIDIList * list = MIDIListCreate( &_retain_item, &_release_item );
+  struct MIDIList * list = MIDIListCreate( TestType );
 
   ASSERT_NOT_EQUAL( list, NULL, "Could not create list!" );
 
-  ASSERT_NO_ERROR( MIDIListAdd( list, &_testitem_refs ), "Could not add item." );
-  ASSERT_EQUAL( _testitem_refs, 2, "Item was not retained." );
-  ASSERT_NO_ERROR( MIDIListRemove( list, &_testitem_refs ), "Could not add item." );
-  ASSERT_EQUAL( _testitem_refs, 1, "Item was not released." );
-  ASSERT_NO_ERROR( MIDIListAdd( list, &_testitem_refs ), "Could not add item." );
-  ASSERT_EQUAL( _testitem_refs, 2, "Item was not retained." );
+  ASSERT_NO_ERROR( MIDIListAdd( list, &_testitem ), "Could not add item." );
+  ASSERT_EQUAL( _testitem.refs, 2, "Item was not retained." );
+  ASSERT_NO_ERROR( MIDIListRemove( list, &_testitem ), "Could not add item." );
+  ASSERT_EQUAL( _testitem.refs, 1, "Item was not released." );
+  ASSERT_NO_ERROR( MIDIListAdd( list, &_testitem ), "Could not add item." );
+  ASSERT_EQUAL( _testitem.refs, 2, "Item was not retained." );
   MIDIListRelease( list );
-  ASSERT_EQUAL( _testitem_refs, 1, "Item was not released on destruction." );
+  ASSERT_EQUAL( _testitem.refs, 1, "Item was not released on destruction." );
   return 0;
 }
 
@@ -46,7 +48,7 @@ int test001_list( void ) {
 int test002_list( void ) {
   int a, b, c;
   int v = 123;
-  struct MIDIList * list = MIDIListCreate( &_retain_item, &_release_item );
+  struct MIDIList * list = MIDIListCreate( TestType );
 
   ASSERT_NOT_EQUAL( list, NULL, "Could not create list!" );
 

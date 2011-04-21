@@ -18,8 +18,7 @@ struct MIDIListEntry {
  */
 struct MIDIList {
   int refs;
-  void (*retain)( void * item );
-  void (*release)( void * item );
+  struct MIDITypeSpec * type;
   struct MIDIListEntry * data;
 };
 
@@ -35,8 +34,9 @@ struct MIDIList {
  * @param item The item to retain.
  */
 static void _list_item_retain( struct MIDIList * list, void * item ) {
-  if( item != NULL && list->retain != NULL ) {
-    (*list->retain)( item );
+  MIDIAssert( list != NULL );
+  if( item != NULL && list->type != NULL && list->type->retain != NULL ) {
+    (*list->type->retain)( item );
   }
 }
 
@@ -47,8 +47,9 @@ static void _list_item_retain( struct MIDIList * list, void * item ) {
  * @param item The item to release.
  */
 static void _list_item_release( struct MIDIList * list, void * item ) {
-  if( item != NULL && list->release != NULL ) {
-    (*list->release)( item );
+  MIDIAssert( list != NULL );
+  if( item != NULL && list->type != NULL && list->type->release ) {
+    (*list->type->release)( item );
   }
 }
 
@@ -65,18 +66,16 @@ static void _list_item_release( struct MIDIList * list, void * item ) {
  * @brief Create a MIDIList instance.
  * Allocate space and initialize a MIDIList instance.
  * @public @memberof MIDIList
- * @param retain The callback to use for retaining list items.
- * @param retain The callback to use for releasing list items.
+ * @param type The type of the elements to be stored.
  * @return a pointer to the created list structure on success.
  * @return a @c NULL pointer if the list could not created.
  */
-struct MIDIList * MIDIListCreate( void (*retain)( void * ), void (*release)( void * ) ) {
+struct MIDIList * MIDIListCreate( struct MIDITypeSpec * type ) {
   struct MIDIList * list = malloc( sizeof( struct MIDIList ) );
   MIDIPrecondReturn( list != NULL, ENOMEM, NULL );
 
   list->refs = 1;
-  list->retain  = retain;
-  list->release = release;
+  list->type = type;
   list->data = NULL;
 
   return list;

@@ -15,6 +15,7 @@
 #include "midi/driver.h"
 #include "midi/message.h"
 #include "midi/message_queue.h"
+#include "midi/event.h"
 
 #define APPLEMIDI_PROTOCOL_SIGNATURE          0xffff
 
@@ -776,11 +777,14 @@ static int _applemidi_control_addr( socklen_t size, struct sockaddr * rtp_addr, 
  */
 static int _applemidi_respond( struct MIDIDriverAppleMIDI * driver, int fd, struct AppleMIDICommand * command ) {
   struct RTPPeer * peer = NULL;
+  struct MIDIEvent * event = NULL;
 
   switch( command->type ) {
     case APPLEMIDI_COMMAND_INVITATION:
       if( fd == driver->control_socket ) {
-        MIDIDriverTriggerEvent( &(driver->base), MIDI_APPLEMIDI_PEER_DID_SEND_INVITATION, sizeof(command->data.session.name), &(command->data.session.name) );
+        event = MIDIEventCreate( MIDI_APPLEMIDI_PEER_DID_SEND_INVITATION, NULL, &(command->data.session.name) );
+        MIDIDriverTriggerEvent( &(driver->base), event );
+        MIDIEventRelease( event );
       }
       if( driver->accept ) {
         command->type = APPLEMIDI_COMMAND_INVITATION_ACCEPTED;
@@ -802,18 +806,24 @@ static int _applemidi_respond( struct MIDIDriverAppleMIDI * driver, int fd, stru
         } else {
           peer = RTPPeerCreate( command->data.session.ssrc, command->size, (struct sockaddr *) &(command->addr) );
           RTPSessionAddPeer( driver->rtp_session, peer );
-          MIDIDriverTriggerEvent( &(driver->base), MIDI_APPLEMIDI_PEER_DID_ACCEPT_INVITATION, sizeof(command->data.session.name), &(command->data.session.name) );
+          event = MIDIEventCreate( MIDI_APPLEMIDI_PEER_DID_ACCEPT_INVITATION, NULL, &(command->data.session.name) );
+          MIDIDriverTriggerEvent( &(driver->base), event );
+          MIDIEventRelease( event );
           RTPPeerRelease( peer );
           return _applemidi_start_sync( driver, driver->rtp_socket, command->size, (struct sockaddr *) &(command->addr) );
         }
       }
       break;
     case APPLEMIDI_COMMAND_INVITATION_REJECTED:
-      MIDIDriverTriggerEvent( &(driver->base), MIDI_APPLEMIDI_PEER_DID_REJECT_INVITATION, sizeof(command->data.session.name), &(command->data.session.name) );
+      event = MIDIEventCreate( MIDI_APPLEMIDI_PEER_DID_REJECT_INVITATION, NULL, &(command->data.session.name) );
+      MIDIDriverTriggerEvent( &(driver->base), event );
+      MIDIEventRelease( event );
       break;
     case APPLEMIDI_COMMAND_ENDSESSION:
       RTPSessionFindPeerBySSRC( driver->rtp_session, &peer, command->data.session.ssrc );
-      MIDIDriverTriggerEvent( &(driver->base), MIDI_APPLEMIDI_PEER_DID_END_SESSION, sizeof(command->data.session.name), &(command->data.session.name) );
+      event = MIDIEventCreate( MIDI_APPLEMIDI_PEER_DID_END_SESSION, NULL, &(command->data.session.name) );
+      MIDIDriverTriggerEvent( &(driver->base), event );
+      MIDIEventRelease( event );
       if( peer != NULL ) {
         RTPSessionRemovePeer( driver->rtp_session, peer );
       }

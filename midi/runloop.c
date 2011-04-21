@@ -146,25 +146,9 @@ static void _timespec_now( struct timespec * ts ) {
   ts->tv_nsec = tv.tv_usec * 1000;
 }
 
-static void _timespec_get( struct timespec * ts ) {
-  _timespec_now( ts );
-}
-
-static void _timespec_elapsed( struct timespec * ts ) {
-  struct timespec since = { ts->tv_sec, ts->tv_nsec };
-  _timespec_now( ts );
-  _timespec_sub( ts, &since );
-}
-
 static void _timeval_from_timespec( struct timeval * tv, struct timespec * ts ) {
   tv->tv_sec  = ts->tv_sec;
   tv->tv_usec = ts->tv_nsec / 1000;
-}
-
-static int _source_reset_remain( struct MIDIRunloopSource * source ) {
-  //source->remain.tv_sec  = source->timeout.tv_sec;
-  //source->remain.tv_nsec = source->timeout.tv_nsec;
-  return 0;
 }
 
 struct MIDIRunloopSource * MIDIRunloopSourceCreate( void * info,

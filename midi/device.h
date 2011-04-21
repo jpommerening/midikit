@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include "midi.h"
 
-struct MIDIConnector;
 struct MIDIMessage;
+struct MIDIPort;
 struct MIDIController;
 struct MIDITimer;
 
@@ -33,14 +33,17 @@ void MIDIDeviceDestroy( struct MIDIDevice * device );
 void MIDIDeviceRetain( struct MIDIDevice * device );
 void MIDIDeviceRelease( struct MIDIDevice * device );
 
+int MIDIDeviceGetInputPort( struct MIDIDevice * device, struct MIDIPort ** port );
 int MIDIDeviceDetachIn( struct MIDIDevice * device );
-int MIDIDeviceAttachIn( struct MIDIDevice * device, struct MIDIConnector * in );
+int MIDIDeviceAttachIn( struct MIDIDevice * device, struct MIDIPort * port );
 
+int MIDIDeviceGetOutputPort( struct MIDIDevice * device, struct MIDIPort ** port );
 int MIDIDeviceDetachOut( struct MIDIDevice * device );
-int MIDIDeviceAttachOut( struct MIDIDevice * device, struct MIDIConnector * out );
+int MIDIDeviceAttachOut( struct MIDIDevice * device, struct MIDIPort * port );
 
+int MIDIDeviceGetThroughPort( struct MIDIDevice * device, struct MIDIPort ** port );
 int MIDIDeviceDetachThru( struct MIDIDevice * device );
-int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIConnector * thru );
+int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIPort * port );
 
 int MIDIDeviceSetBaseChannel( struct MIDIDevice * device, MIDIChannel channel );
 int MIDIDeviceGetBaseChannel( struct MIDIDevice * device, MIDIChannel * channel );

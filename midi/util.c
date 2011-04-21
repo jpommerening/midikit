@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include "util.h"
 #include "midi.h"
+#include "driver.h"
+#include "device.h"
+#include "port.h"
 
 /**
  * @defgroup MIDI-fnc Utility functions
@@ -62,6 +65,28 @@ int MIDIUtilWriteVarLen( MIDIVarLen * value, size_t size, unsigned char * buffer
     buffer[p] = tmp[q+p];
   }
   if( written != NULL ) *written = p;
+  return 0;
+}
+
+/**
+ * @brief Connect a device to a driver.
+ * Connect both the device's @c IN and @c OUT ports to their respective
+ * counterparts on the driver.
+ * @see MIDIDriver, MIDIDevice
+ * @param driver The driver to connect.
+ * @param device The device to connect.
+ * @retval 0 on success.
+ */
+int MIDIDriverConnectDevice( struct MIDIDriver * driver, struct MIDIDevice * device ) {
+  struct MIDIPort * driver_port;
+  struct MIDIPort * in, * out;
+  MIDIPrecond( driver != NULL, EINVAL );
+  MIDIPrecond( device != NULL, EINVAL );
+  MIDIDriverGetPort( driver, &driver_port );
+  MIDIDeviceGetInputPort( device, &in );
+  MIDIDeviceGetOutputPort( device, &out );
+  MIDIPortConnect( driver_port, in );  /* driver[IN] -> device[IN] */
+  MIDIPortConnect( out, driver_port ); /* device[OUT] -> driver[OUT] */
   return 0;
 }
 

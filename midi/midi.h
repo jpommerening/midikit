@@ -312,15 +312,30 @@ extern int MIDIErrorNumber;
 #endif
 
 #ifndef NO_ASSERT
-#define MIDIAssert( expr ) do { if( !(expr) ) { MIDIError( EASSERT, #expr ); exit( EASSERT ); } } while( 0 )
+#define MIDIAssert( expr ) \
+  do { if( !(expr) ) { \
+    MIDIErrorNumber = EASSERT; \
+    MIDILogLocation( ERROR, "[EASSERT] Assertion failed (%s)\n", #expr ); \
+    exit( EASSERT ); \
+  } } while( 0 )
 #else
 #define MIDIAssert( expr )
 #endif
 
 #ifndef NO_PRECOND
-#define MIDIPrecondReturn( expr, kind, retval ) do { if( !(expr) ) { MIDIError( kind, "Precondition failed (" #expr ")" ); \
-                                                                     return retval; } } while( 0 )
-#define MIDIPrecond( expr, kind ) MIDIPrecondReturn( expr, kind, kind )
+#define MIDIPrecondFailed( message, kind, retval ) \
+  MIDIErrorNumber = kind; \
+  MIDILogLocation( ERROR, "%s\n", message ); \
+  return retval;
+
+#define MIDIPrecondReturn( expr, kind, retval ) \
+  do { if( !(expr) ) { \
+    MIDIPrecondFailed( "[" #kind "] Precondition failed (" #expr ")", kind, retval ); \
+  } } while( 0 )
+#define MIDIPrecond( expr, kind ) \
+  do { if( !(expr) ) { \
+    MIDIPrecondFailed( "[" #kind "] Precondition failed (" #expr ")", kind, kind ); \
+  } } while( 0 )
 #else
 #define MIDIPrecondReturn( expr, kind, retval )
 #define MIDIPrecond( expr, kind )

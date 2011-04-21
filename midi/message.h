@@ -3,9 +3,11 @@
 #include <stdlib.h>
 #include "midi.h"
 #include "clock.h"
+#include "type.h"
 
 struct MIDIMessage;
-struct MIDIMessageList;
+extern struct MIDITypeSpec * MIDIMessageType;
+
 struct MIDIMessageList {
 /*size_t refs;
   size_t length;*/

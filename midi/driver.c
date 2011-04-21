@@ -1,12 +1,14 @@
 #include <stdlib.h>
-#include "runloop.h"
 #define MIDI_DRIVER_INTERNALS
 #include "driver.h"
-#include "clock.h"
-#include "connector.h"
+
 #include "list.h"
-#include "message.h"
 #include "port.h"
+#include "event.h"
+#include "message.h"
+
+#include "runloop.h"
+#include "clock.h"
 
 /**
  * @defgroup MIDI-driver MIDI driver implementations
@@ -146,6 +148,7 @@
  * @{
  */
 
+/*
 static void _detach_source_and_release( void * connector ) {
   MIDIConnectorDetachSource( connector );
   MIDIConnectorRelease( connector );
@@ -158,13 +161,13 @@ static void _detach_target_and_release( void * connector ) {
 
 static int _receiver_connect( void * driverp, struct MIDIConnector * receiver ) {
   struct MIDIDriver * driver = driverp;
-  /*MIDIListAdd( driver->receivers, receiver );*/
+  MIDIListAdd( driver->receivers, receiver );
   return 0;
 }
 
 static int _receiver_disconnect( void * driverp, struct MIDIConnector * receiver ) {
   struct MIDIDriver * driver = driverp;
-  /*MIDIListRemove( driver->receivers, receiver );*/
+  MIDIListRemove( driver->receivers, receiver );
   return 0;
 }
 
@@ -174,19 +177,20 @@ static int _sender_relay( void * driverp, struct MIDIMessage * message ) {
 
 static int _sender_connect( void * driverp, struct MIDIConnector * sender ) {
   struct MIDIDriver * driver = driverp;
-  /*MIDIListAdd( driver->senders, sender );*/
+  MIDIListAdd( driver->senders, sender );
   return 0;
 }
 
 static int _sender_disconnect( void * driverp, struct MIDIConnector * sender ) {
   struct MIDIDriver * driver = driverp;
-  /*MIDIListRemove( driver->senders, sender );*/
+  MIDIListRemove( driver->senders, sender );
   return 0;
 }
 
 static int _driver_receive( void * driverp, struct MIDIMessage * message ) {
   return MIDIDriverReceive( driverp, message );
 }
+*/
 
 /** @} */
 
@@ -197,11 +201,12 @@ static int _driver_receive( void * driverp, struct MIDIMessage * message ) {
  * @{
  */
  
-static int _port_receive( void * target, void * source, int type, size_t size, void * data ) {
+static int _port_receive( void * target, void * source, struct MIDITypeSpec * type, void * object ) {
   struct MIDIDriver * driver = target;
-  /** @todo: check for correct message type */
-  if( type == 0 ) {
-    return MIDIDriverReceive( driver, data );
+
+  if( type == MIDIMessageType ) {
+    /* fake an error. the test somehow runs into an infinite loop. @todo: find out why! */
+    return MIDIDriverReceive( driver, object ) + 1;
   } else {
     return 0;
   }
@@ -289,105 +294,26 @@ void MIDIDriverRelease( struct MIDIDriver * driver ) {
 
 /** @} */
 
-#pragma mark Connector attachment
+#pragma mark Port access
 /**
- * @name Connector attachment
- * Methods to obtain connectors that are attached to the driver.
+ * @name Port access
  * @{
  */
 
 /**
- * @brief Delegate for receiving from a driver.
- * @relatesalso MIDIDriver
- * @see         MIDIConnector
- */
-struct MIDIConnectorSourceDelegate MIDIDriverReceiveConnectorDelegate = {
-  &_receiver_connect,
-  &_receiver_disconnect
-};
-
-/**
- * @brief Delegate for sending through driver.
- * @relatesalso MIDIDriver
- * @see         MIDIConnector
- */
-struct MIDIConnectorTargetDelegate MIDIDriverSendConnectorDelegate = {
-  &_sender_relay,
-  &_sender_connect,
-  &_sender_disconnect
-};
-
-/**
- * @brief Get the input port.
+ * @brief Get the driver port.
+ * Provide a port that can be used to send and receive MIDI messages
+ * using the driver.
+ * The port that is stored in @c port will have a retain count
+ * of one and should only be released by the user if it was retained
+ * before.
  * @public @memberof MIDIDriver
  * @param driver The driver.
  * @param port   The port.
  * @retval 0 on success.
  */
-int MIDIDriverGetInputPort( struct MIDIDriver * driver, struct MIDIPort ** port ) {
+int MIDIDriverGetPort( struct MIDIDriver * driver, struct MIDIPort ** port ) {
   *port = driver->port;
-  return 0;
-}
-
-/**
- * @brief Get the output port.
- * @public @memberof MIDIDriver
- * @param driver The driver.
- * @param port   The port.
- * @retval 0 on success.
- */
-int MIDIDriverGetOutputPort( struct MIDIDriver * driver, struct MIDIPort ** port ) {
-  *port = driver->port;
-  return 0;
-}
-
-/**
- * @brief Provice a connector for sending MIDI data.
- * Provide a connector that can be used to send MIDI messages
- * using the driver.
- * The connector that is stored in @c send will have a retain count
- * of one and should only be released by the user if it was retained
- * before.
- * @public @memberof MIDIDriver
- * @param driver The driver.
- * @param send   The location to store the pointer to the connector in.
- * @retval 0  on success.
- * @retval >0 if the connector could not be provided.
- */
-int MIDIDriverProvideSendConnector( struct MIDIDriver * driver, struct MIDIConnector ** send ) {
-  struct MIDIConnector * connector;
-  if( send == NULL ) return 1;
-  connector = MIDIConnectorCreate();
-  if( connector == NULL ) return 1;
-  MIDIConnectorAttachToDriver( connector, driver );
-  /*MIDIListAdd( driver->senders, connector );*/
-  *send = connector;
-  /* MIDIConnectorRelease( connector ); retained by list */
-  return 0;
-}
-
-/**
- * @brief Provice a connector for receiving MIDI data.
- * Provide a connector that can be used to receive MIDI messages
- * using the driver.
- * The connector that is stored in @c receive will have a retain count
- * of one and should only be released by the user if it was retained
- * before.
- * @public @memberof MIDIDriver
- * @param driver  The driver.
- * @param receive The location to store the pointer to the connector in.
- * @retval 0  on success.
- * @retval >0 if the connector could not be provided.
- */
-int MIDIDriverProvideReceiveConnector( struct MIDIDriver * driver, struct MIDIConnector ** receive ) {
-  struct MIDIConnector * connector;
-  if( receive == NULL ) return 1;
-  connector = MIDIConnectorCreate();
-  if( connector == NULL ) return 1;
-  MIDIConnectorAttachFromDriver( connector, driver );
-  /*MIDIListAdd( driver->receivers, connector );*/
-  *receive = connector;
-  /*MIDIConnectorRelease( connector ); retained by list */
   return 0;
 }
 
@@ -410,9 +336,7 @@ int MIDIDriverProvideReceiveConnector( struct MIDIDriver * driver, struct MIDICo
  * @retval >0 if the operation could not be completed.
  */
 int MIDIDriverMakeLoopback( struct MIDIDriver * driver ) {
-/*if( driver->delegate == NULL ) return 1;
-  driver->delegate->send = &_driver_receive;
-  driver->delegate->implementation = driver;*/
+  /*driver->send = &_port_receive;*/
   return 0;
 }
 
@@ -430,10 +354,7 @@ int MIDIDriverMakeLoopback( struct MIDIDriver * driver ) {
 int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message ) {
   MIDIPrecond( driver != NULL, EFAULT );
   MIDIPrecond( message != NULL, EINVAL );
-/*if( MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_DRIVER_WILL_RECEIVE_MESSAGE, message ) ) return 1;*/
-  size_t size;
-  MIDIMessageGetSize( message, &size );
-  return MIDIPortSend( driver->port, 0, size, message );
+  return MIDIPortSend( driver->port, MIDIMessageType, message );
 }
 
 /**
@@ -449,15 +370,18 @@ int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message 
 int MIDIDriverSend( struct MIDIDriver * driver, struct MIDIMessage * message ) {
   MIDIPrecond( driver != NULL, EFAULT );
   MIDIPrecond( message != NULL, EINVAL );
-/*if( MIDIDriverDelegateTriggerEvent( driver->delegate, MIDI_DRIVER_WILL_SEND_MESSAGE, message ) ) return 1;
-  return MIDIDriverDelegateSendMessage( driver->delegate, message );*/
   if( driver->send == NULL ) return 1;
   return (*driver->send)( driver, message );
 }
 
-int MIDIDriverTriggerEvent( struct MIDIDriver * driver, int type, size_t size, void * data ) {
+/**
+ * @brief Trigger an event that occured in the driver implementation.
+ * @public @memberof MIDIDriver
+ */
+int MIDIDriverTriggerEvent( struct MIDIDriver * driver, struct MIDIEvent * event ) {
   MIDIPrecond( driver != NULL, EFAULT );
-  return MIDIPortSend( driver->port, type, size, data );
+  MIDIPrecond( event != NULL, EINVAL );
+  return MIDIPortSend( driver->port, MIDIEventType, event );
 }
 
 /** @} */

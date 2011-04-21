@@ -1,9 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+
 #include "device.h"
+
+#include "type.h"
+#include "port.h"
 #include "message.h"
-#include "connector.h"
 #include "controller.h"
 #include "timer.h"
 
@@ -86,10 +89,12 @@
  */
 struct MIDIDevice {
   size_t refs;                 /**< @private */
-  struct MIDIConnector * in;   /**< @private */
-  struct MIDIConnector * out;  /**< @private */
-  struct MIDIConnector * thru; /**< @private */
+/*struct MIDIConnector * in;
+  struct MIDIConnector * out;
+  struct MIDIConnector * thru;*/
   struct MIDIDeviceDelegate * delegate; /**< @private */
+  struct MIDIPort * in;
+  struct MIDIPort * out;
   MIDIChannel base_channel; /**< @private */
   MIDIBoolean omni_mode;    /**< @private */
   MIDIBoolean poly_mode;    /**< @private */
@@ -105,6 +110,7 @@ struct MIDIDevice {
  * @{
  */
 
+/*
 static int _connect( struct MIDIConnector ** device_connector, struct MIDIConnector * connector ) {
   MIDIConnectorRetain( connector );
   *device_connector = connector;
@@ -159,6 +165,15 @@ static int _thru_disconnect( void * devicep, struct MIDIConnector * thru ) {
   struct MIDIDevice * device = devicep;
   if( device->thru != thru ) return 1;
   return _disconnect( &(device->thru) );
+}*/
+
+static int _device_receive( void * dev, void * source, struct MIDITypeSpec * type, void * data ) {
+  struct MIDIDevice * device = dev;
+
+  if( type == MIDIMessageType ) {
+    return MIDIDeviceReceive( device, data );
+  }
+  return 0;
 }
 
 /** @} */
@@ -183,9 +198,11 @@ struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate ) {
   MIDIChannel channel;
 
   device->refs = 1;
-  device->in   = NULL;
+  device->in   = MIDIPortCreate( "Device IN",  MIDI_PORT_IN | MIDI_PORT_THRU, device, &_device_receive );
+  device->out  = MIDIPortCreate( "Device OUT", MIDI_PORT_OUT, device, NULL );
+/*device->in   = NULL;
   device->out  = NULL;
-  device->thru = NULL;
+  device->thru = NULL;*/
   device->delegate     = delegate;
   device->base_channel = MIDI_CHANNEL_1;
   device->omni_mode    = MIDI_OFF;
@@ -207,9 +224,15 @@ struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate ) {
 void MIDIDeviceDestroy( struct MIDIDevice * device ) {
   MIDIChannel channel;
 
-  MIDIDeviceDetachIn( device );
+/*MIDIDeviceDetachIn( device );
   MIDIDeviceDetachOut( device );
-  MIDIDeviceDetachThru( device );
+  MIDIDeviceDetachThru( device );*/
+
+  MIDIPortInvalidate( device->in );
+  MIDIPortInvalidate( device->out );
+  MIDIPortRelease( device->in );
+  MIDIPortRelease( device->out );
+
   if( device->timer != NULL ) MIDITimerRelease( device->timer );
   for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
   /*if( device->instrument[(int)channel] != NULL ) MIDIInstrumentRelease( device->instrument[(int)channel] );;*/
@@ -243,148 +266,90 @@ void MIDIDeviceRelease( struct MIDIDevice * device ) {
 
 /** @} */
 
-#pragma mark Connector attachment
+#pragma mark Port access
 /**
- * @name Connector attachment
- * Methods to attach and detach connectors to the device's
- * @c IN, @c OUT and @c THRU port.
+ * @name Port access
+ * Methods to access the devices @c IN, @c OUT and @c THRU ports.
  * @{
  */
 
 /**
- * @brief Delegate for sending to a device's @c IN port.
- * @relatesalso MIDIDevice
- * @see         MIDIConnector
- */
-struct MIDIConnectorTargetDelegate MIDIDeviceInConnectorDelegate = {
-  &_in_relay,
-  &_in_connect,
-  &_in_disconnect
-};
-
-/**
- * @brief Delegate for receiving from a device's @c OUT port.
- * @relatesalso MIDIDevice
- * @see         MIDIConnector
- */
-struct MIDIConnectorSourceDelegate MIDIDeviceOutConnectorDelegate = {
-  &_out_connect,
-  &_out_disconnect
-};
-
-/**
- * @brief Delegate for receiving from a device's @c THRU port.
- * @relatesalso MIDIDevice
- * @see         MIDIConnector
- */
-struct MIDIConnectorSourceDelegate MIDIDeviceThruConnectorDelegate = {
-  &_thru_connect,
-  &_thru_disconnect
-};
-
-/**
- * @brief Detach the connector from the device's @c IN port.
- * If a connector is attached to the device, tell the connector
- * to detach the device (target) from itself.
- * This is identical to calling MIDIConnectorDetachTarget on
- * the attached connector.
- * @see MIDIConnectorDetachTarget
+ * @brief Get the device's @c IN port.
  * @public @memberof MIDIDevice
  * @param device The device.
- * @retval 0  on success.
- * @retval >0 if the connector could not be detached.
+ * @param port   The @c IN port.
+ * @retval 0 on success.
  */
+int MIDIDeviceGetInputPort( struct MIDIDevice * device, struct MIDIPort ** port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  *port = device->in;
+  return 0;
+}
+
+/**
+ * @brief Get the device's @c OUT port.
+ * @public @memberof MIDIDevice
+ * @param device The device.
+ * @param port   The @c OUT port.
+ * @retval 0 on success.
+ */
+int MIDIDeviceGetOutputPort( struct MIDIDevice * device, struct MIDIPort ** port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  *port = device->out;
+  return 0;
+}
+
+/**
+ * @brief Get the device's @c THRU port.
+ * @public @memberof MIDIDevice
+ * @param device The device.
+ * @param port   The @c THRU port.
+ * @retval 0 on success.
+ */
+int MIDIDeviceGetThroughPort( struct MIDIDevice * device, struct MIDIPort ** port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  *port = device->in;
+  return 0;
+}
+
 int MIDIDeviceDetachIn( struct MIDIDevice * device ) {
-  if( device->in == NULL ) return 0;
-  return MIDIConnectorDetachTarget( device->in );
+  MIDIPrecond( device != NULL, EFAULT );
+  return 0;
 }
 
-/**
- * @brief Attach a connector to the device's @c IN port.
- * If a connector is already attached to the device, it will
- * be detached.
- * This is identical to calling MIDIConnectorAttachTarget on
- * the connector to be attached.
- * @see MIDIConnectorDetachTarget
- * @public @memberof MIDIDevice
- * @param device The device.
- * @param in     The connector to attach to device's @c IN port.
- * @retval 0  on success.
- * @retval >0 if the connector could not be detached.
- */
-int MIDIDeviceAttachIn( struct MIDIDevice * device, struct MIDIConnector * in ) {
-  if( device->in != NULL ) MIDIDeviceDetachIn( device );
-  return MIDIConnectorAttachToDeviceIn( in, device );
+int MIDIDeviceAttachIn( struct MIDIDevice * device, struct MIDIPort * port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  MIDIPortConnect( port, device->in );
+  return 0;
 }
 
-/**
- * @brief Detach the connector from the device's @c OUT port.
- * If a connector is attached to the device, tell the connector
- * to detach the device (source) from itself.
- * This is identical to calling MIDIConnectorDetachSource on
- * the attached connector.
- * @see MIDIConnectorDetachSource
- * @public @memberof MIDIDevice
- * @param device The device.
- * @retval 0  on success.
- * @retval >0 if the connector could not be detached.
- */
 int MIDIDeviceDetachOut( struct MIDIDevice * device ) {
-  if( device->out == NULL ) return 0;
-  return MIDIConnectorDetachSource( device->out );
+  MIDIPrecond( device != NULL, EFAULT );
+  return MIDIPortDisconnectAll( device->out );
 }
 
-/**
- * @brief Attach a connector to the device's @c OUT port.
- * If a connector is already attached to the device, it will
- * be detached.
- * This is identical to calling MIDIConnectorAttachFromDeviceOut
- * on the connector to be attached.
- * @see MIDIConnectorAttachFromDeviceOut
- * @public @memberof MIDIDevice
- * @param device The device.
- * @param out    The connector to attach to device's @c OUT port.
- * @retval 0  on success.
- * @retval >0 if the connector could not be detached.
- */
-int MIDIDeviceAttachOut( struct MIDIDevice * device, struct MIDIConnector * out ) {
-  if( device->out != NULL ) MIDIDeviceDetachOut( device );
-  return MIDIConnectorAttachFromDeviceOut( out, device );
+int MIDIDeviceAttachOut( struct MIDIDevice * device, struct MIDIPort * port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  MIDIPortConnect( device->out, port );
+  return 0;
 }
 
-/**
- * @brief Detach the connector from the device's @c THRU port.
- * If a connector is attached to the device, tell the connector
- * to detach the device (source) from itself.
- * This is identical to calling MIDIConnectorDetachSource on
- * the attached connector.
- * @see MIDIConnectorDetachSource
- * @public @memberof MIDIDevice
- * @param device The device.
- * @retval 0  on success.
- * @retval >0 if the connector could not be detached.
- */
+
 int MIDIDeviceDetachThru( struct MIDIDevice * device ) {
-  if( device->thru == NULL ) return 0;
-  return MIDIConnectorDetachSource( device->thru );
+  MIDIPrecond( device != NULL, EFAULT );
+  return MIDIPortDisconnectAll( device->in );
 }
 
-/**
- * @brief Attach a connector to the device's @c THRU port.
- * If a connector is already attached to the device, it will
- * be detached.
- * This is identical to calling MIDIConnectorAttachFromDeviceThru
- * on the connector to be attached.
- * @see MIDIConnectorAttachFromDeviceThru
- * @public @memberof MIDIDevice
- * @param device The device.
- * @param thru   The connector to attach to device's @c THRU port.
- * @retval 0  on success.
- * @retval >0 if the connector could not be detached.
- */
-int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIConnector * thru ) {
-  if( device->thru != NULL ) MIDIDeviceDetachThru( device );
-  return MIDIConnectorAttachFromDeviceThru( thru, device );
+int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIPort * port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  MIDIPortConnect( device->in, port );
+  return 0;
 }
 
 /** @} */
@@ -659,9 +624,6 @@ int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message 
   uint8_t b;
   size_t  s;
   void *  vp;
-  if( device->thru != NULL ) {
-    MIDIConnectorRelay( device->thru, message );
-  }
   MIDIMessageGetStatus( message, &status );
   switch( status ) {
     case MIDI_STATUS_NOTE_OFF:
@@ -753,11 +715,11 @@ int MIDIDeviceReceive( struct MIDIDevice * device, struct MIDIMessage * message 
  * @retval 1 if the message could not be sent.
  */
 int MIDIDeviceSend( struct MIDIDevice * device, struct MIDIMessage * message ) {
-  if( device->out == NULL ) {
+  /*if( device->out == NULL ) {
     return 0;
-  }
+  }*/
   /* maybe .. update the message timestamp using the device timer? */
-  return MIDIConnectorRelay( device->out, message );
+  return MIDIPortSend( device->out, MIDIMessageType, message );
 }
 
 /**

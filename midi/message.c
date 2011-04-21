@@ -14,6 +14,18 @@ struct MIDIMessage {
   MIDITimestamp timestamp;
 };
 
+/*
+static struct MIDITypeSpec _type_spec_MIDIMessage_xxx = {
+  0x4010, "MIDIMessage", sizeof(struct MIDIMessage)
+  (MIDIRefFn*)   &MIDIMessageRetain,
+  (MIDIRefFn*)   &MIDIMessageRelease,
+  (MIDICoderFn*) &MIDIMessageEncode,
+  (MIDICoderFn*) &MIDIMessageDecode
+};
+struct MIDITypeSpec * MIDIMessageType = &_type_spec_MIDIMessage_xxx;
+*/
+MIDI_TYPE_SPEC_CODING( MIDIMessage, 0x4010 );
+
 #pragma mark Creation and destruction
 /**
  * @name Creation and destruction

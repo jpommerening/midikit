@@ -2,7 +2,7 @@
 #define MIDI_DRIVER_INTERNALS
 #include "test.h"
 #include "midi/midi.h"
-#include "midi/connector.h"
+#include "midi/port.h"
 #include "midi/message.h"
 #include "midi/device.h"
 #include "midi/driver.h"
@@ -149,30 +149,23 @@ int test001_integration( void ) {
   struct MIDIDevice * device_1;
   struct MIDIDevice * device_2;
   struct MIDIDriver * driver;
-  struct MIDIConnector * connector;
+  struct MIDIPort * port;
   
   device_1 = MIDIDeviceCreate( &_test_device );
   device_2 = MIDIDeviceCreate( &_test_device );
   driver = MIDIDriverCreate( "test driver", MIDI_SAMPLING_RATE_DEFAULT );
   driver->send = &_send;
-  connector = MIDIConnectorCreate();
   
   ASSERT_NOT_EQUAL( device_1,  NULL, "Could not create device 1." );
   ASSERT_NOT_EQUAL( device_2,  NULL, "Could not create device 2." );
-  ASSERT_NOT_EQUAL( device_2,  NULL, "Could not create driver." );
-  ASSERT_NOT_EQUAL( connector, NULL, "Could not create connector." );
-  ASSERT_NO_ERROR( MIDIDeviceAttachOut( device_1, connector ), "Could not attach connector to device 1 out port." );
-  ASSERT_NO_ERROR( MIDIDeviceAttachIn( device_2, connector ), "Could not attach connector to device 2 in port." );
-  MIDIConnectorRelease( connector ); /* connector is retained by the device 1 & 2. */
-  connector = NULL;
+  ASSERT_NOT_EQUAL( driver,  NULL, "Could not create driver." );
+
+  ASSERT_NO_ERROR( MIDIDeviceGetOutputPort( device_1, &port ), "Could not get out port." );
+  ASSERT_NO_ERROR( MIDIDeviceAttachIn( device_2, port ), "Could not attach port to device 2 in port." );
   
-  ASSERT_NO_ERROR( MIDIDriverProvideSendConnector( driver, &connector ), "Could not provide driver output." );
-  ASSERT_NO_ERROR( MIDIDeviceAttachOut( device_2, connector ), "Could not attach connector to device 2 out port." );
-  connector = NULL;
-  
-  ASSERT_NO_ERROR( MIDIDriverProvideReceiveConnector( driver, &connector ), "Could not provide driver input." );
-  ASSERT_NO_ERROR( MIDIDeviceAttachIn( device_1, connector ), "Could not attach connector to device 1 in port." );
-  connector = NULL;
+  ASSERT_NO_ERROR( MIDIDriverGetPort( driver, &port ), "Could not provide driver output." );
+  ASSERT_NO_ERROR( MIDIDeviceAttachOut( device_2, port ), "Could not attach port to device 2 out port." );
+  ASSERT_NO_ERROR( MIDIDeviceAttachIn( device_1, port ), "Could not attach port to device 1 in port." );
   
   _test_values[0] = MIDI_CHANNEL_1;
   _test_values[1] = 60;

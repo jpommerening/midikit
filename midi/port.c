@@ -20,14 +20,15 @@ struct MIDIPort {
   struct MIDIList * ports;
 };
 
+MIDI_TYPE_SPEC_OBJECT( MIDIPort, 0x3000 );
+
 /**
  * @internal Parameter struct for apply function used for sending.
  */
 struct MIDIPortApplyParams {
-  struct MIDIPort * port; /**< source port */
-  int    type; /**< message type */
-  size_t size; /**< number of bytes pointed to by data */
-  void * data; /**< message data */
+  struct MIDIPort * port;     /**< source port */
+  struct MIDITypeSpec * type; /**< message type */
+  void * object;              /**< message data */
 };
 
 /**
@@ -50,7 +51,7 @@ static int _port_apply_send( void * item, void * info ) {
     MIDIPortRelease( port );
     return 0;
   } else {
-    return MIDIPortReceiveFrom( port, params->port, params->type, params->size, params->data );
+    return MIDIPortReceiveFrom( port, params->port, params->type, params->object );
   }
 }
 
@@ -76,6 +77,20 @@ static int _port_apply_check( void * item, void * info ) {
   return 0;
 }
 
+/**
+ * @brief Applier function to disconnect a port from another.
+ * @private @memberof MIDIPort
+ * @param item A pointer to the @c MIDIPort to disconnect.
+ * @param info A pointer to the @c MIDIPort from which to disconnect
+ *             the port.
+ * @retval 0 on success.
+ */
+static int _port_apply_disconnect( void * item, void * info ) {
+  struct MIDIPort * port   = item;
+  struct MIDIPort * source = info;
+  return MIDIPortDisconnect( source, port );
+}
+
 #pragma mark Creation and destruction
 /**
  * @name Creation and destruction
@@ -94,10 +109,12 @@ static int _port_apply_check( void * item, void * info ) {
  * @return a @c NULL pointer if the port could not created.
  */
 struct MIDIPort * MIDIPortCreate( char * name, int mode, void * target,
-                                  int (*receive)( void *, void *, int, size_t, void * ) ) {
+                                  int (*receive)( void *, void *, struct MIDITypeSpec *, void * ) ) {
   MIDIPrecondReturn( name != NULL, EINVAL, NULL );
-  MIDIPrecondReturn( target != NULL, EINVAL, NULL );
-  MIDIPrecondReturn( receive != NULL, EINVAL, NULL );
+  if( mode & MIDI_PORT_IN ) {
+    MIDIPrecondReturn( target != NULL, EINVAL, NULL );
+    MIDIPrecondReturn( receive != NULL, EINVAL, NULL );
+  }
   struct MIDIPort * port = malloc( sizeof( struct MIDIPort ) );
   size_t namelen;
   MIDIPrecondReturn( port != NULL, ENOMEM, NULL );
@@ -110,7 +127,7 @@ struct MIDIPort * MIDIPortCreate( char * name, int mode, void * target,
   port->name    = malloc( namelen );
   port->target  = target;
   port->receive = receive;
-  port->ports   = MIDIListCreate( (MIDIRefFn*) &MIDIPortRetain, (MIDIRefFn*) &MIDIPortRelease );
+  port->ports   = MIDIListCreate( MIDIPortType );
 
   if( port->name == NULL ) {
     free( port );
@@ -121,6 +138,9 @@ struct MIDIPort * MIDIPortCreate( char * name, int mode, void * target,
     free( port );
     return NULL;
   }
+
+  port->intercept = NULL;
+  port->observer  = NULL;
 
   strncpy( port->name, name, namelen );
 
@@ -179,14 +199,24 @@ void MIDIPortRelease( struct MIDIPort * port ) {
  * Methods to connect ports and pass messages between them.
  * @{
  */
-
-static int _observer_intercept( struct MIDIPort * port, int mode, int type, size_t size, void * data ) {
+#include <stdio.h>
+static int _port_intercept( struct MIDIPort * port, int mode, struct MIDITypeSpec * type, void * object ) {
   MIDIPrecond( port != NULL, EFAULT );
   if( port->observer != NULL && port->intercept != NULL ) {
-    return (*port->intercept)( port->observer, port, mode, type, size, data );
+    return (*port->intercept)( port->observer, port, mode, type, object );
   } else {
     return 0;
   }
+}
+
+static int _port_passthrough( struct MIDIPort * port, struct MIDIPort * source, struct MIDITypeSpec * type, void * object ) {
+  struct MIDIPortApplyParams params;
+  MIDIAssert( port->mode & MIDI_PORT_THRU );
+  _port_intercept( port, MIDI_PORT_THRU, type, object );
+  params.port   = source;
+  params.type   = type;
+  params.object = object;
+  return MIDIListApply( port->ports, &params, &_port_apply_send );
 }
 
 /**
@@ -217,6 +247,17 @@ int MIDIPortDisconnect( struct MIDIPort * port, struct MIDIPort * target ) {
 }
 
 /**
+ * @brief Disconnect all ports from another port.
+ * Disconnect all connected ports from another port.
+ * @public @memberof MIDIPort
+ * @param port   The source port.
+ */
+int MIDIPortDisconnectAll( struct MIDIPort * port ) {
+  MIDIPrecond( port != NULL, EFAULT );
+  return MIDIListApply( port->ports, port, &_port_apply_disconnect );
+}
+
+/**
  * @brief Invalidate the port.
  * This has to be called by the instance that created the port,
  * when it is being destroyed or no longer available. A port that
@@ -229,7 +270,7 @@ int MIDIPortDisconnect( struct MIDIPort * port, struct MIDIPort * target ) {
  */
 int MIDIPortInvalidate( struct MIDIPort * port ) {
   MIDIPrecond( port != NULL, EFAULT );
-  _observer_intercept( port, MIDI_PORT_INVALID, 0, 0, NULL );
+  _port_intercept( port, MIDI_PORT_INVALID, NULL,  NULL );
   port->mode   |= MIDI_PORT_INVALID;
   port->target  = NULL;
   port->receive = NULL;
@@ -256,10 +297,10 @@ int MIDIPortGetObserver( struct MIDIPort * port, void ** target, MIDIPortInterce
  * @param port   The target port.
  * @param source The source port.
  * @param type   The message type that was received.
- * @param data   The message data that was received.
+ * @param object The message data that was received.
  * @retval 0 on success.
  */
-int MIDIPortReceiveFrom( struct MIDIPort * port, struct MIDIPort * source, int type, size_t size, void * data ) {
+int MIDIPortReceiveFrom( struct MIDIPort * port, struct MIDIPort * source, struct MIDITypeSpec * type, void * object ) {
   int result;
   MIDIPrecond( port != NULL, EFAULT );
   MIDIPrecond( port->mode & MIDI_PORT_IN, EPERM );
@@ -271,14 +312,14 @@ int MIDIPortReceiveFrom( struct MIDIPort * port, struct MIDIPort * source, int t
     MIDIAssert( port->target  != NULL );
     MIDIAssert( port->receive != NULL );
 
-    _observer_intercept( port, MIDI_PORT_IN, type, size, data );
+    _port_intercept( port, MIDI_PORT_IN, type, object );
     if( source != NULL ) {
-      result = (*port->receive)( port->target, source->target, type, size, data );
+      result = (*port->receive)( port->target, source->target, type, object );
     } else {
-      result = (*port->receive)( port->target, NULL, type, size, data );
+      result = (*port->receive)( port->target, NULL, type, object );
     }
     if( port->mode & MIDI_PORT_THRU ) {
-      return result + MIDIPortSend( port, type, size, data );
+      return result + _port_passthrough( port, source, type, object );
     } else {
       return result;
     }
@@ -296,8 +337,8 @@ int MIDIPortReceiveFrom( struct MIDIPort * port, struct MIDIPort * source, int t
  * @param data The message data that was received.
  * @retval 0 on success.
  */
-int MIDIPortReceive( struct MIDIPort * port, int type, size_t size, void * data ) {
-  return MIDIPortReceiveFrom( port, NULL, type, size, data );
+int MIDIPortReceive( struct MIDIPort * port, struct MIDITypeSpec * type, void * object ) {
+  return MIDIPortReceiveFrom( port, NULL, type, object );
 }
 
 /**
@@ -312,15 +353,15 @@ int MIDIPortReceive( struct MIDIPort * port, int type, size_t size, void * data 
  * @param data   The message data to send.
  * @retval 0 on success.
  */
-int MIDIPortSendTo( struct MIDIPort * port, struct MIDIPort * target, int type, size_t size, void * data ) {
+int MIDIPortSendTo( struct MIDIPort * port, struct MIDIPort * target, struct MIDITypeSpec * type, void * object ) {
   MIDIPrecond( port != NULL, EFAULT );
   MIDIPrecond( port->mode & MIDI_PORT_OUT, EPERM );
   
   if( port->mode & MIDI_PORT_INVALID ) {
     return 0;
   } else {
-    _observer_intercept( port, MIDI_PORT_OUT, type, size, data );
-    return MIDIPortReceiveFrom( target, port, type, size, data );
+    _port_intercept( port, MIDI_PORT_OUT, type, object );
+    return MIDIPortReceiveFrom( target, port, type, object );
   }
 }
 
@@ -335,7 +376,7 @@ int MIDIPortSendTo( struct MIDIPort * port, struct MIDIPort * target, int type, 
  * @param data The message data to send.
  * @retval 0 on success.
  */
-int MIDIPortSend( struct MIDIPort * port, int type, size_t size, void * data ) {
+int MIDIPortSend( struct MIDIPort * port, struct MIDITypeSpec * type, void * object ) {
   struct MIDIPortApplyParams params;
   MIDIPrecond( port != NULL, EFAULT );
   MIDIPrecond( port->mode & MIDI_PORT_OUT, EPERM );
@@ -343,11 +384,10 @@ int MIDIPortSend( struct MIDIPort * port, int type, size_t size, void * data ) {
   if( port->mode & MIDI_PORT_INVALID ) {
     return 0;
   } else {
-    _observer_intercept( port, MIDI_PORT_OUT, type, size, data );
-    params.port = port;
-    params.type = type;
-    params.size = size;
-    params.data = data;
+    _port_intercept( port, MIDI_PORT_OUT, type, object );
+    params.port   = port;
+    params.type   = type;
+    params.object = object;
     return MIDIListApply( port->ports, &params, &_port_apply_send );
   }
 }

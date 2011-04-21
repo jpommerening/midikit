@@ -9,7 +9,7 @@ LDFLAGS := $(LDFLAGS) -lmidikit -lmidikit-driver
 
 OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/list.o $(OBJDIR)/port.o \
      $(OBJDIR)/clock.o $(OBJDIR)/message_format.o $(OBJDIR)/message.o \
-     $(OBJDIR)/connector.o $(OBJDIR)/controller.o $(OBJDIR)/device.o \
+     $(OBJDIR)/controller.o $(OBJDIR)/device.o \
      $(OBJDIR)/driver.o $(OBJDIR)/message_queue.o \
      $(OBJDIR)/integration.o $(OBJDIR)/runloop.o \
      $(OBJDIR)/driver_rtp.o $(OBJDIR)/driver_applemidi.o
@@ -30,7 +30,7 @@ $(OBJDIR)/%.o:
 	@$(MKDIR_P) $(OBJDIR)
 	$(CC) $(CFLAGS_OBJ) -o $@ $<
 
-$(BINDIR)/$(BIN): $(MAIN_C) $(OBJS)
+$(BINDIR)/$(BIN): $(MAIN_C) $(OBJS) $(LIBDIR)/libmidikit$(LIB_SUFFIX)
 	$(CC) $(LDFLAGS_BIN) $(CFLAGS) -o $@ $^
 
 $(BINDIR)/demo: demo.c
@@ -42,7 +42,6 @@ $(OBJDIR)/list.o: list.c test.h
 $(OBJDIR)/clock.o: clock.c test.h
 $(OBJDIR)/message_format.o: message_format.c test.h
 $(OBJDIR)/message.o: message.c test.h
-$(OBJDIR)/connector.o: connector.c test.h
 $(OBJDIR)/controller.o: controller.c test.h
 $(OBJDIR)/device.o: device.c test.h
 $(OBJDIR)/driver.o: driver.c test.h
@@ -56,5 +55,5 @@ $(OBJDIR)/driver_applemidi.o: driver_applemidi.c test.h
 tests.passed: $(BINDIR)/$(BIN) $(LIBDIR)/libmidikit$(LIB_SUFFIX) $(LIBDIR)/libmidikit-driver$(LIB_SUFFIX)
 	LD_LIBRARY_PATH=$(LIBDIR) $(BINDIR)/$(BIN) && touch $@
 
-$(MAIN_C): midi.c util.c list.c port.c clock.c message_format.c message.c connector.c controller.c device.c driver.c integration.c runloop.c driver_rtp.c driver_applemidi.c
+$(MAIN_C): midi.c util.c list.c port.c clock.c message_format.c message.c controller.c device.c driver.c integration.c runloop.c driver_rtp.c driver_applemidi.c
 	./generate_main.sh -o $(MAIN_C) $^
