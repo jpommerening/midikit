@@ -10,7 +10,8 @@ OBJS_COMMON=$(OBJDIR)/common/rtp.o $(OBJDIR)/common/rtpmidi.o
 OBJS_APPLEMIDI=$(OBJDIR)/applemidi/applemidi.o
 OBJS_OSC=$(OBJDIR)/osc/osc.o
 
-LIB=$(LIBDIR)/libmidikit-driver$(LIB_SUFFIX)
+LIB_NAME=libmidikit-driver
+LIB=$(LIBDIR)/$(LIB_NAME)$(LIB_SUFFIX)
 
 .PHONY: all clean common $(DRIVERS)
 
@@ -30,8 +31,11 @@ $(OBJS_COMMON): common/.make
 $(OBJS_APPLEMIDI): applemidi/.make
 $(OBJS_OSC): osc/.make
 
-$(LIB): $(OBJS_COMMON) $(OBJS_APPLEMIDI) $(OBJS_OSC)
+$(LIBDIR)/$(LIB_NAME)$(LIB_SUFFIX_SHARED): $(OBJS_COMMON) $(OBJS_APPLEMIDI) $(OBJS_OSC)
 	$(CC) $(LDFLAGS_LIB) -o $@ $^
+
+$(LIBDIR)/$(LIB_NAME)$(LIB_SUFFIX_STATIC): $(OBJS_COMMON) $(OBJS_APPLEMIDI) $(OBJS_OSC)
+	$(AR) rs $@ $^
 
 %/.make:
 	cd $$(dirname $@) && $(MAKE)

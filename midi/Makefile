@@ -9,7 +9,8 @@ OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/event.o $(OBJDIR)/list.o \
      $(OBJDIR)/clock.o $(OBJDIR)/driver.o $(OBJDIR)/device.o \
      $(OBJDIR)/controller.o $(OBJDIR)/timer.o \
      $(OBJDIR)/runloop.o $(OBJDIR)/message_queue.o
-LIB=$(LIBDIR)/libmidikit$(LIB_SUFFIX)
+LIB_NAME=libmidikit
+LIB=$(LIBDIR)/$(LIB_NAME)$(LIB_SUFFIX)
 
 .PHONY: all clean
 
@@ -23,8 +24,11 @@ $(OBJDIR)/%.o:
 	@$(MKDIR_P) $(OBJDIR)
 	$(CC) $(CFLAGS_OBJ) -o $@ $<
 
-$(LIB): $(OBJS)
+$(LIBDIR)/$(LIB_NAME)$(LIB_SUFFIX_SHARED): $(OBJS)
 	$(CC) $(LDFLAGS_LIB) -o $@ $^
+
+$(LIBDIR)/$(LIB_NAME)$(LIB_SUFFIX_STATIC): $(OBJS)
+	$(AR) rs $@ $^
 
 $(OBJDIR)/cfintegration.o: cfintegration.c
 $(OBJDIR)/clock.o: clock.c clock.h midi.h

@@ -5,7 +5,9 @@ SUBDIR=test
 include $(PROJECTDIR)/config.mk
 
 CFLAGS := $(CFLAGS)
-LDFLAGS := $(LDFLAGS) -lmidikit -lmidikit-driver
+LDFLAGS_SHARED := $(LDFLAGS) -lmidikit -lmidikit-driver
+LDFLAGS_STATIC := $(LDFLAGS) $(LIBDIR)/libmidikit$(LIB_SUFFIX_STATIC) $(LIBDIR)/libmidikit-driver$(LIB_SUFFIX_STATIC)
+LDFLAGS := $(LDFLAGS_$(COMPILE_MODE))
 
 OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/list.o $(OBJDIR)/port.o \
      $(OBJDIR)/clock.o $(OBJDIR)/message_format.o $(OBJDIR)/message.o \
@@ -29,8 +31,8 @@ $(OBJDIR)/%.o:
 	@$(MKDIR_P) $(OBJDIR)
 	$(CC) $(CFLAGS_OBJ) -o $@ $<
 
-$(BINDIR)/$(BIN): $(MAIN_C) $(OBJS) $(LIBDIR)/libmidikit$(LIB_SUFFIX)
-	$(CC) $(LDFLAGS_BIN) $(CFLAGS) -o $@ $^
+$(BINDIR)/$(BIN): $(MAIN_C) $(OBJS)
+	$(CC) $^ $(LDFLAGS_BIN) $(CFLAGS) -o $@
 
 $(BINDIR)/demo: demo.c
 	$(CC) $(LDFLAGS_BIN) -o $@ $^
