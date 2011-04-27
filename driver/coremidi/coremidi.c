@@ -1,12 +1,18 @@
 #ifdef __APPLE__
+
+#define MIDI_DRIVER_INTERNALS
 #include "coremidi.h"
+#include "midi/driver.h"
+#include "midi/message.h"
 #include "midi/message_queue.h"
 
+#define COREMIDI_CLOCK_RATE 10000
+
 struct MIDIDriverCoreMIDI {
-  size_t refs;
+  struct MIDIDriver base;
   MIDIClientRef client;
-  MIDIPortRef   in_port;
-  MIDIPortRef   out_port;
+  MIDIPortRef   cm_in_port;
+  MIDIPortRef   cm_out_port;
   struct MIDIDriverDelegate * delegate;
 };
 
@@ -15,11 +21,11 @@ static void _coremidi_readproc( const MIDIPacketList *pktlist, void * readProcRe
   struct MIDIMessage * message       = NULL;
   int i;
   size_t size, read = 0;
-  void * buffer;
+  const void * buffer;
   
   for( i=0; i<pktlist->numPackets; i++ ) {
-    size   = pktlist->packet[i].length;
-    buffer = pktlist->packet[i].data;
+    size   =   pktlist->packet[i].length;
+    buffer = &(pktlist->packet[i].data[0]);
     do {
       message = MIDIMessageCreate( MIDI_STATUS_RESET );
       MIDIMessageDecode( message, size, buffer, &read );
@@ -31,8 +37,14 @@ static void _coremidi_readproc( const MIDIPacketList *pktlist, void * readProcRe
   }
 }
 
+int MIDIDriverCoreMIDISendMessage( struct MIDIDriverCoreMIDI * driver, struct MIDIMessage * message );
 static int _driver_send( void * driverp, struct MIDIMessage * message ) {
   return MIDIDriverCoreMIDISendMessage( driverp, message );
+}
+
+void MIDIDriverCoreMIDIDestroy( struct MIDIDriverCoreMIDI * driver );
+static void _driver_destroy( void * driverp ) {
+  MIDIDriverCoreMIDIDestroy( driverp );
 }
 
 /**
@@ -42,18 +54,21 @@ static int _driver_send( void * driverp, struct MIDIMessage * message ) {
  * @return a pointer to the created driver structure on success.
  * @return a @c NULL pointer if the driver could not created.
  */
-struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( struct MIDIDriverDelegate * delegate, MIDIClientRef client ) {
+struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( char * name, MIDIClientRef client ) {
   struct MIDIDriverCoreMIDI * driver;
+  CFStringRef in_name, out_name;
+  
+  driver = malloc( sizeof( struct MIDIDriverCoreMIDI ) );
+  MIDIPrecondReturn( driver != NULL, ENOMEM, NULL );
+  MIDIDriverInit( &(driver->base), name, COREMIDI_CLOCK_RATE );
 
-  driver->client    = client;
-  MIDIInputPortCreate( client, CFSTR("MIDIKit input"), &_coremidi_readproc, driver, &(driver->in_port) );
-  MIDIOutputPortCreate( client, CFSTR("MIDIKit output"), &(driver->out_port) );
-  driver->delegate  = delegate;
+  driver->client = client; 
+  in_name  = CFStringCreateWithFormat( NULL, NULL, CFSTR("MIDIKit %s input"), name );
+  out_name = CFStringCreateWithFormat( NULL, NULL, CFSTR("MIDIKit %s input"), name );
+  
+  MIDIInputPortCreate( client, in_name, &_coremidi_readproc, driver, &(driver->cm_in_port) );
+  MIDIOutputPortCreate( client, out_name, &(driver->cm_out_port) );
 
-  if( delegate != NULL ) {
-    delegate->send = &_driver_send;
-    delegate->implementation = driver;
-  }
   return driver;
 }
 
@@ -64,31 +79,8 @@ struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( struct MIDIDriverDelegate 
  * @param driver The driver.
  */
 void MIDIDriverCoreMIDIDestroy( struct MIDIDriverCoreMIDI * driver ) {
-  MIDIPortDispose( driver->in_port );
-  MIDIPortDispose( driver->out_port );
-}
-
-/**
- * @brief Retain a MIDIDriverCoreMIDI instance.
- * Increment the reference counter of a driver so that it won't be destroyed.
- * @public @memberof MIDIDriverCoreMIDI
- * @param driver The driver.
- */
-void MIDIDriverCoreMIDIRetain( struct MIDIDriverCoreMIDI * driver ) {
-  driver->refs++;
-}
-
-/**
- * @brief Release a MIDIDriverCoreMIDI instance.
- * Decrement the reference counter of a driver. If the reference count
- * reached zero, destroy the driver.
- * @public @memberof MIDIDriverCoreMIDI
- * @param driver The driver.
- */
-void MIDIDriverCoreMIDIRelease( struct MIDIDriverCoreMIDI * driver ) {
-  if( ! --driver->refs ) {
-    MIDIDriverCoreMIDIDestroy( driver );
-  }
+  MIDIPortDispose( driver->cm_in_port );
+  MIDIPortDispose( driver->cm_out_port );
 }
 
 /**

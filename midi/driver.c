@@ -141,59 +141,6 @@
  * on initialization.
  */
 
-#pragma mark Connector list management
-/**
- * @internal
- * Connector list management.
- * @{
- */
-
-/*
-static void _detach_source_and_release( void * connector ) {
-  MIDIConnectorDetachSource( connector );
-  MIDIConnectorRelease( connector );
-}
-
-static void _detach_target_and_release( void * connector ) {
-  MIDIConnectorDetachTarget( connector );
-  MIDIConnectorRelease( connector );
-}
-
-static int _receiver_connect( void * driverp, struct MIDIConnector * receiver ) {
-  struct MIDIDriver * driver = driverp;
-  MIDIListAdd( driver->receivers, receiver );
-  return 0;
-}
-
-static int _receiver_disconnect( void * driverp, struct MIDIConnector * receiver ) {
-  struct MIDIDriver * driver = driverp;
-  MIDIListRemove( driver->receivers, receiver );
-  return 0;
-}
-
-static int _sender_relay( void * driverp, struct MIDIMessage * message ) {
-  return MIDIDriverSend( driverp, message );
-}
-
-static int _sender_connect( void * driverp, struct MIDIConnector * sender ) {
-  struct MIDIDriver * driver = driverp;
-  MIDIListAdd( driver->senders, sender );
-  return 0;
-}
-
-static int _sender_disconnect( void * driverp, struct MIDIConnector * sender ) {
-  struct MIDIDriver * driver = driverp;
-  MIDIListRemove( driver->senders, sender );
-  return 0;
-}
-
-static int _driver_receive( void * driverp, struct MIDIMessage * message ) {
-  return MIDIDriverReceive( driverp, message );
-}
-*/
-
-/** @} */
-
 #pragma mark Creation and destruction
 /**
  * @name Creation and destruction
@@ -205,13 +152,21 @@ static int _port_receive( void * target, void * source, struct MIDITypeSpec * ty
   struct MIDIDriver * driver = target;
 
   if( type == MIDIMessageType ) {
-    /* fake an error. the test somehow runs into an infinite loop. @todo: find out why! */
-    return MIDIDriverReceive( driver, object ) + 1;
+    return MIDIDriverReceive( driver, object );
   } else {
     return 0;
   }
 }
 
+/**
+ * @brief Create a MIDIDriver instance.
+ * Allocate space and initialize a MIDIDriver instance.
+ * @public @memberof MIDIDriver
+ * @param name The name to identify the driver.
+ * @param rate The sampling rate to use.
+ * @return a pointer to the created driver structure on success.
+ * @return a @c NULL pointer if the driver could not created.
+ */
 struct MIDIDriver * MIDIDriverCreate( char * name, MIDISamplingRate rate ) {
   struct MIDIDriver * driver = malloc( sizeof( struct MIDIDriver ) );
   MIDIPrecondReturn( driver != NULL, ENOMEM, NULL );
@@ -220,12 +175,10 @@ struct MIDIDriver * MIDIDriverCreate( char * name, MIDISamplingRate rate ) {
 }
 
 /**
- * @brief Create a MIDIDriver instance.
- * Allocate space and initialize a MIDIDriver instance.
+ * @brief Initialize a MIDIDriver instance.
  * @public @memberof MIDIDriver
- * @param delegate The delegate to use for the driver. May be @c NULL.
- * @return a pointer to the created driver structure on success.
- * @return a @c NULL pointer if the driver could not created.
+ * @param name The name to identify the driver.
+ * @param rate The sampling rate to use.
  */
 void MIDIDriverInit( struct MIDIDriver * driver, char * name, MIDISamplingRate rate ) {
   MIDIPrecondReturn( driver != NULL, EFAULT, (void)0 );
@@ -336,7 +289,7 @@ int MIDIDriverGetPort( struct MIDIDriver * driver, struct MIDIPort ** port ) {
  * @retval >0 if the operation could not be completed.
  */
 int MIDIDriverMakeLoopback( struct MIDIDriver * driver ) {
-  /*driver->send = &_port_receive;*/
+  driver->send = &_port_receive;
   return 0;
 }
 

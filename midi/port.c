@@ -50,8 +50,11 @@ static int _port_apply_send( void * item, void * info ) {
     MIDIListRemove( params->port->ports, port );
     MIDIPortRelease( port );
     return 0;
-  } else {
+  } else if( port != params->port ) {
     return MIDIPortReceiveFrom( port, params->port, params->type, params->object );
+  } else {
+    /* avoid sending messages to self */
+    return 0;
   }
 }
 
@@ -199,7 +202,7 @@ void MIDIPortRelease( struct MIDIPort * port ) {
  * Methods to connect ports and pass messages between them.
  * @{
  */
-#include <stdio.h>
+
 static int _port_intercept( struct MIDIPort * port, int mode, struct MIDITypeSpec * type, void * object ) {
   MIDIPrecond( port != NULL, EFAULT );
   if( port->observer != NULL && port->intercept != NULL ) {

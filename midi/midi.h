@@ -284,10 +284,12 @@ extern int MIDIErrorNumber;
 #define MIDI_LOG_INFO     0x08
 #define MIDI_LOG_ERROR    0x10
 
+#ifndef MIDI_LOG_CHANNELS
 #ifdef DEBUG
 #define MIDI_LOG_CHANNELS 0xff
 #else
 #define MIDI_LOG_CHANNELS MIDI_LOG_ERROR
+#endif
 #endif
 
 #define MIDI_LOG_CH( channels ) ( (MIDI_LOG_ ## channels) & MIDI_LOG_CHANNELS )

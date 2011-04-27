@@ -1,16 +1,21 @@
 #ifndef MIDIKIT_DRIVER_COREMIDI_H
 #define MIDIKIT_DRIVER_COREMIDI_H
 #ifdef __APPLE__
-#include "midi/driver.h"
-#include "midi/message.h"
 #include <CoreMIDI/MIDIServices.h>
 
+
+#ifndef MIDI_DRIVER_INTERNALS
+/**
+ * When used as an opaque pointer type, an instance of
+ * @c MIDIDriverCoreMIDI can be used as a @c MIDIDriver.
+ */
+#define MIDIDriverCoreMIDI MIDIDriver
+#endif
+
+struct MIDIMessage;
 struct MIDIDriverCoreMIDI;
 
-struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( struct MIDIDriverDelegate * delegate, MIDIClientRef client );
-void MIDIDriverCoreMIDIDestroy( struct MIDIDriverCoreMIDI * driver );
-void MIDIDriverCoreMIDIRetain( struct MIDIDriverCoreMIDI * driver );
-void MIDIDriverCoreMIDIRelease( struct MIDIDriverCoreMIDI * driver );
+struct MIDIDriverCoreMIDI * MIDIDriverCoreMIDICreate( char * name, MIDIClientRef client );
 
 int MIDIDriverCoreMIDIReceiveMessage( struct MIDIDriverCoreMIDI * driver, struct MIDIMessage * message );
 int MIDIDriverCoreMIDISendMessage( struct MIDIDriverCoreMIDI * driver, struct MIDIMessage * message );

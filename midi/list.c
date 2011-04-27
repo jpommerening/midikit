@@ -190,6 +190,56 @@ int MIDIListRemove( struct MIDIList * list, void * item ) {
   return 0;
 }
 
+/**
+ * @brief Check if an item is contained inside the list.
+ * Step through all items and check if any item has the given address.
+ * @public @memberof MIDIList
+ * @param list The list.
+ * @param item The item to search for.
+ * @retval 0 if the item is present in the list.
+ * @retval -1 if the item is not present in the list.
+ * @retvak >0 if an error occurred.
+ */
+int MIDIListContains( struct MIDIList * list, void * item ) {
+  struct MIDIListEntry * entry;
+  MIDIPrecond( list != NULL, EFAULT );
+  MIDIPrecond( item != NULL, EINVAL );
+  
+  entry = list->data;
+  while( entry != NULL ) {
+    if( entry->item == item ) {
+      return 0;
+    }
+  }
+  return -1;
+}
+
+/**
+ * @brief Find a given item using a comparator function.
+ * Step through all items and check if the given comparator returns 0.
+ * @public @memberof MIDIList
+ * @param list The list.
+ * @param item The result-item.
+ * @param info The pointer to pass as the first parameter.
+ * @param func The comparator function.
+ * @retval 0 if the item is present in the list.
+ * @retval -1 if the item is not present in the list.
+ * @retvak >0 if an error occurred.
+ */
+int MIDIListFind( struct MIDIList * list, void ** item, void * info, int (*func)( void *, void *) ) {
+  struct MIDIListEntry * entry;
+  MIDIPrecond( list != NULL, EFAULT );
+  MIDIPrecond( item != NULL, EINVAL );
+  
+  entry = list->data;
+  while( entry != NULL ) {
+    if( (*func)( entry->item, info ) == 0 ) {
+      *item = entry->item;
+      return 0;
+    }
+  }
+  return -1;
+}
 
 /**
  * @brief Apply a function to all items in the list.
@@ -198,8 +248,8 @@ int MIDIListRemove( struct MIDIList * list, void * item ) {
  * calling the function and the item as the second parameter.
  * @public @memberof MIDIList
  * @param list The list.
- * @param func The function to apply.
  * @param info The pointer to pass as the first parameter.
+ * @param func The function to apply.
  * @retval 0 on success.
  * @retval >0 otherwise.
  */

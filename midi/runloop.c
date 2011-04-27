@@ -5,26 +5,28 @@
 #include "runloop.h"
 #include "midi.h"
 
-#define MAX_RUNLOOP_SOURCES 16 
+#define CURRENT_RUNLOOP( rl ) do { _current_runloop = (rl); } while(0)
+
+#define MAX_RUNLOOP_SOURCES 16
+
+static struct MIDIRunloop * _current_runloop = NULL;
 
 struct MIDIRunloopSource {
-  int refs;
-  int nfds;
+  int    refs;
+  int    nfds;
   fd_set readfds;
   fd_set writefds;
   struct timespec timeout_start;
   struct timespec timeout_time;
+  struct MIDIRunloopSourceDelegate delegate;
   struct MIDIRunloop * runloop;
-  int (*read)( void * info, int nfds, fd_set * readfds );
-  int (*write)( void * info, int nfds, fd_set * writefds );
-  int (*timeout)( void * info, struct timespec * elapsed );
-  void * info;
 };
 
 struct MIDIRunloop {
-  size_t refs;
-  int active;
-  struct MIDIRunloopSource master;
+  int    refs;
+  int    active;
+  struct MIDIRunloopDelegate delegate;
+  struct MIDIRunloopSource   master;
   struct MIDIRunloopSource * sources[MAX_RUNLOOP_SOURCES];
 };
 
@@ -151,10 +153,7 @@ static void _timeval_from_timespec( struct timeval * tv, struct timespec * ts ) 
   tv->tv_usec = ts->tv_nsec / 1000;
 }
 
-struct MIDIRunloopSource * MIDIRunloopSourceCreate( void * info,
-    int (*read)( void *, int, fd_set * ),
-    int (*write)( void *, int, fd_set * ),
-    int (*timeout)( void *, struct timespec * ) ) {
+struct MIDIRunloopSource * MIDIRunloopSourceCreate( struct MIDIRunloopSourceDelegate * delegate ) {
   struct MIDIRunloopSource * source = malloc( sizeof( struct MIDIRunloopSource ) );
 
   source->refs = 1;
@@ -166,12 +165,18 @@ struct MIDIRunloopSource * MIDIRunloopSourceCreate( void * info,
   _timespec_zero( &(source->timeout_start) );
   _timespec_zero( &(source->timeout_time) );
 
+  if( delegate != NULL ) {
+    source->delegate.info    = delegate->info;
+    source->delegate.read    = delegate->read;
+    source->delegate.write   = delegate->write;
+    source->delegate.timeout = delegate->timeout;
+  } else {
+    source->delegate.info    = NULL;
+    source->delegate.read    = NULL;
+    source->delegate.write   = NULL;
+    source->delegate.timeout = NULL;
+  }
   source->runloop = NULL;
-
-  source->read    = read;
-  source->write   = write;
-  source->timeout = timeout;
-  source->info    = info;
 
   return source;
 }
@@ -201,15 +206,17 @@ void MIDIRunloopSourceRelease( struct MIDIRunloopSource * source ) {
  */
 int MIDIRunloopSourceInvalidate( struct MIDIRunloopSource * source ) {
   MIDIPrecond( source != NULL, EFAULT );
-  source->info    = NULL;
-  source->read    = NULL;
-  source->write   = NULL;
-  source->timeout = NULL;
 
+  source->delegate.info    = NULL;
+  source->delegate.read    = NULL;
+  source->delegate.write   = NULL;
+  source->delegate.timeout = NULL;
+  
   if( source->runloop != NULL ) {
-    // remove from runloop
+    return MIDIRunloopRemoveSource( source->runloop, source );
+  } else {
+    return 0;
   }
-  return 0;
 }
 
 /**
@@ -261,9 +268,10 @@ static int _runloop_source_timeout_check( struct MIDIRunloopSource * source, str
  * @param now    Must be set to the current time.
  */
 static int _runloop_source_timeout( struct MIDIRunloopSource * source, struct timespec * now ) {
-  if( source->timeout == NULL || source->info == NULL ) return 0;
+  if( source->delegate.info == NULL || source->delegate.timeout == NULL ) return 0;
+  MIDIPrecond( source->delegate.info != NULL, EINVAL );
   _runloop_source_timeout_start( source, now );
-  return (source->timeout)( source->info, now );
+  return (source->delegate.timeout)( source->delegate.info, now );
 }
 
 /**
@@ -274,12 +282,13 @@ static int _runloop_source_timeout( struct MIDIRunloopSource * source, struct ti
  * @param fds    The fd_set from which to read.
  */
 static int _runloop_source_read( struct MIDIRunloopSource * source, struct timespec * now, fd_set * fds ) {
-  if( source->read == NULL || source->info == NULL ) return 0;
+  if( source->delegate.info == NULL || source->delegate.read == NULL ) return 0;
   if( _fds_check( fds, source->nfds ) ) {
     _runloop_source_timeout_start( source, now );
-    return (source->read)( source->info, source->nfds, fds );
+    return (source->delegate.read)( source->delegate.info, source->nfds, fds );
+  } else {
+    return 0;
   }
-  return 0;
 }
 
 /**
@@ -290,11 +299,11 @@ static int _runloop_source_read( struct MIDIRunloopSource * source, struct times
  * @param fds    The fd_set to which to write.
  */
 static int _runloop_source_write( struct MIDIRunloopSource * source, struct timespec * now, fd_set * fds ) {
-  if( source->write == NULL || source->info == NULL ) return 0;
+  if( source->delegate.info == NULL || source->delegate.write == NULL ) return 0;
   if( _fds_check( fds, source->nfds ) ) {
     _fds_sub( &(source->writefds), fds, source->nfds );
     _runloop_source_timeout_start( source, now );
-    return (source->write)( source->info, source->nfds, fds );
+    return (source->delegate.write)( source->delegate.info, source->nfds, fds );
   }
   return 0;
 }
@@ -348,6 +357,12 @@ int MIDIRunloopSourceWait( struct MIDIRunloopSource * source ) {
   return 0;
 }
 
+static int _runloop_schedule_read( struct MIDIRunloop * runloop, int fd );
+static int _runloop_schedule_write( struct MIDIRunloop * runloop, int fd );
+static int _runloop_schedule_timeout( struct MIDIRunloop * runloop, struct timespec * ts );
+static int _runloop_clear_read( struct MIDIRunloop * runloop, int fd );
+static int _runloop_clear_write( struct MIDIRunloop * runloop, int fd );
+
 /**
  * @brief Schedule the read callback of a runloop source.
  * Enable the read callback of a runloop source. The callback will be invoked the
@@ -362,8 +377,11 @@ int MIDIRunloopSourceScheduleRead( struct MIDIRunloopSource * source, int fd ) {
   MIDIPrecond( source != NULL, EFAULT );
   FD_SET( fd, &(source->readfds) );
   if( source->nfds <= fd ) source->nfds = fd + 1;
-  if( source->runloop != NULL ) MIDIRunloopUpdateFromSource( source->runloop, source );
-  return 0;
+  if( source->runloop != NULL ) {
+    return _runloop_schedule_read( source->runloop, fd );
+  } else {
+    return 0;
+  }
 }
 
 /**
@@ -376,7 +394,11 @@ int MIDIRunloopSourceScheduleRead( struct MIDIRunloopSource * source, int fd ) {
 int MIDIRunloopSourceClearRead( struct MIDIRunloopSource * source, int fd ) {
   MIDIPrecond( source != NULL, EFAULT );
   FD_CLR( fd, &(source->readfds) );
-  return 0;
+  if( source->runloop != NULL ) {
+    return _runloop_clear_read( source->runloop, fd );
+  } else {
+    return 0;
+  }
 }
 
 /**
@@ -393,21 +415,29 @@ int MIDIRunloopSourceScheduleWrite( struct MIDIRunloopSource * source, int fd ) 
   MIDIPrecond( source != NULL, EFAULT );
   FD_SET( fd, &(source->writefds) );
   if( source->nfds <= fd ) source->nfds = fd + 1;
-  if( source->runloop != NULL ) MIDIRunloopUpdateFromSource( source->runloop, source );
-  return 0;
+  if( source->runloop != NULL ) {
+    return _runloop_schedule_write( source->runloop, fd );
+  } else {
+    return 0;
+  }
 }
 
 /**
  * @brief Stop a scheduled write callback of a runloop source.
  * Unschedule a previously scheduled write operation.
  * @public @memberof MIDIRunloopSource
- * @param source The source that should be scheduled.
+ * @param source  The source that should be scheduled.
+ * @param timeout The timeout to be scheduled.
  * @param fd     The file descriptor to which to write.
  */
 int MIDIRunloopSourceClearWrite( struct MIDIRunloopSource * source, int fd ) {
   MIDIPrecond( source != NULL, EFAULT );
-  FD_CLR( fd, &(source->readfds) );
-  return 0;
+  FD_CLR( fd, &(source->writefds) );
+  if( source->runloop != NULL ) {
+    return _runloop_clear_write( source->runloop, fd );
+  } else {
+    return 0;
+  }
 }
 
 /**
@@ -429,8 +459,11 @@ int MIDIRunloopSourceScheduleTimeout( struct MIDIRunloopSource * source, struct 
      * Use a minimal timeout instead. */
     source->timeout_time.tv_nsec = 1;
   }
-  if( source->runloop != NULL ) MIDIRunloopUpdateFromSource( source->runloop, source );
-  return 0;
+  if( source->runloop != NULL ) {
+    return _runloop_schedule_timeout( source->runloop, timeout );
+  } else {
+    return 0;
+  }
 }
 
 /**
@@ -450,6 +483,8 @@ static int _runloop_master_read( void * rl, int nfds, fd_set * readfds ) {
   struct MIDIRunloop * runloop = rl;
   struct MIDIRunloopSource * source;
   struct timespec now;
+  
+  CURRENT_RUNLOOP( runloop );
 
   /* _timespec_now( &now ); */
   _timespec_cpy( &now, &(runloop->master.timeout_start) );
@@ -458,7 +493,7 @@ static int _runloop_master_read( void * rl, int nfds, fd_set * readfds ) {
     source = runloop->sources[i];
     if( source == NULL ) continue;
 
-    if( source->read != NULL ) {
+    if( source->delegate.read != NULL ) {
       cb++;
       if( _fds_check2( readfds, &(source->readfds), source->nfds ) ) {
         result += _runloop_source_read( source, &now, readfds );
@@ -472,7 +507,7 @@ static int _runloop_master_read( void * rl, int nfds, fd_set * readfds ) {
     }
   }
   if( cb == 0 ) {
-    runloop->master.read = NULL;
+    runloop->master.delegate.read = NULL;
   }
   return result;
 }
@@ -482,6 +517,8 @@ static int _runloop_master_write( void * rl, int nfds, fd_set * writefds ) {
   struct MIDIRunloop * runloop = rl;
   struct MIDIRunloopSource * source;  
   struct timespec now;
+  
+  CURRENT_RUNLOOP( runloop );
 
   /* _timespec_now( &now ); */
   _timespec_cpy( &now, &(runloop->master.timeout_start) );
@@ -490,7 +527,7 @@ static int _runloop_master_write( void * rl, int nfds, fd_set * writefds ) {
     source = runloop->sources[i];
     if( source == NULL ) continue;
 
-    if( source->write != NULL ) {
+    if( source->delegate.write != NULL ) {
       cb++;
       if( _fds_check2( writefds, &(source->writefds), source->nfds ) ) {
         result += _runloop_source_write( source, &now, writefds );
@@ -504,7 +541,7 @@ static int _runloop_master_write( void * rl, int nfds, fd_set * writefds ) {
     }
   }
   if( cb == 0 ) {
-    runloop->master.write = NULL;
+    runloop->master.delegate.write = NULL;
   }
   return result;
 }
@@ -514,10 +551,12 @@ static int _runloop_master_timeout( void * rl, struct timespec * ts ) {
   struct MIDIRunloop * runloop = rl;
   struct MIDIRunloopSource * source;
   struct timespec now;
+  
+  CURRENT_RUNLOOP( runloop );
 
   /* _timespec_now( &now ); */
   _timespec_cpy( &now, &(runloop->master.timeout_start) );
-  
+
   for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
     source = runloop->sources[i];
     if( source == NULL ) continue;
@@ -526,17 +565,17 @@ static int _runloop_master_timeout( void * rl, struct timespec * ts ) {
       result += _runloop_source_timeout( source, &now );
     }
     
-    if( source->read != NULL ) {
-      runloop->master.read  = &_runloop_master_read;
+    if( source->delegate.read != NULL ) {
+      runloop->master.delegate.read  = &_runloop_master_read;
     }
-    if( source->write != NULL ) {
-      runloop->master.write = &_runloop_master_write;
+    if( source->delegate.write != NULL ) {
+      runloop->master.delegate.write = &_runloop_master_write;
     }
   }
   return result;
 }
 
-struct MIDIRunloop * MIDIRunloopCreate() {
+struct MIDIRunloop * MIDIRunloopCreate( struct MIDIRunloopDelegate * delegate ) {
   int i;
   struct MIDIRunloop * runloop = malloc( sizeof( struct MIDIRunloop ) );
   MIDIPrecondReturn( runloop != NULL, ENOMEM, NULL );
@@ -548,14 +587,33 @@ struct MIDIRunloop * MIDIRunloopCreate() {
   FD_ZERO( &(runloop->master.writefds) );
   _timespec_now( &(runloop->master.timeout_start) );
   _timespec_zero( &(runloop->master.timeout_time) );
-  runloop->master.read    = NULL;
-  runloop->master.write   = NULL;
-  runloop->master.timeout = NULL;
-  runloop->master.info  = runloop;
+  runloop->master.delegate.read    = NULL;
+  runloop->master.delegate.write   = NULL;
+  runloop->master.delegate.timeout = NULL;
+  runloop->master.delegate.info    = runloop;
 
   for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
     runloop->sources[i] = NULL;
   }
+  
+  if( delegate != NULL ) {
+    runloop->delegate.info             = delegate->info;
+    runloop->delegate.schedule_read    = delegate->schedule_read;
+    runloop->delegate.schedule_write   = delegate->schedule_write;
+    runloop->delegate.schedule_timeout = delegate->schedule_timeout;
+    runloop->delegate.clear_read       = delegate->clear_read;
+    runloop->delegate.clear_write      = delegate->clear_write;
+    runloop->delegate.clear_timeout    = delegate->clear_timeout;
+  } else {
+    runloop->delegate.info             = NULL;
+    runloop->delegate.schedule_read    = NULL;
+    runloop->delegate.schedule_write   = NULL;
+    runloop->delegate.schedule_timeout = NULL;
+    runloop->delegate.clear_read       = NULL;
+    runloop->delegate.clear_write      = NULL;
+    runloop->delegate.clear_timeout    = NULL;
+  }
+
   return runloop;
 }
 
@@ -579,7 +637,112 @@ void MIDIRunloopRelease( struct MIDIRunloop * runloop ) {
   }
 }
 
-int MIDIRunloopUpdateFromSource( struct MIDIRunloop * runloop, struct MIDIRunloopSource * source ) {
+static int _runloop_schedule_read( struct MIDIRunloop * runloop, int fd ) {
+  MIDIAssert( runloop != NULL );
+  
+  if( fd >= runloop->master.nfds ) {
+    runloop->master.nfds = fd + 1;
+  }
+  FD_SET( fd, &(runloop->master.readfds) );
+  runloop->master.delegate.read = &_runloop_master_read;
+
+  if( runloop->delegate.info != NULL && runloop->delegate.schedule_read != NULL ) {
+    return (runloop->delegate.schedule_read)( runloop->delegate.info, fd );
+  } else {
+    return 0;
+  }
+}
+
+static int _runloop_clear_read( struct MIDIRunloop * runloop, int fd ) {
+  int i;
+  MIDIAssert( runloop != NULL );
+
+  for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
+    if( runloop->sources[i] != NULL ) {
+      if( FD_ISSET( fd, &(runloop->sources[i]->readfds) ) ) {
+        return 0;
+      }
+    }
+  }
+  
+  if( fd == runloop->master.nfds - 1 ) {
+    runloop->master.nfds = fd;
+  }
+  FD_CLR( fd, &(runloop->master.readfds) );
+
+  if( runloop->delegate.info != NULL && runloop->delegate.clear_read != NULL ) {
+    return (runloop->delegate.clear_read)( runloop->delegate.info, fd );
+  } else {
+    return 0;
+  }
+}
+
+static int _runloop_schedule_write( struct MIDIRunloop * runloop, int fd ) {
+  MIDIAssert( runloop != NULL );
+  
+  if( fd >= runloop->master.nfds ) {
+    runloop->master.nfds = fd + 1;
+  }
+  FD_SET( fd, &(runloop->master.writefds) );
+  runloop->master.delegate.write = &_runloop_master_write;
+
+  if( runloop->delegate.info != NULL && runloop->delegate.schedule_write != NULL ) {
+    return (runloop->delegate.schedule_write)( runloop->delegate.info, fd );
+  } else {
+    return 0;
+  }
+}
+
+static int _runloop_clear_write( struct MIDIRunloop * runloop, int fd ) {
+  int i;
+  MIDIAssert( runloop != NULL );
+
+  for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
+    if( runloop->sources[i] != NULL ) {
+      if( FD_ISSET( fd, &(runloop->sources[i]->writefds) ) ) {
+        return 0;
+      }
+    }
+  }
+  
+  if( fd == runloop->master.nfds - 1 ) {
+    runloop->master.nfds = fd;
+  }
+  FD_CLR( fd, &(runloop->master.writefds) );
+
+  if( runloop->delegate.info != NULL && runloop->delegate.clear_write != NULL ) {
+    return (runloop->delegate.clear_write)( runloop->delegate.info, fd );
+  } else {
+    return 0;
+  }
+}
+
+
+static int _runloop_schedule_timeout( struct MIDIRunloop * runloop, struct timespec * timeout ) {
+  MIDIAssert( runloop != NULL );
+
+  if( ! _timespec_empty( timeout ) ) {
+    if( (  _timespec_cmp( timeout, &(runloop->master.timeout_time) ) < 0 )
+        || _timespec_empty( &(runloop->master.timeout_time) ) ) {
+      /* fix this:
+       * The start time should not be changed. Instead the remaining time of the source
+       * timeout should be computed and checked against the remaining time of the master
+       * source.
+       */
+      _timespec_now( &(runloop->master.timeout_start) );
+      _timespec_cpy( &(runloop->master.timeout_time), timeout );
+    }
+    runloop->master.delegate.timeout = &_runloop_master_timeout;
+  }
+
+  if( runloop->delegate.info != NULL && runloop->delegate.schedule_timeout != NULL ) {
+    return (runloop->delegate.schedule_timeout)( runloop->delegate.info, timeout );
+  } else {
+    return 0;
+  }
+}
+
+static int _runloop_update_from_source( struct MIDIRunloop * runloop, struct MIDIRunloopSource * source ) {
   if( ! _timespec_empty( &(source->timeout_time) ) ) {
     if( (  _timespec_cmp( &(source->timeout_time), &(runloop->master.timeout_time) ) < 0 )
         || _timespec_empty( &(runloop->master.timeout_time) ) ) {
@@ -599,14 +762,14 @@ int MIDIRunloopUpdateFromSource( struct MIDIRunloop * runloop, struct MIDIRunloo
       runloop->master.nfds = source->nfds;
     }
   }
-  if( source->read != NULL ) {
-    runloop->master.read = &_runloop_master_read;
+  if( source->delegate.read != NULL ) {
+    runloop->master.delegate.read = &_runloop_master_read;
   }
-  if( source->write != NULL ) {
-    runloop->master.write = &_runloop_master_write;
+  if( source->delegate.write != NULL ) {
+    runloop->master.delegate.write = &_runloop_master_write;
   }
-  if( source->timeout != NULL ) {
-    runloop->master.timeout = &_runloop_master_timeout;
+  if( source->delegate.timeout != NULL ) {
+    runloop->master.delegate.timeout = &_runloop_master_timeout;
   }
   return 0;
 }
@@ -624,7 +787,7 @@ int MIDIRunloopAddSource( struct MIDIRunloop * runloop, struct MIDIRunloopSource
   if( i == MAX_RUNLOOP_SOURCES ) {
     return 1;
   }
-  MIDIRunloopUpdateFromSource( runloop, source );
+  _runloop_update_from_source( runloop, source );
   MIDILog( DEVELOP, "master timeout %lu sec + %lu nsec\nnfds: %i\n",
     runloop->master.timeout_time.tv_sec, runloop->master.timeout_time.tv_nsec, runloop->master.nfds );
   return 0;
@@ -642,6 +805,10 @@ int MIDIRunloopRemoveSource( struct MIDIRunloop * runloop, struct MIDIRunloopSou
   return 1;
 }
 
+int MIDIRunloopStep( struct MIDIRunloop * runloop ) {
+  return MIDIRunloopSourceWait( &(runloop->master) );
+}
+
 int MIDIRunloopStart( struct MIDIRunloop * runloop ) {
   int result = 0;
   runloop->active = 1;
@@ -651,6 +818,7 @@ int MIDIRunloopStart( struct MIDIRunloop * runloop ) {
       runloop->active = 0;
     }
   } while( runloop->active );
+  CURRENT_RUNLOOP(NULL);
   return result;
 }
 
@@ -658,8 +826,3 @@ int MIDIRunloopStop( struct MIDIRunloop * runloop ) {
   runloop->active = 0;
   return 0;
 }
-
-int MIDIRunloopStep( struct MIDIRunloop * runloop ) {
-  return MIDIRunloopSourceWait( &(runloop->master) );
-}
-

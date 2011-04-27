@@ -5,7 +5,7 @@
 #include "message.h"
 
 struct MIDITimer {
-  size_t refs;
+  int refs;
   struct MIDITimerDelegate * delegate;
   MIDILongValue song_position;
   MIDILongValue beats_per_minute;

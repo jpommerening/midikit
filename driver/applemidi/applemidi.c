@@ -91,12 +91,14 @@ static int _applemidi_write_fds( void * drv, int nfsd, fd_set * fds );
 static int _applemidi_idle_timeout( void * drv, struct timespec * ts );
 
 static int _applemidi_init_runloop_source( struct MIDIDriverAppleMIDI * driver ) {
-  driver->base.rls = MIDIRunloopSourceCreate(
+  struct MIDIRunloopSourceDelegate delegate = {
     driver,
     &_applemidi_read_fds,
     &_applemidi_write_fds,
     &_applemidi_idle_timeout
-  );
+  };
+  
+  driver->base.rls = MIDIRunloopSourceCreate( &delegate );
 
   MIDIRunloopSourceScheduleRead( driver->base.rls, driver->control_socket );
   MIDIRunloopSourceScheduleRead( driver->base.rls, driver->rtp_socket );
@@ -265,7 +267,7 @@ static void _driver_destroy( void * driverp ) {
  */
 struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned short port ) {
   struct MIDIDriverAppleMIDI * driver;
-  MIDITimestamp    timestamp;
+  MIDITimestamp timestamp;
 
   driver = malloc( sizeof( struct MIDIDriverAppleMIDI ) );
   MIDIPrecondReturn( driver != NULL, ENOMEM, NULL );
@@ -280,6 +282,9 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned sh
 
   driver->in_queue  = MIDIMessageQueueCreate();
   driver->out_queue = MIDIMessageQueueCreate();
+  
+  driver->base.send    = &_driver_send;
+  driver->base.destroy = &_driver_destroy;
   
   _applemidi_connect( driver );
 

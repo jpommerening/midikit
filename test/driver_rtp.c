@@ -9,7 +9,7 @@
 #define RTP_CLIENT_SSRC 123456789
 #define RTP_SERVER_PORT 5104
 
-static struct RTPSession * session = NULL;
+static struct RTPSession * _session = NULL;
 
 static struct sockaddr_in server_address;
 static struct sockaddr_in client_address;
@@ -45,10 +45,10 @@ int test001_rtp( void ) {
   ASSERT_NO_ERROR( _rtp_socket( &s, &server_address ),
                    "Could not create server socket." );
 
-  session = RTPSessionCreate( s );
-  ASSERT_NOT_EQUAL( session, NULL, "Could not create RTP session." );
+  _session = RTPSessionCreate( s );
+  ASSERT_NOT_EQUAL( _session, NULL, "Could not create RTP session." );
 
-  RTPSessionGetSSRC( session, &ssrc );
+  RTPSessionGetSSRC( _session, &ssrc );
   printf( "SSRC: 0x%lx\n", ssrc );
   return 0;
 }
@@ -66,24 +66,24 @@ int test002_rtp( void ) {
 
   ASSERT_NOT_EQUAL( peer, NULL, "Could not create RTP peer." );
 
-  ASSERT_NO_ERROR( RTPSessionAddPeer( session, peer ), "Could not add peer." );
-  ASSERT_NO_ERROR( RTPSessionFindPeerBySSRC( session, &p, RTP_CLIENT_SSRC ), "Could find peer by SSRC." );
+  ASSERT_NO_ERROR( RTPSessionAddPeer( _session, peer ), "Could not add peer." );
+  ASSERT_NO_ERROR( RTPSessionFindPeerBySSRC( _session, &p, RTP_CLIENT_SSRC ), "Could find peer by SSRC." );
   ASSERT_EQUAL( peer, p, "Lookup by SSRC returned wrong peer." );
-  ASSERT_NO_ERROR( RTPSessionFindPeerByAddress( session, &p, sizeof(struct sockaddr_in), (void*) &client_address ),
+  ASSERT_NO_ERROR( RTPSessionFindPeerByAddress( _session, &p, sizeof(struct sockaddr_in), (void*) &client_address ),
                    "Could find peer by address." );
   ASSERT_EQUAL( peer, p, "Lookup by address returned wrong peer." );
   p=NULL;
-  ASSERT_NO_ERROR( RTPSessionNextPeer( session, &p ), "Could not get first peer." );
+  ASSERT_NO_ERROR( RTPSessionNextPeer( _session, &p ), "Could not get first peer." );
   ASSERT_EQUAL( peer, p, "First peer returned wrong peer." );
-  ASSERT_NO_ERROR( RTPSessionNextPeer( session, &p ), "Could not get next peer." );
+  ASSERT_NO_ERROR( RTPSessionNextPeer( _session, &p ), "Could not get next peer." );
   ASSERT_EQUAL( NULL, p, "First peer returned wrong peer." );
   
-  ASSERT_NO_ERROR( RTPSessionRemovePeer( session, peer ), "Could not remove peer." );
-  ASSERT_ERROR( RTPSessionFindPeerBySSRC( session, &p, RTP_CLIENT_SSRC ), "Peer was not removed." );
-  ASSERT_ERROR( RTPSessionFindPeerByAddress( session, &p, sizeof(struct sockaddr_in), (void*) &client_address ),
+  ASSERT_NO_ERROR( RTPSessionRemovePeer( _session, peer ), "Could not remove peer." );
+  ASSERT_ERROR( RTPSessionFindPeerBySSRC( _session, &p, RTP_CLIENT_SSRC ), "Peer was not removed." );
+  ASSERT_ERROR( RTPSessionFindPeerByAddress( _session, &p, sizeof(struct sockaddr_in), (void*) &client_address ),
                "Could find peer by address." );
 
-  ASSERT_NO_ERROR( RTPSessionAddPeer( session, peer ), "Could not add peer." );
+  ASSERT_NO_ERROR( RTPSessionAddPeer( _session, peer ), "Could not add peer." );
   RTPPeerRelease( peer );
   return 0;
 }
@@ -114,14 +114,14 @@ int test003_rtp( void ) {
   info.iovlen = 1;
   info.iov    = &iov;
 
-  ASSERT_NO_ERROR( RTPSessionFindPeerBySSRC( session, &peer, RTP_CLIENT_SSRC ),
+  ASSERT_NO_ERROR( RTPSessionFindPeerBySSRC( _session, &peer, RTP_CLIENT_SSRC ),
                    "Could not find peer." );
 
   info.peer = peer;
   iov.iov_len  = sizeof(send_buffer);
   iov.iov_base = &(send_buffer[0]);
 
-  ASSERT_NO_ERROR( RTPSessionSendPacket( session, &info ),
+  ASSERT_NO_ERROR( RTPSessionSendPacket( _session, &info ),
                    "Could not send payload to peer." );
 
   bytes = recv( s, &recv_buffer[0], sizeof(recv_buffer), 0 );
@@ -155,12 +155,12 @@ int test004_rtp( void ) {
   ASSERT_NO_ERROR( _rtp_socket( &s, &client_address ),
                    "Could not create client socket." );
 
-  ASSERT_NO_ERROR( RTPSessionFindPeerBySSRC( session, &peer, RTP_CLIENT_SSRC ),
+  ASSERT_NO_ERROR( RTPSessionFindPeerBySSRC( _session, &peer, RTP_CLIENT_SSRC ),
                    "Could not find peer." );
 
   sendto( s, &send_buffer[0], sizeof(send_buffer), 0,
           (struct sockaddr *) &server_address, sizeof(server_address) );
-  ASSERT_NO_ERROR( RTPSessionReceive( session, sizeof(recv_buffer), &recv_buffer[0], &info ),
+  ASSERT_NO_ERROR( RTPSessionReceive( _session, sizeof(recv_buffer), &recv_buffer[0], &info ),
                    "Could not receive payload from peer." );
 
   ASSERT_EQUAL( info.payload_size, 4, "Received message of unexpected size." );
@@ -186,7 +186,9 @@ int test005_rtp( void ) {
  * Test that an RTP session can be properly teared down.
  */
 int test006_rtp( void ) {
-  RTPSessionRelease( session );
+  if( _session != NULL ) {
+    RTPSessionRelease( _session );
+  }
 
   return 0;
 }

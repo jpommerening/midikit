@@ -9,8 +9,7 @@ LDFLAGS := $(LDFLAGS) -lmidikit -lmidikit-driver
 
 OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/list.o $(OBJDIR)/port.o \
      $(OBJDIR)/clock.o $(OBJDIR)/message_format.o $(OBJDIR)/message.o \
-     $(OBJDIR)/controller.o $(OBJDIR)/device.o \
-     $(OBJDIR)/driver.o $(OBJDIR)/message_queue.o \
+     $(OBJDIR)/device.o $(OBJDIR)/driver.o $(OBJDIR)/message_queue.o \
      $(OBJDIR)/integration.o $(OBJDIR)/runloop.o \
      $(OBJDIR)/driver_rtp.o $(OBJDIR)/driver_applemidi.o
 BIN=test_main
@@ -55,5 +54,5 @@ $(OBJDIR)/driver_applemidi.o: driver_applemidi.c test.h
 tests.passed: $(BINDIR)/$(BIN) $(LIBDIR)/libmidikit$(LIB_SUFFIX) $(LIBDIR)/libmidikit-driver$(LIB_SUFFIX)
 	LD_LIBRARY_PATH=$(LIBDIR) $(BINDIR)/$(BIN) && touch $@
 
-$(MAIN_C): midi.c util.c list.c port.c clock.c message_format.c message.c controller.c device.c driver.c integration.c runloop.c driver_rtp.c driver_applemidi.c
+$(MAIN_C): midi.c util.c list.c port.c clock.c message_format.c message.c device.c driver.c integration.c runloop.c driver_rtp.c driver_applemidi.c
 	./generate_main.sh -o $(MAIN_C) $^

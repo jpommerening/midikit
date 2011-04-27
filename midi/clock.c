@@ -40,7 +40,7 @@
  * rate with a selectable offset.
  */
 struct MIDIClock {
-  size_t           refs;
+  int              refs;
   MIDITimestamp    offset;
   MIDISamplingRate rate;
   unsigned long long numer;
@@ -195,7 +195,7 @@ struct MIDIClock * MIDIClockCreate( MIDISamplingRate rate ) {
   _normalize_frac( &(clock->numer), &(clock->denom) );
   clock->rate   = rate;
   clock->offset = -1 * _get_real_time( clock );
-  MIDILogLocation( INFO, "Initialized clock:\n  rate: %u, offset: %lli\n  numer: %llu / denom: %llu\n",
+  MIDILogLocation( DEVELOP, "Initialized clock:\n  rate: %u, offset: %lli\n  numer: %llu / denom: %llu\n",
     clock->rate, clock->offset, clock->numer, clock->denom );
   return clock;
 }

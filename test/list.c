@@ -54,7 +54,7 @@ int test002_list( void ) {
 
   ASSERT_NO_ERROR( MIDIListAdd( list, &a ), "Could not add item." );
   ASSERT_NO_ERROR( MIDIListAdd( list, &b ), "Could not add item." );
-  ASSERT_NO_ERROR( MIDIListAdd( list, &b ), "Could not add item." );
+  ASSERT_NO_ERROR( MIDIListAdd( list, &c ), "Could not add item." );
 
   ASSERT_NO_ERROR( MIDIListApply( list, &v, &_apply_set ), "Could not apply set function." );
   ASSERT_EQUAL( a, v, "Setter did not set list item a." );

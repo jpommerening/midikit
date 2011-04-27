@@ -453,6 +453,7 @@
 				592307DA129320E40067DE03 /* Sources */,
 				592307DB129320E40067DE03 /* Frameworks */,
 				592307DC129320E40067DE03 /* CopyFiles */,
+				591E7C751365CE7C0043C240 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -511,6 +512,19 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		591E7C751365CE7C0043C240 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:${TARGET_BUILD_DIR}\ncd ${TARGET_BUILD_DIR} && ./${EXECUTABLE_PATH}\ntrue";
+		};
 		59A048C212A9769F001B597E /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -522,7 +536,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "DOT_PATH=/usr/local/graphviz-2.14/bin\nDOXY_PATH=/Applications/Doxygen.app/Contents/Resources\nexport PATH=$PATH:$DOT_PATH:$DOXY_PATH\ncd $SRCROOT\ndoxygen\nmake -C documentation/html install";
+			shellScript = "DOT_PATH=/usr/local/graphviz-2.14/bin\nDOXY_PATH=/Applications/Doxygen.app/Contents/Resources\nexport PATH=$PATH:$DOT_PATH:$DOXY_PATH\ncd $SRCROOT\n#doxygen\n#make -C documentation/html install";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -634,6 +648,11 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NO_ASSERT,
+					NO_PRECOND,
+					NO_LOG,
+				);
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -689,7 +708,7 @@
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_PREPROCESSOR_DEFINITIONS = "";
+				GCC_PREPROCESSOR_DEFINITIONS = DEBUG;
 				INSTALL_PATH = /usr/local/bin;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "$(TARGET_NAME)";

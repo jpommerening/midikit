@@ -1,17 +1,19 @@
 #include <stdio.h>
+#ifndef MIDI_LOG_CHANNELS
+#define MIDI_LOG_CHANNELS MIDI_LOG_TEST
+#endif
 #include "midi/midi.h"
 
 #define _EXPAND( v ) v
 #define EXPAND( v ) _EXPAND( v )
 
-#ifndef SUBDIR
-#define SUBDIR "test"
-#endif
 #define ASSERT_BASE( expr, message, print_expr ) \
   if( ! (expr) ) { \
-    printf( "%s/%s:%i: error: assertion failed: %s\n  " print_expr "\n", SUBDIR, __FILE__, __LINE__, message ); \
+    MIDILogLocation( TEST, "error: assertion failed: %s\n  " print_expr "\n", message ); \
     return 1; \
   }
+
+#define MIDI_LOG_TEST 0x20
 
 #define ASSERT( expr, message ) ASSERT_BASE( expr, message, #expr );
 

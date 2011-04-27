@@ -9,12 +9,6 @@
 #endif
 #endif
 
-
-struct MIDIDriver;
-
-CFRunLoopSourceRef MIDIDriverCreateRunloopSource( struct MIDIDriver * driver );
-
-
 #include "driver/applemidi/applemidi.h"
 
 int MIDIDriverAppleMIDIAddPeerWithCFNetService( struct MIDIDriverAppleMIDI * driver,

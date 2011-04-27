@@ -84,7 +84,6 @@ int test002_device( void ) {
 
   MIDIDeviceDetachOut( device_master );
 
-  MIDIPortRelease( port );
   MIDIMessageRelease( message );
   MIDIDeviceRelease( device_master );
   MIDIDeviceRelease( device_slave );

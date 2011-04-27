@@ -2,9 +2,6 @@
 #define MIDIKIT_DRIVER_APPLEMIDI_H
 #include <sys/socket.h>
 
-/*struct MIDIDriverDelegate;
-struct MIDIRunloopSource;*/
-
 #ifndef MIDI_DRIVER_INTERNALS
 /**
  * When used as an opaque pointer type, an instance of

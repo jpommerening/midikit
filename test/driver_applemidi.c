@@ -94,6 +94,7 @@ static int _receive( void * target, void * source, struct MIDITypeSpec * type, v
   if( target != &_n_msg ) {
     printf( "Incorrect port target.\n" );
   }
+
   if( type == MIDIMessageType ) {
     message = data;
     printf( "Received message!\n" );
@@ -221,7 +222,7 @@ int test003_applemidi( void ) {
   struct MIDIRunloop * runloop;
   unsigned char buf[36] = { 0 };
 
-  runloop = MIDIRunloopCreate();
+  runloop = MIDIRunloopCreate( NULL );
   ASSERT_NOT_EQUAL( runloop, NULL, "Could not create runloop." );
   ASSERT_NO_ERROR( MIDIDriverAppleMIDIGetRunloopSource( driver, &source ), "Could not create runloop source." );
   ASSERT_NO_ERROR( MIDIRunloopAddSource( runloop, source ), "Could not add source to runloop." );

@@ -37,6 +37,46 @@ int MIDIDriverAppleMIDIRemovePeerWithCFNetService( struct MIDIDriverAppleMIDI * 
   return MIDIDriverAppleMIDIRemovePeerWithSockaddr( driver, size, addr );
 }
 
+#pragma mark -
+
+#pragma mark CFMIDIRunloop
+
+struct CFMIDIRunloopDelegate {
+  int refs;
+  CFRunLoopTimerContext timer_context;
+  CFSocketContext       socket_context;
+  size_t nsrc;
+  CFRunLoopTimerRef  cfrlt;
+  CFRunLoopSourceRef cfrls[1];
+};
+
+#pragma mark Creation and destruction
+/**
+ * @name Creation and destruction
+ * Creating, destroying and reference counting of MIDIClock objects.
+ * @{
+ */
+
+/**
+ * @brief Create a MIDIClock instance.
+ * Allocate space and initialize a MIDIClock instance.
+ * @public @memberof MIDIClock
+ * @param rate The number of times the clock should tick per second.
+ * @return a pointer to the created clock structure on success.
+ * @return a @c NULL pointer if the clock could not created.
+ */
+struct MIDIRunloop * MIDIRunloopCreateWithCFRunloop( CFRunLoopRef runloop ) {
+  struct MIDIRunloop * midi_runloop = MIDIRunloopCreate( &_runloop_cf_delegate );
+  return midi_runloop;
+}
+
+
+#pragma mark Core Foundation callbacks
+/**
+ * @name Core Foundation callbacks
+ * @{
+ */
+
 static void _cf_socket_callback( CFSocketRef s, CFSocketCallBackType callbackType, CFDataRef address, const void *data, void *info ) {
   struct MIDIRunloopSource * source = info;
   int i = CFSocketGetNative( s );
@@ -68,6 +108,75 @@ static void _cf_timer_callback( CFRunLoopTimerRef timer, void *info ) {
     (*source->idle)( source->info, &ts );
   }
 }
+
+/** @} */
+
+#pragma mark Runloop callbacks
+/**
+ * @name Runloop callbacks
+ * Methods that are part of the runloop delegate to schedule and unschedule (clear)
+ * actions.
+ * @{
+ */
+
+static int _cf_runloop_schedule_read( void * info, int fd ) {
+  struct CFMIDIRunloop * runloop = info;
+  CFSocketRef socket;
+  MIDIAssert( runloop != NULL );
+
+  socket = CFSocketCreateWithNative( NULL, fd, kCFSocketReadCallBack, &_cf_socket_callback, &(runloop->socket_context) );
+  CFSocketEnableCallBacks( socket, kCFSocketReadCallBack );
+  CFRelease( socket );
+  return 0;
+}
+
+static int _cf_runloop_clear_read( void * info, int fd ) {
+  struct CFMIDIRunloop * runloop = info;
+  CFSocketRef socket;
+  MIDIAssert( runloop != NULL );
+
+  socket = CFSocketCreateWithNative( NULL, fd, kCFSocketReadCallBack, &_cf_socket_callback, &(runloop->socket_context) );
+  CFSocketDisableCallBacks( socket, kCFSocketReadCallBack );
+  CFRelease( socket );
+  return 0;
+}
+
+static int _cf_runloop_schedule_write( void * info, int fd ) {
+  struct CFMIDIRunloop * runloop = info;
+  CFSocketRef socket;
+  MIDIAssert( runloop != NULL );
+
+  socket = CFSocketCreateWithNative( NULL, fd, kCFSocketWriteCallBack, &_cf_socket_callback, &(runloop->socket_context) );
+  CFSocketEnableCallBacks( socket, kCFSocketWriteCallBack );
+  CFRelease( socket );
+  return 0;
+}
+
+static int _cf_runloop_clear_write( void * info, int fd ) {
+  struct CFMIDIRunloop * runloop = info;
+  CFSocketRef socket;
+  MIDIAssert( runloop != NULL );
+
+  socket = CFSocketCreateWithNative( NULL, fd, kCFSocketWriteCallBack, &_cf_socket_callback, &(runloop->socket_context) );
+  CFSocketDisableCallBacks( socket, kCFSocketWriteCallBack );
+  CFRelease( socket );
+  return 0;
+}
+
+static int _cf_runloop_schedule_timeout( void * info, struct timespec * timeout ) {
+  struct CFMIDIRunloop * runloop = info;
+  MIDIAssert( runloop != NULL );
+
+  return 0;
+}
+
+static struct MIDIRunloopDelegate _cf_runloop_delegate = {
+  
+};
+
+/** @} */
+
+#pragma mark end
 
 static int _cf_source_schedule( struct MIDIRunloopSource * source, int event ) {
   int i, created;

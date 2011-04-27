@@ -8,22 +8,12 @@
  * @brief Structure of MIDI message object.
  */
 struct MIDIMessage {
-  size_t refs;
+  int    refs;
   struct MIDIMessageFormat * format;
   struct MIDIMessageData data;
   MIDITimestamp timestamp;
 };
 
-/*
-static struct MIDITypeSpec _type_spec_MIDIMessage_xxx = {
-  0x4010, "MIDIMessage", sizeof(struct MIDIMessage)
-  (MIDIRefFn*)   &MIDIMessageRetain,
-  (MIDIRefFn*)   &MIDIMessageRelease,
-  (MIDICoderFn*) &MIDIMessageEncode,
-  (MIDICoderFn*) &MIDIMessageDecode
-};
-struct MIDITypeSpec * MIDIMessageType = &_type_spec_MIDIMessage_xxx;
-*/
 MIDI_TYPE_SPEC_CODING( MIDIMessage, 0x4010 );
 
 #pragma mark Creation and destruction
@@ -236,9 +226,10 @@ static void _check_release_data( struct MIDIMessage * message ) {
  * @brief Encode messages.
  * Encode message objects into a buffer.
  * @public @memberof MIDIMessage
- * @param message  The message.
- * @param size     The size of the memory pointed to by @c buffer.
- * @param buffer   The buffer to encode the message into.
+ * @param message The message.
+ * @param size    The size of the memory pointed to by @c buffer.
+ * @param buffer  The buffer to encode the message into.
+ * @param written The number of bytes that have been written.
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
