@@ -123,6 +123,11 @@ void MIDIDriverDestroy( struct MIDIDriver * driver ) {
   if( driver->clock != NULL ) {
     MIDIClockRelease( driver->clock );
   }
+  if( driver->rls != NULL ) {
+    MIDIRunloopSourceInvalidate( driver->rls );
+    MIDIRunloopSourceRelease( driver->rls );
+  }
+  MIDIPortInvalidate( driver->port );
   MIDIPortRelease( driver->port );
   free( driver );
 }

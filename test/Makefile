@@ -54,7 +54,7 @@ $(OBJDIR)/driver_rtp.o: driver_rtp.c test.h
 $(OBJDIR)/driver_applemidi.o: driver_applemidi.c test.h
 
 tests.passed: $(BINDIR)/$(BIN) $(LIBDIR)/libmidikit$(LIB_SUFFIX) $(LIBDIR)/libmidikit-driver$(LIB_SUFFIX)
-	LD_LIBRARY_PATH=$(LIBDIR) $(BINDIR)/$(BIN) && touch $@
+	LD_LIBRARY_PATH=$(LIBDIR) valgrind --leak-check=full $(BINDIR)/$(BIN) && touch $@
 
 $(MAIN_C): midi.c util.c list.c port.c clock.c message_format.c message.c device.c driver.c integration.c runloop.c driver_rtp.c driver_applemidi.c
 	./generate_main.sh -o $(MAIN_C) $^

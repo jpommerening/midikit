@@ -33,7 +33,7 @@ int test001_port( void ) {
 
   v = 234;
   ASSERT_NO_ERROR( MIDIPortConnect( port_b, port_a ), "Could not connect MIDI ports!" );
-  ASSERT_NO_ERROR( MIDIPortSend( port_b, TestPortType, &v ), "Could not send without connection." );
+  ASSERT_NO_ERROR( MIDIPortSend( port_b, TestPortType, &v ), "Could not send with connection." );
   ASSERT_EQUAL( a, v, "Did not receive correct message." );
 
   /* create a retainment cycle */

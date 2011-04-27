@@ -621,6 +621,7 @@ void MIDIRunloopDestroy( struct MIDIRunloop * runloop ) {
   for( i=0; i<MAX_RUNLOOP_SOURCES; i++ ) {
     if( runloop->sources[i] != NULL ) {
       runloop->sources[i]->runloop = NULL;
+      MIDIRunloopSourceRelease( runloop->sources[i] );
     }
   }
   free( runloop );

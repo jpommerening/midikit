@@ -8,7 +8,7 @@
 
 static unsigned char * _buffer = NULL;
 
-static int _send( void * implementation, struct MIDIMessage * message ) {
+static int _send( void * driver, struct MIDIMessage * message ) {
 /*struct MIDIDriver * driver = implementation;*/
   size_t size, i;
 
@@ -28,6 +28,13 @@ static int _send( void * implementation, struct MIDIMessage * message ) {
     }
   }
   return 0;
+}
+
+static void _destroy( void * driver ) {
+  if( _buffer != NULL ) {
+    free( _buffer );
+    _buffer = NULL;
+  }
 }
 
 /**
@@ -52,7 +59,9 @@ int test001_driver( void ) {
                    "Could not set message velocity." );
   driver = MIDIDriverCreate( "test driver", MIDI_SAMPLING_RATE_DEFAULT );
   ASSERT_NOT_EQUAL( driver, NULL, "Could not create driver!" );
-  driver->send = &_send;
+  driver->send    = &_send;
+  driver->destroy = &_destroy;
+
   ASSERT_NO_ERROR( MIDIDriverGetPort( driver, &port ), "Could not get driver port." );
   ASSERT_NOT_EQUAL( port, NULL, "Could not get driver port!" );
 
@@ -116,7 +125,6 @@ int test002_driver( void ) {
   MIDIDriverRelease( driver );
   MIDIDeviceRelease( device );
 
-  if( _buffer != NULL ) free( _buffer );
   return 0;
 }
 

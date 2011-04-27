@@ -127,7 +127,7 @@ struct MIDIPort * MIDIPortCreate( char * name, int mode, void * target,
   size_t namelen;
   MIDIPrecondReturn( port != NULL, ENOMEM, NULL );
 
-  namelen = strlen( name );
+  namelen = strlen( name ) + 1;
   if( namelen > 128 ) namelen = 128;
 
   port->refs    = 1;
@@ -168,6 +168,8 @@ void MIDIPortDestroy( struct MIDIPort * port ) {
    * enable this temporarily ..
    * port->ports = NULL;
    * MIDIPrecondReturn( port->valid == 0, ECANCELED, (void)0 ); */
+  MIDILogLocation( DEVELOP, "Destroy port %s [%p]\n", port->name, port );
+  free( port->name );
   free( port );
 }
 
@@ -193,10 +195,12 @@ void MIDIPortRetain( struct MIDIPort * port ) {
  */
 void MIDIPortRelease( struct MIDIPort * port ) {
   MIDIPrecondReturn( port != NULL, EFAULT, (void)0 );
+  if( port->refs > 1 ) {
+    MIDIListApply( port->ports, port, &_port_apply_check );
+  }
+  MIDILogLocation( DEVELOP, "Release port %s [%p] (%i -> %i)\n", port->name, port, port->refs, port->refs -1 );
   if( ! --port->refs ) {
     MIDIPortDestroy( port );
-  } else {
-    MIDIListApply( port->ports, port, &_port_apply_check );
   }
 }
 
@@ -302,10 +306,10 @@ int MIDIPortDisconnectAll( struct MIDIPort * port ) {
 int MIDIPortInvalidate( struct MIDIPort * port ) {
   MIDIPrecond( port != NULL, EFAULT );
   _port_intercept( port, MIDI_PORT_INVALID, NULL,  NULL );
-  port->mode   |= MIDI_PORT_INVALID;
+  port->mode    = MIDI_PORT_INVALID;
   port->target  = NULL;
   port->receive = NULL;
-  return 0;
+  return MIDIPortDisconnectAll( port );
 }
 
 /**
