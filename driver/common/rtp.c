@@ -1014,7 +1014,9 @@ int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo *
  * @brief Send an RTP packet.
  * @public @memberof RTPSession
  * @param session The session.
- * @param info The packet info.
+ * @param size    The number of bytes in the @c payload buffer.
+ * @param payload The buffer to read the payload from.
+ * @param info    The packet info.
  * @retval 0 On success.
  * @retval >0 If the message could not be sent.
  */
@@ -1050,7 +1052,9 @@ int RTPSessionSend( struct RTPSession * session, size_t size, void * payload,
  * @brief Receive an RTP packet.
  * @public @memberof RTPSession
  * @param session The session.
- * @param info The packet info.
+ * @param size    The number of available bytes in the @c payload buffer.
+ * @param payload The buffer to store the payload in.
+ * @param info    The packet info.
  * @retval 0 On success.
  * @retval >0 If the message could not be received.
  */

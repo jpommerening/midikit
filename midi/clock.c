@@ -156,6 +156,12 @@ static struct MIDIClock * _get_global_clock( void ) {
   return _midi_global_clock;
 }
 
+/**
+ * @brief Set the global clock.
+ * Replace the global clock (if set) with another clock.
+ * @relates MIDIClock
+ * @param clock The global clock.
+ */
 int MIDIClockSetGlobalClock( struct MIDIClock * clock ) {
   if( clock == _midi_global_clock ) return 0;
   if( _midi_global_clock != NULL ) MIDIClockRelease( _midi_global_clock );
@@ -164,6 +170,11 @@ int MIDIClockSetGlobalClock( struct MIDIClock * clock ) {
   return 0;
 }
 
+/**
+ * @brief Get the global clock.
+ * @relates MIDIClock
+ * @param clock The global clock.
+ */
 int MIDIClockGetGlobalClock( struct MIDIClock ** clock ) {
   *clock = _get_global_clock();
   return 0;
@@ -238,6 +249,22 @@ void MIDIClockRelease( struct MIDIClock * clock ) {
 
 /** @} */
 
+#pragma mark Timing functions
+/**
+ * @name Timing functions
+ * Read and modify clocks and timestamps.
+ * @{
+ */
+
+/**
+ * @brief Set the current time.
+ * Set the current time. The clock must not be referenced anywhere else.
+ * @public @memberof MIDIClock
+ * @param clock The clock to modify (pass @c NULL for global clock)
+ * @param now   The new current time.
+ * @retval 0 on success.
+ * @retval >0 if the time could not be set.
+ */
 int MIDIClockSetNow( struct MIDIClock * clock, MIDITimestamp now ) {
   if( clock == NULL ) clock = _get_global_clock();
   MIDIPrecond( clock->refs == 1, EFAULT );
@@ -245,6 +272,14 @@ int MIDIClockSetNow( struct MIDIClock * clock, MIDITimestamp now ) {
   return 0;
 }
 
+/**
+ * @brief Get the current time.
+ * Get the current time.
+ * @public @memberof MIDIClock
+ * @param clock The clock to read (pass @c NULL for global clock)
+ * @param now   The current time.
+ * @retval 0 on success.
+ */
 int MIDIClockGetNow( struct MIDIClock * clock, MIDITimestamp * now ) {
   MIDIPrecond( now != NULL, EINVAL );
   if( clock == NULL ) clock = _get_global_clock();
@@ -252,6 +287,15 @@ int MIDIClockGetNow( struct MIDIClock * clock, MIDITimestamp * now ) {
   return 0;
 }
 
+/**
+ * @brief Set the sampling rate.
+ * Set the clocks sampling rate in ticks per second. The clock must not be
+ * referenced anywhere else.
+ * @public @memberof MIDIClock
+ * @param clock The clock (pass @c NULL for global clock)
+ * @param rate  The rate.
+ * @retval 0 on success.
+ */
 int MIDIClockSetSamplingRate( struct MIDIClock * clock, MIDISamplingRate rate ) {
   if( clock == NULL ) clock = _get_global_clock();
   MIDIPrecond( clock->refs == 1, EFAULT );
@@ -260,6 +304,14 @@ int MIDIClockSetSamplingRate( struct MIDIClock * clock, MIDISamplingRate rate ) 
   return 0;
 }
 
+/**
+ * @brief Get the sampling rate.
+ * Get the clocks sampling rate in ticks per second.
+ * @public @memberof MIDIClock
+ * @param clock The clock (pass @c NULL for global clock)
+ * @param rate  The rate.
+ * @retval 0 on success.
+ */
 int MIDIClockGetSamplingRate( struct MIDIClock * clock, MIDISamplingRate * rate ) {
   MIDIPrecond( rate != NULL, EINVAL );
   if( clock == NULL ) clock = _get_global_clock();
@@ -267,6 +319,15 @@ int MIDIClockGetSamplingRate( struct MIDIClock * clock, MIDISamplingRate * rate 
   return 0;
 }
 
+/**
+ * @brief Convert a clock's timestamp to seconds.
+ * Converting the timestamp to seconds can be useful, when handling with time-deltas.
+ * @public @memberof MIDIClock
+ * @param clock     The clock (pass @c NULL for global clock)
+ * @param timestamp The timestamp to convert.
+ * @param seconds   The value of the timestamp converted to seconds.
+ * @retval 0 on success.
+ */
 int MIDIClockTimestampToSeconds( struct MIDIClock * clock, MIDITimestamp timestamp, double * seconds ) {
   MIDIPrecond( seconds != NULL, EINVAL );
   if( clock == NULL ) clock = _get_global_clock();
@@ -274,6 +335,14 @@ int MIDIClockTimestampToSeconds( struct MIDIClock * clock, MIDITimestamp timesta
   return 0;
 }
 
+/**
+ * @brief Convert seconds to a clock's timestamp
+ * @public @memberof MIDIClock
+ * @param clock     The clock (pass @c NULL for global clock)
+ * @param timestamp The value of the seconds converted to a timestamp.
+ * @param seconds   The seconds to convert.
+ * @retval 0 on success.
+ */
 int MIDIClockTimestampFromSeconds( struct MIDIClock * clock, MIDITimestamp * timestamp, double seconds ) {
   MIDIPrecond( timestamp != NULL, EINVAL );
   if( clock == NULL ) clock = _get_global_clock();
@@ -281,6 +350,16 @@ int MIDIClockTimestampFromSeconds( struct MIDIClock * clock, MIDITimestamp * tim
   return 0;
 }
 
+/**
+ * @brief Convert between different clocks.
+ * Convert a timestamp that was created by a given clock to the timestamp of another clock.
+ * The function tries to avoid integer overflows where possible.
+ * @public @memberof MIDIClock
+ * @param clock     The clock to convert to (pass @c NULL for global clock)
+ * @param source    The clock that created the timestamp (pass @c NULL for global clock)
+ * @param timestamp The timestamp to convert.
+ * @retval 0 on success.
+ */
 int MIDIClockConvertTimestamp( struct MIDIClock * clock, struct MIDIClock * source, MIDITimestamp * timestamp ) {
   long long tmp;
   unsigned long long numer, denom;
@@ -302,3 +381,5 @@ int MIDIClockConvertTimestamp( struct MIDIClock * clock, struct MIDIClock * sour
   *timestamp = ( tmp + clock->offset );
   return 0;
 }
+
+/** @} */

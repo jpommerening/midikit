@@ -18,7 +18,7 @@ MAIN_C=main.c
 
 .PHONY: all clean
 
-all: tests.passed demo
+all: tests.passed
 
 clean:
 	rm -f $(OBJS)

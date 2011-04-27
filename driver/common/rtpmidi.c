@@ -201,7 +201,7 @@ static int _rtpmidi_journal_encode( struct RTPMIDISession * session, struct RTPM
  * @param journal The journal.
  * @param size    The number of available bytes in the buffer.
  * @param buffer  The buffer to read the journal from.
- * @param written The number of bytes read from the stream.
+ * @param read    The number of bytes read from the stream.
  */
 static int _rtpmidi_journal_decode( struct RTPMIDISession * session, struct RTPMIDIJournal * journal,
                                     size_t size, void * buffer, size_t * read ) {
@@ -472,10 +472,8 @@ static int _rtpmidi_decode_messages( struct RTPMIDIInfo * info, MIDITimestamp ti
  * The peer's control structures will be updated with the required journalling
  * information.
  * @public @memberof RTPMIDISession
- * @param session The session.
- * @param size The number of valid message pointers pointed to by @c messages.
+ * @param session  The session.
  * @param messages A pointer to a list of @c size message pointers.
- * @param count The number of sent messages.
  * @retval 0 On success.
  * @retval >0 If the message could not be sent.
  */
@@ -559,9 +557,8 @@ int RTPMIDISessionSend( struct RTPMIDISession * session, struct MIDIMessageList 
  * If lost packets are detected the required information is recovered from the
  * journal.
  * @public @memberof RTPMIDISession
- * @param session The session.
+ * @param session  The session.
  * @param messages A pointer to a list of midi messages.
- * @param count The number of received messages.
  * @retval 0 on success.
  * @retval >0 If the message was corrupted or could not be received.
  */

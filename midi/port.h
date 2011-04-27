@@ -7,13 +7,6 @@
 #define MIDI_PORT_THRU    0x04
 #define MIDI_PORT_INVALID 0x08
 
-struct MIDIObjectSpec {
-  int id;
-  size_t size;
-  void (*retain)( void * );
-  void (*release)( void * );
-};
-
 struct MIDIPort;
 extern struct MIDITypeSpec * MIDIPortType;
 

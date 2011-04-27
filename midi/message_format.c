@@ -1216,6 +1216,7 @@ int MIDIMessageFormatGet( struct MIDIMessageFormat * format, struct MIDIMessageD
  * @param status   The running status inherited from previous messages.
  * @param size     The size of the memory pointed to by @c buffer.
  * @param buffer   The buffer to encode the message into.
+ * @param written  The number of bytes that were written to the @c buffer.
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
@@ -1235,6 +1236,7 @@ int MIDIMessageFormatEncodeRunningStatus( struct MIDIMessageFormat * format, str
  * @param status   The running status inherited from previous messages.
  * @param size     The size of the memory pointed to by @c buffer.
  * @param buffer   The buffer to decode the message from.
+ * @param read     The number of bytes that were read from the @c buffer.
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
@@ -1253,6 +1255,7 @@ int MIDIMessageFormatDecodeRunningStatus( struct MIDIMessageFormat * format, str
  * @param data     The message data object to read from.
  * @param size     The size of the memory pointed to by @c buffer.
  * @param buffer   The buffer to encode the message into.
+ * @param written  The number of bytes that were written to the @c buffer.
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */
@@ -1268,6 +1271,7 @@ int MIDIMessageFormatEncode( struct MIDIMessageFormat * format, struct MIDIMessa
  * @param data     The message data object to read from.
  * @param size     The size of the memory pointed to by @c buffer.
  * @param buffer   The buffer to decode the message from.
+ * @param read     The number of bytes that were read from the @c buffer.
  * @retval 0 on success.
  * @retval 1 if the message could not be encoded.
  */

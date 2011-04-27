@@ -427,7 +427,6 @@ int MIDIRunloopSourceScheduleWrite( struct MIDIRunloopSource * source, int fd ) 
  * Unschedule a previously scheduled write operation.
  * @public @memberof MIDIRunloopSource
  * @param source  The source that should be scheduled.
- * @param timeout The timeout to be scheduled.
  * @param fd     The file descriptor to which to write.
  */
 int MIDIRunloopSourceClearWrite( struct MIDIRunloopSource * source, int fd ) {

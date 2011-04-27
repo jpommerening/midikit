@@ -478,7 +478,7 @@ int MIDIControllerStore( struct MIDIController * controller, size_t size, void *
  * @param controller The controller.
  * @param size       The size of the buffer pointed to by @c buffer.
  * @param buffer     The buffer to store the controller values in.
- * @param written    The number of bytes read from the buffer.
+ * @param read       The number of bytes read from the buffer.
  */
 int MIDIControllerRecall( struct MIDIController * controller, size_t size, void * buffer, size_t * read ) {
   MIDIPrecond( controller != NULL, EFAULT );

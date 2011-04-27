@@ -5,6 +5,11 @@
 #include "type.h"
 #include "midi.h"
 
+/**
+ * @ingroup MIDI
+ * A basic event consisting of an id, a message and arbitary optional
+ * data.
+ */
 struct MIDIEvent {
   int refs;
   size_t id;
@@ -13,8 +18,30 @@ struct MIDIEvent {
   void * info;
 };
 
+/**
+ * @brief Declare the @c MIDIEventType type specification.
+ */
 MIDI_TYPE_SPEC_CODING( MIDIEvent, 0x3010 );
 
+#pragma mark Creation and destruction
+/**
+ * @name Creation and destruction
+ * Creating, destroying and reference counting of MIDIEvent objects.
+ * @{
+ */
+
+/**
+ * @brief Create a MIDIEvent instance.
+ * Allocate space and initialize a MIDIEvent instance.
+ * @public @memberof MIDIEvent
+ * @param id      A (hopefully) unique ID.
+ * @param info    Any optional data to be associated with the event.
+ * @param message A message format that may contain placeholders.
+ * @param ...     The data to be filled into the message format placeholders.
+ *                (Refer to the sprintf specification for details.)
+ * @return a pointer to the created event structure on success.
+ * @return a @c NULL pointer if the event could not created.
+ */
 struct MIDIEvent * MIDIEventCreate( size_t id, void * info, char * message, ... ) {
   void * buffer;
   size_t length, required;
@@ -54,6 +81,12 @@ struct MIDIEvent * MIDIEventCreate( size_t id, void * info, char * message, ... 
   return event;
 }
 
+/**
+ * @brief Destroy a MIDIEvent instance.
+ * Free all resources occupied by the event and release all referenced objects.
+ * @public @memberof MIDIEvent
+ * @param event The event.
+ */
 void MIDIEventDestroy( struct MIDIEvent * event ) {
   MIDIPrecondReturn( event != NULL, EFAULT, (void)0 );
   if( event->message != NULL ) {
@@ -62,17 +95,32 @@ void MIDIEventDestroy( struct MIDIEvent * event ) {
   free( event );
 }
 
+/**
+ * @brief Retain a MIDIEvent instance.
+ * Increment the reference counter of an event so that it won't be destroyed.
+ * @public @memberof MIDIEvent
+ * @param event The event.
+ */
 void MIDIEventRetain( struct MIDIEvent * event ) {
   MIDIPrecondReturn( event != NULL, EFAULT, (void)0 );
   event->refs++;
 }
 
+/**
+ * @brief Release a MIDIEvent instance.
+ * Decrement the reference counter of an event. If the reference count
+ * reached zero, destroy the event.
+ * @public @memberof MIDIEvent
+ * @param event The event.
+ */
 void MIDIEventRelease( struct MIDIEvent * event ) {
   MIDIPrecondReturn( event != NULL, EFAULT, (void)0 );
   if( ! --event->refs ) {
     MIDIEventDestroy( event );
   }
 }
+
+/** @} */
 
 int MIDIEventGetId( struct MIDIEvent * event, size_t * id ) {
   MIDIPrecond( event != NULL, EFAULT );

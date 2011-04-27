@@ -198,7 +198,7 @@ int MIDIListRemove( struct MIDIList * list, void * item ) {
  * @param item The item to search for.
  * @retval 0 if the item is present in the list.
  * @retval -1 if the item is not present in the list.
- * @retvak >0 if an error occurred.
+ * @retval >0 if an error occurred.
  */
 int MIDIListContains( struct MIDIList * list, void * item ) {
   struct MIDIListEntry * entry;
@@ -224,7 +224,7 @@ int MIDIListContains( struct MIDIList * list, void * item ) {
  * @param func The comparator function.
  * @retval 0 if the item is present in the list.
  * @retval -1 if the item is not present in the list.
- * @retvak >0 if an error occurred.
+ * @retval >0 if an error occurred.
  */
 int MIDIListFind( struct MIDIList * list, void ** item, void * info, int (*func)( void *, void *) ) {
   struct MIDIListEntry * entry;
