@@ -65,9 +65,11 @@ int test001_driver( void ) {
   ASSERT_NO_ERROR( MIDIDriverGetPort( driver, &port ), "Could not get driver port." );
   ASSERT_NOT_EQUAL( port, NULL, "Could not get driver port!" );
 
-  return 0;
-  ASSERT_NO_ERROR( MIDIPortSend( port, MIDIMessageType, message), "Port could not send message to driver." );
+  /* Remember: To "send" message outwards, the driver port (which may be connected to a device)
+   *           must *receive* a message! */
+  ASSERT_NO_ERROR( MIDIPortReceive( port, MIDIMessageType, message), "Driver port could not receive message." );
 
+  ASSERT_NOT_EQUAL( _buffer, NULL, "Driver did not send the message it received." );
   ASSERT_EQUAL( _buffer[0], MIDI_NIBBLE_VALUE( MIDI_STATUS_NOTE_ON, channel ), "Message status byte incorrectly encoded." );
   ASSERT_EQUAL( _buffer[1], key, "Message key byte incorrectly encoded." );
   ASSERT_EQUAL( _buffer[2], velocity, "Message velocity byte incorrectly encoded." );

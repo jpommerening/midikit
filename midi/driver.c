@@ -48,11 +48,26 @@
  * a @c MIDIDriver struct is expected.
  */
 
+/**
+ * @brief Port callback.
+ * This may be confusing at first but when the driver <b>receives</b>
+ * a message on it's port it has to <b>send</b> the message using it's
+ * implementation.
+ * This is because the port <b>receives</b> messages from (virtual)
+ * @c MIDIDevices when these devices <b>send</b> a message through
+ * their own ports.
+ * @private @memberof MIDIDriver
+ * @param target  The target of the port callback, the driver itself.
+ * @param source  The source that sended the message.
+ * @param type    The type of the message that was received.
+ * @param object  The actual message object that was received.
+ * @retval 0 on success.
+ */
 static int _port_receive( void * target, void * source, struct MIDITypeSpec * type, void * object ) {
   struct MIDIDriver * driver = target;
 
-  if( type == MIDIMessageType ) {
-    return MIDIDriverReceive( driver, object );
+  if( type == MIDIMessageType && driver->send != NULL ) {
+    return (*driver->send)( driver, object );
   } else {
     return 0;
   }
@@ -178,6 +193,8 @@ void MIDIDriverRelease( struct MIDIDriver * driver ) {
  * @retval 0 on success.
  */
 int MIDIDriverGetPort( struct MIDIDriver * driver, struct MIDIPort ** port ) {
+  MIDIPrecond( driver != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
   *port = driver->port;
   return 0;
 }
@@ -193,7 +210,7 @@ int MIDIDriverGetPort( struct MIDIDriver * driver, struct MIDIPort ** port ) {
 
 /**
  * @brief Make the MIDIDriver implement itself as loopback.
- * The driver's delegate will be modified so that it passes
+ * The driver's callback will be modified so that it passes
  * outgoing messages to it's own receive method.
  * @public @memberof MIDIDriver
  * @param driver The driver
@@ -201,14 +218,15 @@ int MIDIDriverGetPort( struct MIDIDriver * driver, struct MIDIPort ** port ) {
  * @retval >0 if the operation could not be completed.
  */
 int MIDIDriverMakeLoopback( struct MIDIDriver * driver ) {
+  MIDIPrecond( driver != NULL, EFAULT );
   driver->send = &MIDIDriverReceive;
   return 0;
 }
 
 /**
  * @brief Receive a generic MIDIMessage.
- * Relay an incoming message via all attached receiving connectors.
- * This should be called by the driver delegate whenever
+ * Relay an incoming message via all attached receiving ports.
+ * This should be called by the driver implementation whenever
  * a new message was received.
  * @public @memberof MIDIDriver
  * @param driver  The driver.
@@ -224,8 +242,9 @@ int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message 
 
 /**
  * @brief Send a generic MIDIMessage.
- * Pass an outgoing message to the driver delegate.
- * The delegate should take care of sending.
+ * Pass an outgoing message (through the port) to the implementation.
+ * The implementation's @c send callback is responsible for sending the
+ * message.
  * @public @memberof MIDIDriver
  * @param driver  The driver.
  * @param message The message.
@@ -235,13 +254,15 @@ int MIDIDriverReceive( struct MIDIDriver * driver, struct MIDIMessage * message 
 int MIDIDriverSend( struct MIDIDriver * driver, struct MIDIMessage * message ) {
   MIDIPrecond( driver != NULL, EFAULT );
   MIDIPrecond( message != NULL, EINVAL );
-  if( driver->send == NULL ) return 1;
-  return (*driver->send)( driver, message );
+  return MIDIPortReceive( driver->port, MIDIMessageType, message );
 }
 
 /**
  * @brief Trigger an event that occured in the driver implementation.
  * @public @memberof MIDIDriver
+ * @param driver The driver.
+ * @param event  The event.
+ * @retval 0  on success.
  */
 int MIDIDriverTriggerEvent( struct MIDIDriver * driver, struct MIDIEvent * event ) {
   MIDIPrecond( driver != NULL, EFAULT );
