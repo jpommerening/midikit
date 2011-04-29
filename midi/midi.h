@@ -3,7 +3,8 @@
 #include <errno.h>
 
 /**
- * Channel Voice Messages.
+ * @name Channel Voice Messages.
+ * @addtogroup MIDI
  * (Status has 4 bits & is followed by a 4 bit channel number.)
  * @{
  */
@@ -57,7 +58,8 @@
 /** @} */
 
 /**
- * System Common Messages.
+ * @name System Common Messages
+ * @addtogroup MIDI
  * (Status has eight bits.)
  * @{
  */
@@ -111,7 +113,8 @@
 /** @} */
 
 /**
- * System Real-Time Messages.
+ * @name System Real-Time Messages
+ * @addtogroup MIDI
  * (Status has eight bits, message has no data bytes.)
  * @{
  */
@@ -173,7 +176,8 @@
 /** @} */
 
 /**
- * MIDI channel enumeration values.
+ * @name MIDI channel enumeration values
+ * @addtogroup MIDI
  * Whenever a MIDIChannel is expected any of the MIDI
  * channels 1-16 can be specified. In some cases special
  * constants for a device's base channel or all channels (1-16)
@@ -201,7 +205,8 @@
 /** @} */
 
 /**
- * @name MIDIProperty
+ * @name MIDI property enumeration values
+ * @addtogroup MIDI
  * @see MIDIProperty
  * MIDIMessage property type enumeration.
  * @{
@@ -225,52 +230,67 @@
 /** @} */
 
 /**
+ * @name MIDI boolean enumeration values
+ * @addtogroup MIDI
+ * Whenever the type is MIDIBoolean you can expect them
+ * to work like "real" booleans.
+ * When the type is MIDIValue you can't expect them to be
+ * normalized and MIDI semantics apply.
+ * Use MIDI_BOOL to convert a MIDIValue into a boolean.
+ * @{
+ */
+#define MIDI_ON  0x7f
+#define MIDI_OFF 0x00
+/** @} */
+
+/**
+ * @ingroup MIDI
  * Create a status byte with a channel number
  */
 #define MIDI_NIBBLE_VALUE( h, l ) ( ((h)<<4)|((l)&0xf) )
 
 /**
+ * @ingroup MIDI
  * Access the high nibble of a byte.
  */
 #define MIDI_HIGH_NIBBLE( b ) (((b)>>4)&0xf)
 
 /**
+ * @ingroup MIDI
  * Access the low nibble of a byte.
  */
 #define MIDI_LOW_NIBBLE( b ) ((b)&0xf)
 
 /**
+ * @ingroup MIDI
  * Compose a MIDILongValue from two MIDIValues
  */
 #define MIDI_LONG_VALUE( m, l ) (((m & 0x7f)<<7) | (l & 0x7f))
 
 /**
+ * @ingroup MIDI
  * Access the lowest 7 bits of a MIDILongValue
  */
 #define MIDI_LSB( v )  (v)     & 0x7f
 
 /**
+ * @ingroup MIDI
  * Access the higher 7 bits of a MIDILongValue
  */
 #define MIDI_MSB( v ) ((v)>>7) & 0x7f
 
 /**
+ * @ingroup MIDI
  * Mark a manufacturer ID as "extended".
  * Extended manufacturer IDs use 2 bytes + one empty byte.
  */
 #define MIDI_MANUFACTURER_ID_EXTENDED( v ) v | 0x80
 
 /**
- * Whenever the type is MIDIBoolean you can expect them
- * to work like "real" booleans.
- * When the type is MIDIValue you can't expect them to be
- * normalized and MIDI semantics apply.
- * @{
+ * @ingroup MIDI
+ * Interpret a MIDIValue as MIDIBoolean
  */
-#define MIDI_ON  0x7f
-#define MIDI_OFF 0x00
 #define MIDI_BOOL( v ) (((v)>=64) ? MIDI_ON : MIDI_OFF)
-/** @} */
 
 typedef int (*MIDILogFunction)( const char *, ... );
 extern MIDILogFunction MIDILogger;
@@ -343,6 +363,11 @@ extern int MIDIErrorNumber;
 #define MIDIPrecond( expr, kind )
 #endif
 
+/**
+ * @addtogroup MIDI
+ * @{
+ */
+
 typedef unsigned char  MIDIByte;
 typedef unsigned short MIDIProperty;
 
@@ -363,5 +388,7 @@ typedef short          MIDIManufacturerId;
 typedef char           MIDIBoolean;
 typedef char           MIDIValue;
 typedef short          MIDILongValue;
+
+/** @} */
 
 #endif
