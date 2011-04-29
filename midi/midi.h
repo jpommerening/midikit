@@ -315,11 +315,14 @@ extern int MIDIErrorNumber;
 #define MIDI_LOG_CH( channels ) ( (MIDI_LOG_ ## channels) & MIDI_LOG_CHANNELS )
 
 #ifndef NO_LOG
-#define MIDILog( channels, ... ) do { if( MIDI_LOG_ ## channels & MIDI_LOG_CHANNELS ) { (*MIDILogger)( __VA_ARGS__ ); } } while( 0 )
+#define MIDILog( channels, ... ) \
+do { if( MIDI_LOG_ ## channels & MIDI_LOG_CHANNELS ) { (*MIDILogger)( __VA_ARGS__ ); } } while( 0 )
 #ifdef SUBDIR
-#define MIDILogLocation( channels, fmt, ... ) MIDILog( channels, "%s/%s:%i: " fmt, SUBDIR, __FILE__, __LINE__, __VA_ARGS__ );
+#define MIDILogLocation( channels, fmt, ... ) \
+MIDILog( channels, "%s/%s:%i: " fmt, SUBDIR, __FILE__, __LINE__, __VA_ARGS__ );
 #else
-#define MIDILogLocation( channels, fmt, ... ) MIDILog( channels, "%s:%i: " fmt, __FILE__, __LINE__, __VA_ARGS__ );
+#define MIDILogLocation( channels, fmt, ... ) \
+MIDILog( channels, "%s:%i: " fmt, __FILE__, __LINE__, __VA_ARGS__ );
 #endif
 #else
 #define MIDILog( channels, fmt, ... )
@@ -327,37 +330,39 @@ extern int MIDIErrorNumber;
 #endif
 
 #ifndef NO_ERROR
-#define MIDIError( kind, msg ) do { MIDIErrorNumber = kind; \
-                                    MIDILogLocation( ERROR, "[" #kind "] %s\n", msg ); } while( 0 )
+#define MIDIError( kind, msg ) \
+do { MIDIErrorNumber = kind; \
+     MIDILogLocation( ERROR, "[" #kind "] %s\n", msg ); \
+} while( 0 )
 #else
 #define MIDIError( kind, msg )
 #endif
 
 #ifndef NO_ASSERT
 #define MIDIAssert( expr ) \
-  do { if( !(expr) ) { \
-    MIDIErrorNumber = EASSERT; \
-    MIDILogLocation( ERROR, "[EASSERT] Assertion failed (%s)\n", #expr ); \
-    exit( EASSERT ); \
-  } } while( 0 )
+do { if( !(expr) ) { \
+  MIDIErrorNumber = EASSERT; \
+  MIDILogLocation( ERROR, "[EASSERT] Assertion failed (%s)\n", #expr ); \
+  exit( EASSERT ); \
+} } while( 0 )
 #else
 #define MIDIAssert( expr )
 #endif
 
 #ifndef NO_PRECOND
 #define MIDIPrecondFailed( message, kind, retval ) \
-  MIDIErrorNumber = kind; \
-  MIDILogLocation( ERROR, "%s\n", message ); \
-  return retval;
+MIDIErrorNumber = kind; \
+MIDILogLocation( ERROR, "%s\n", message ); \
+return retval;
 
 #define MIDIPrecondReturn( expr, kind, retval ) \
-  do { if( !(expr) ) { \
-    MIDIPrecondFailed( "[" #kind "] Precondition failed (" #expr ")", kind, retval ); \
-  } } while( 0 )
+do { if( !(expr) ) { \
+  MIDIPrecondFailed( "[" #kind "] Precondition failed (" #expr ")", kind, retval ); \
+} } while( 0 )
 #define MIDIPrecond( expr, kind ) \
-  do { if( !(expr) ) { \
-    MIDIPrecondFailed( "[" #kind "] Precondition failed (" #expr ")", kind, kind ); \
-  } } while( 0 )
+do { if( !(expr) ) { \
+  MIDIPrecondFailed( "[" #kind "] Precondition failed (" #expr ")", kind, kind ); \
+} } while( 0 )
 #else
 #define MIDIPrecondReturn( expr, kind, retval )
 #define MIDIPrecond( expr, kind )
