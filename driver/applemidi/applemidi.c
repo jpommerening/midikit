@@ -397,7 +397,7 @@ int MIDIDriverAppleMIDIGetControlSocket( struct MIDIDriverAppleMIDI * driver, in
 /**
  * @brief Handle incoming MIDI messages.
  * This is called by the RTP-MIDI payload parser whenever it encounters a new MIDI message.
- * There may be multiple messages in a single packet so a single call of @c MIDIDriverAppleMIDI
+ * There may be multiple messages in a single packet so a single call of MIDIDriverAppleMIDI
  * may trigger multiple calls of this function.
  * @public @memberof MIDIDriverAppleMIDI
  * @param driver The driver.
@@ -881,7 +881,7 @@ int MIDIDriverAppleMIDIAddPeer( struct MIDIDriverAppleMIDI * driver, char * addr
 /**
  * @brief Disconnect from a peer.
  * Use the AppleMIDI protocol to tell the peer that the session ended.
- * Remove the peer from the @c RTPSession.
+ * Remove the peer from the RTPSession.
  * @public @memberof MIDIDriverAppleMIDI
  * @param driver The driver.
  * @param size The size of the address pointed to by @c addr.
@@ -905,7 +905,7 @@ int MIDIDriverAppleMIDIRemovePeerWithSockaddr( struct MIDIDriverAppleMIDI * driv
 /**
  * @brief Disconnect from a peer.
  * Use the AppleMIDI protocol to tell the peer that the session ended.
- * Remove the peer from the @c RTPSession.
+ * Remove the peer from the RTPSession.
  * @public @memberof MIDIDriverAppleMIDI
  * @param driver The driver.
  * @param address The internet address of the peer.

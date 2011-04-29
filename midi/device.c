@@ -371,8 +371,8 @@ int MIDIDeviceGetTimer( struct MIDIDevice * device, struct MIDITimer ** timer ) 
  * @param device     The midi device.
  * @param channel    The channel to attach the instrument to.
  *                   To attach the instrument to the device's base channel
- *                   use special @c MIDI_CHANNEL_BASE; to attach it to all
- *                   channels at once, use @c MIDI_CHANNEL_ALL.
+ *                   use special MIDI_CHANNEL_BASE; to attach it to all
+ *                   channels at once, use MIDI_CHANNEL_ALL.
  * @param instrument The instrument to attach.
  * @retval 0  on success.
  * @retval >0 if the instrument could not be attached to the channel(s).
@@ -425,8 +425,8 @@ int MIDIDeviceGetChannelInstrument( struct MIDIDevice * device, MIDIChannel chan
  * @param device     The midi device.
  * @param channel    The channel to attach the controller to.
  *                   To attach the controller to the device's base channel
- *                   use special @c MIDI_CHANNEL_BASE; to attach it to all
- *                   channels at once, use @c MIDI_CHANNEL_ALL.
+ *                   use special MIDI_CHANNEL_BASE; to attach it to all
+ *                   channels at once, use MIDI_CHANNEL_ALL.
  * @param controller The controller to attach.
  * @retval 0  on success.
  * @retval >0 if the controller could not be attached to the channel(s).
@@ -520,7 +520,7 @@ static int _recv_cc( struct MIDIDevice * device, MIDIChannel channel,
 /**
  * @brief Receive a generic MIDI message.
  * This is called by the @c IN port whenever it relays a MIDIMessage
- * to the device. Such a message may come from a @c MIDIDriver or the @c THRU
+ * to the device. Such a message may come from a MIDIDriver or the @c THRU
  * port of another device.
  *
  * The device determines the message type and calls the appropiate member

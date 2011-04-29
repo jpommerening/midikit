@@ -12,6 +12,9 @@ all: midi driver test
 clean: midi-clean driver-clean test-clean
 
 documentation: midi driver
+	rm -r documentation/xml
+	rm -r documentation/html
+	rm -r documentation/wiki
 	doxygen
 	cd documentation && ./generate_wikidoc.sh
 

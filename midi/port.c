@@ -6,9 +6,14 @@
 
 /**
  * @ingroup MIDI
+ * @struct MIDIPort port.h
  * @brief Endpoint for message based communication.
  */
 struct MIDIPort {
+/**
+ * @privatesection
+ * @cond INTERNALS
+ */
   int refs;
   int mode;
   int valid;
@@ -18,15 +23,53 @@ struct MIDIPort {
   MIDIPortReceiveFn * receive;
   MIDIPortInterceptFn * intercept;
   struct MIDIList * ports;
+/** @endcond */
 };
 
 /**
- * @brief Declare the @c MIDIPortType type specification.
+ * @brief Declare the MIDIPortType type specification.
+ * @relates MIDIPort
  */
 MIDI_TYPE_SPEC_OBJECT( MIDIPort, 0x3000 );
 
 /**
- * @internal
+ * @def MIDI_PORT_IN
+ * @brief Port mode for ports that can be used to receive messages.
+ * This is also used as @c mode when incoming messages are
+ * intercepted by an observer.
+ * @relates MIDIPort
+ */
+/**
+ * @def MIDI_PORT_OUT
+ * @brief Port mode for ports that can be used to send messages.
+ * This is also used as @c mode when outgoing messages are
+ * intercepted by an observer.
+ * @relates MIDIPort
+ */
+/**
+ * @def MIDI_PORT_THRU
+ * @brief Port mode for ports that immediately send their incoming
+ * messages to connected ports.
+ * This is also used as @c mode when passed-through messages are
+ * intercepted by an observer.
+ * @relates MIDIPort
+ */
+/**
+ * @def MIDI_PORT_INVALID
+ * @brief Marker for invalidated ports.
+ * This is also used as @c mode when the observer is notified
+ * of a port's invalidation.
+ * @relates MIDIPort
+ */
+
+#pragma mark Internals
+/**
+ * @name Internals
+ * @cond INTERNALS
+ * @{
+ */
+
+/**
  * Parameter struct for apply function used for sending.
  */
 struct MIDIPortApplyParams {
@@ -41,9 +84,9 @@ struct MIDIPortApplyParams {
  * If the port to send to was invalidated before, remove it from the
  * list of connected ports. Send the message to the port otherwise.
  * @private @memberof MIDIPort
- * @param item A pointer to the @c MIDIPort to send to.
- * @param info A pointer to the @c MIDIPortApplyParams structure
- *             that was passed to @c MIDIListApply.
+ * @param item A pointer to the MIDIPort to send to.
+ * @param info A pointer to the MIDIPortApplyParams structure
+ *             that was passed to MIDIListApply.
  * @retval 0 on success.
  */
 static int _port_apply_send( void * item, void * info ) {
@@ -66,8 +109,8 @@ static int _port_apply_send( void * item, void * info ) {
  * @brief Applier function to release invalidated ports.
  * This is used to break retainment cycles.
  * @private @memberof MIDIPort
- * @param item A pointer to the @c MIDIPort to check.
- * @param info A pointer to the @c MIDIPort that is connected
+ * @param item A pointer to the MIDIPort to check.
+ * @param info A pointer to the MIDIPort that is connected
  *             to the port to check.
  * @retval 0 on success.
  */
@@ -87,8 +130,8 @@ static int _port_apply_check( void * item, void * info ) {
 /**
  * @brief Applier function to disconnect a port from another.
  * @private @memberof MIDIPort
- * @param item A pointer to the @c MIDIPort to disconnect.
- * @param info A pointer to the @c MIDIPort from which to disconnect
+ * @param item A pointer to the MIDIPort to disconnect.
+ * @param info A pointer to the MIDIPort from which to disconnect
  *             the port.
  * @retval 0 on success.
  */
@@ -97,6 +140,52 @@ static int _port_apply_disconnect( void * item, void * info ) {
   struct MIDIPort * source = info;
   return MIDIPortDisconnect( source, port );
 }
+
+/**
+ * @brief Intercept messages.
+ * Handle every incoming or outgoing message. To cancel the processing of
+ * the message a value not equal to 0 can be returned.
+ * @private @memberof MIDIPort
+ * @param port   The port.
+ * @param mode   The mode of operation that is intercepted.
+ * @param type   The type of the message.
+ * @param object The message.
+ * @retval 0 on success.
+ */
+static int _port_intercept( struct MIDIPort * port, int mode, struct MIDITypeSpec * type, void * object ) {
+  MIDIAssert( port != NULL );
+  if( port->observer != NULL && port->intercept != NULL ) {
+    return (*port->intercept)( port->observer, port, mode, type, object );
+  } else {
+    return 0;
+  }
+}
+
+/**
+ * @brief Handle the internal passthrough.
+ * Forward the received message to all connected ports.
+ * @private @memberof MIDIPort
+ * @param port   The source port for the forwarded messages.
+ * @param source The source port of the incoming message.
+ * @param type   The type of the message.
+ * @param object The message.
+ * @retval 0 on success.
+ */
+static int _port_passthrough( struct MIDIPort * port, struct MIDIPort * source, struct MIDITypeSpec * type, void * object ) {
+  struct MIDIPortApplyParams params;
+  MIDIAssert( port != NULL );
+  MIDIAssert( port->mode & MIDI_PORT_THRU );
+  _port_intercept( port, MIDI_PORT_THRU, type, object );
+  params.port   = source;
+  params.type   = type;
+  params.object = object;
+  return MIDIListApply( port->ports, &params, &_port_apply_send );
+}
+
+/**
+ * @}
+ * @endcond
+ */
 
 #pragma mark Creation and destruction
 /**
@@ -212,47 +301,6 @@ void MIDIPortRelease( struct MIDIPort * port ) {
  * Methods to connect ports and pass messages between them.
  * @{
  */
-
-/**
- * @brief Intercept messages.
- * Handle every incoming or outgoing message. To cancel the processing of
- * the message a value not equal to 0 can be returned.
- * @private @memberof MIDIPort
- * @param port   The port.
- * @param mode   The mode of operation that is intercepted.
- * @param type   The type of the message.
- * @param object The message.
- * @retval 0 on success.
- */
-static int _port_intercept( struct MIDIPort * port, int mode, struct MIDITypeSpec * type, void * object ) {
-  MIDIAssert( port != NULL );
-  if( port->observer != NULL && port->intercept != NULL ) {
-    return (*port->intercept)( port->observer, port, mode, type, object );
-  } else {
-    return 0;
-  }
-}
-
-/**
- * @brief Handle the internal passthrough.
- * Forward the received message to all connected ports.
- * @private @memberof MIDIPort
- * @param port   The source port for the forwarded messages.
- * @param source The source port of the incoming message.
- * @param type   The type of the message.
- * @param object The message.
- * @retval 0 on success.
- */
-static int _port_passthrough( struct MIDIPort * port, struct MIDIPort * source, struct MIDITypeSpec * type, void * object ) {
-  struct MIDIPortApplyParams params;
-  MIDIAssert( port != NULL );
-  MIDIAssert( port->mode & MIDI_PORT_THRU );
-  _port_intercept( port, MIDI_PORT_THRU, type, object );
-  params.port   = source;
-  params.type   = type;
-  params.object = object;
-  return MIDIListApply( port->ports, &params, &_port_apply_send );
-}
 
 /**
  * @brief Connect a port to another port.

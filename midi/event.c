@@ -11,15 +11,20 @@
  * data.
  */
 struct MIDIEvent {
+/**
+ * @privatesection
+ * @cond INTERNALS
+ */
   int refs;
   size_t id;
   size_t length;
   char * message;
   void * info;
+/** @endcond */
 };
 
 /**
- * @brief Declare the @c MIDIEventType type specification.
+ * @brief Declare the MIDIEventType type specification.
  */
 MIDI_TYPE_SPEC_CODING( MIDIEvent, 0x3010 );
 
@@ -122,6 +127,20 @@ void MIDIEventRelease( struct MIDIEvent * event ) {
 
 /** @} */
 
+#pragma mark Property access
+/**
+ * @name Property access
+ * Acces properties of MIDIEvents
+ * @{
+ */
+
+/**
+ * @brief Get the event identifier.
+ * @public @memberof MIDIEvent
+ * @param event The event.
+ * @param id    The ID.
+ * @retval 0 on success.
+ */
 int MIDIEventGetId( struct MIDIEvent * event, size_t * id ) {
   MIDIPrecond( event != NULL, EFAULT );
   MIDIPrecond( id != NULL, EINVAL );
@@ -129,6 +148,13 @@ int MIDIEventGetId( struct MIDIEvent * event, size_t * id ) {
   return 0;
 }
 
+/**
+ * @brief Get the event info-object.
+ * @public @memberof MIDIEvent
+ * @param event The event.
+ * @param info  The info.
+ * @retval 0 on success.
+ */
 int MIDIEventGetInfo( struct MIDIEvent * event, void ** info ) {
   MIDIPrecond( event != NULL, EFAULT );
   MIDIPrecond( info != NULL, EINVAL );
@@ -136,21 +162,53 @@ int MIDIEventGetInfo( struct MIDIEvent * event, void ** info ) {
   return 0;
 }
 
+/** @} */
+
+#pragma mark Coding
+/**
+ * @name Coding
+ * Encoding and decoding of MIDIEvent objects.
+ * @{
+ */
+
+/**
+ * @brief Encode events.
+ * Encode an event to a buffer.
+ * @public @memberof MIDIEvent
+ * @param event   The event.
+ * @param size    The size of the memory pointed to by @c buffer.
+ * @param buffer  The buffer to encode the event into.
+ * @param written The number of bytes that have been written.
+ * @retval 0 on success.
+ * @retval 1 if the event could not be encoded.
+ */
 int MIDIEventEncode( struct MIDIEvent * event, size_t size, void * buffer, size_t * written ) {
   MIDIPrecond( event != NULL, EFAULT );
   MIDIPrecond( buffer != NULL, EINVAL );
   size_t required = 8 + event->length;
   MIDIPrecond( size >= required, ENOMEM );
-
-  return 0;
+  /** @todo implement me */
+  return 1;
 }
 
+/**
+ * @brief Decode events.
+ * Decode event objects from a buffer.
+ * @public @memberof MIDIEvent
+ * @param event  The event.
+ * @param size   The size of the memory pointed to by @c buffer.
+ * @param buffer The buffer to decode the event from.
+ * @param read   The number of bytes that were actually read.
+ * @retval 0 on success.
+ * @retval 1 if the event could not be encoded.
+ */
 int MIDIEventDecode( struct MIDIEvent * event, size_t size, void * buffer, size_t * read ) {
   MIDIPrecond( event != NULL, EFAULT );
   MIDIPrecond( buffer != NULL, EINVAL );
   size_t required = 5;
   MIDIPrecond( size >= required, EINVAL );
-  
+  /** @todo implement me */
   return 1;
 }
 
+/** @} */

@@ -86,7 +86,7 @@ void MIDIDriverCoreMIDIDestroy( struct MIDIDriverCoreMIDI * driver ) {
 /**
  * @brief Handle incoming MIDI messages.
  * This is called by the RTP-MIDI payload parser whenever it encounters a new MIDI message.
- * There may be multiple messages in a single packet so a single call of @c MIDIDriverCoreMIDI
+ * There may be multiple messages in a single packet so a single call of MIDIDriverCoreMIDI
  * may trigger multiple calls of this function.
  * @public @memberof MIDIDriverCoreMIDI
  * @param driver The driver.

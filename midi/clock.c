@@ -35,6 +35,7 @@
 
 /**
  * @ingroup MIDI
+ * @struct MIDIClock clock.h
  * @brief Provider for accurate timestamps.
  * The MIDIClock provides accurate timestamps at any desired
  * rate with a selectable offset.

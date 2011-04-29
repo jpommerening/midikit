@@ -13,7 +13,7 @@
 /**
  * @defgroup MIDI-driver MIDI driver implementations
  * @ingroup MIDI
- * Implementations of the @c MIDIDriver interface.
+ * Implementations of the MIDIDriver interface.
  */
 
 /**
@@ -37,7 +37,7 @@
 
 /**
  * @ingroup MIDI
- * @struct MIDIDriver
+ * @struct MIDIDriver driver.h
  * @brief Abstract class to send MIDI messages with various drivers.
  * The MIDIDriver is an abstract class / interface that can be used
  * to pass messages to an underlying implementation.
@@ -45,7 +45,7 @@
  * driver implementation structure.
  * The C-standard asserts that there is no unnamed padding at
  * the beginning of a struct. Extended structs can be used whereever
- * a @c MIDIDriver struct is expected.
+ * a MIDIDriver struct is expected.
  */
 
 /**
@@ -54,7 +54,7 @@
  * a message on it's port it has to <b>send</b> the message using it's
  * implementation.
  * This is because the port <b>receives</b> messages from (virtual)
- * @c MIDIDevices when these devices <b>send</b> a message through
+ * MIDIDevices when these devices <b>send</b> a message through
  * their own ports.
  * @private @memberof MIDIDriver
  * @param target  The target of the port callback, the driver itself.

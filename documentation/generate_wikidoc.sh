@@ -1,6 +1,8 @@
 #!/bin/bash
 
 STYLESHEET="doxyxml2wiki.xslt"
+INDEX="wiki/index.wiki"
+CONTENTS="wiki/contents.wiki"
 
 if ! [ -x "$(which xml)" ]; then
   exit
@@ -10,12 +12,20 @@ if ! [ -d "xml" ]; then
   exit 1
 fi
 
-FILES="$(find xml -name "struct*.xml")"
-
 mkdir -p wiki
+rm -f "${CONTENTS}" "${INDEX}"
 
+FILES="$(find xml -name "struct_*.xml")"
 for FILE in ${FILES}; do
    OUTPUT="${FILE%.xml}.wiki"
    OUTPUT="wiki/${OUTPUT#xml/}"
-   xml tr "${STYLESHEET}" "${FILE}" > "${OUTPUT}"
+   xml tr "${STYLESHEET}" -s "contents=contents" "${FILE}" > "${OUTPUT}"
+done
+
+FILES="$(find xml -name "group_*.xml")"
+for FILE in ${FILES}; do
+   OUTPUT="${FILE%.xml}.wiki"
+   OUTPUT="wiki/${OUTPUT#xml/}"
+   xml tr "${STYLESHEET}" -s "contents=contents" "${FILE}" > "${OUTPUT}"
+   xml tr "${STYLESHEET}" -s "display=contents"  "${FILE}" >> "${CONTENTS}"
 done

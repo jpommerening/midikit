@@ -77,10 +77,10 @@ struct RTPMIDIPeerInfo {
 };
 
 /**
- * @brief Send and receive @c MIDIMessage objects via an @c RTPSession.
+ * @brief Send and receive MIDIMessage objects via an @c RTPSession.
  * This class describes a payload format to code MIDI messages as
- * RTP payload. It extends the @c RTPSession by methods to send and
- * receive @c MIDIMessage objects.
+ * RTP payload. It extends the RTPSession by methods to send and
+ * receive MIDIMessage objects.
  * For implementation details refer to RFC 4695 & 4696.
  */
 struct RTPMIDISession {
@@ -240,7 +240,7 @@ static int _rtpmidi_journal_decode_messages( struct RTPMIDIJournal * journal, un
 #pragma mark RTP transmission extension
 /**
  * @name RTP transmission extension
- * Sending and receiving @c MIDIMessage objects using the RTP-protocol.
+ * Sending and receiving MIDIMessage objects using the RTP-protocol.
  * @{
  */
 

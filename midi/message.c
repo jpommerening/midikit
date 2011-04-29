@@ -8,13 +8,47 @@
  * @brief Structure of MIDI message object.
  */
 struct MIDIMessage {
+/**
+ * @privatesection
+ * @cond INTERNALS
+ */
   int    refs;
   struct MIDIMessageFormat * format;
   struct MIDIMessageData data;
   MIDITimestamp timestamp;
+/** @endcond */
 };
 
+/**
+ * @brief Declare the MIDIMessage type specification.
+ */
 MIDI_TYPE_SPEC_CODING( MIDIMessage, 0x4010 );
+
+#pragma mark Internals
+/**
+ * @name Internals
+ * @cond INTERNALS
+ * @{
+ */
+ 
+/**
+ * @brief Release auxiliary data.
+ * Check if the message has auxiliary data (variable length sysex data) and release it if
+ * necessary.
+ * @private @memberof MIDIMessage
+ * @param message The message.
+ */
+static void _check_release_data( struct MIDIMessage * message ) {
+  if( message->data.data != NULL && ( message->data.bytes[3] & 1 ) ) {
+    free( message->data.data );
+    message->data.data = NULL;
+  }
+}
+
+/**
+ * @}
+ * @endcond
+ */
 
 #pragma mark Creation and destruction
 /**
@@ -206,21 +240,6 @@ int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t 
  * Methods for encoding and decoding midi message objects.
  * @{
  */
- 
-/**
- * @brief Release auxiliary data.
- * Check if the message has auxiliary data (variable length sysex data) and release it if
- * necessary.
- * @private @memberof MIDIMessage
- * @param message The message.
- */
-static void _check_release_data( struct MIDIMessage * message ) {
-  if( message->data.data != NULL && ( message->data.bytes[3] & 1 ) ) {
-    free( message->data.data );
-    message->data.data = NULL;
-  }
-}
-
 
 /**
  * @brief Encode messages.

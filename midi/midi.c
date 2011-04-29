@@ -43,7 +43,7 @@ MIDILogFunction MIDILogger = NULL;
  * @def MIDIPrecondReturn
  * @brief Check preconditions of a method and return a specified value.
  * Use this macro to check your preconditions inside a function.
- * Unlike @c MIDIPrecond this macro allows you to specify the return
+ * Unlike MIDIPrecond this macro allows you to specify the return
  * value if the precondition was violated.
  * @param expr   The expression to test.
  * @param kind   The symbolic error number.
