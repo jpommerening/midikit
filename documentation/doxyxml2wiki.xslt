@@ -81,7 +81,7 @@
       <xsl:when test="@kind='user-defined'">== <xsl:value-of select="header/text()"/> ==</xsl:when>
       <xsl:when test="@kind='public-attrib'">== Public Attributes == </xsl:when>
       <xsl:when test="@kind='private-attrib'">== Private Attributes == </xsl:when>
-      <xsl:when test="@kind='public-finc'">== Public Functions == </xsl:when>
+      <xsl:when test="@kind='public-func'">== Public Functions == </xsl:when>
       <xsl:when test="@kind='private-func'">== Private Functions == </xsl:when>
       <xsl:when test="@kind='func'">== Functions == </xsl:when>
       <xsl:when test="@kind='define'">== Defines == </xsl:when>
