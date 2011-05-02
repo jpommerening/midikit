@@ -106,14 +106,12 @@
   <xsl:template match="ref">[<xsl:value-of select="@refid" /><xsl:text> </xsl:text><xsl:apply-templates />]</xsl:template>
 
   <!-- Formatting for types, declnames, computeroutput (@c) -->
-  <xsl:template match="tt|type|declname|computeroutput">`<xsl:apply-templates />`</xsl:template>
+  <xsl:template match="type|declname|computeroutput">`<xsl:apply-templates />`</xsl:template>
 
   <!-- Formatting for code & preformatted text -->
-  <xsl:template match="code|pre">
-{{{
-<xsl:apply-templates />
-}}}
-</xsl:template>
+  <xsl:template match="preformatted">
+    <xsl:text>&lt;pre&gt;</xsl:text><xsl:apply-templates /><xsl:text>&lt;/pre&gt;</xsl:text>
+  </xsl:template>
 
   <!-- Formatting for variables -->
   <xsl:template match="memberdef[@kind='variable']">
@@ -194,6 +192,11 @@
       <xsl:when test="@kind='return'">
         <xsl:text>
 ==== Return ====
+</xsl:text>
+      </xsl:when>
+      <xsl:when test="@kind='par'">
+        <xsl:text>
+==== </xsl:text><xsl:value-of select="title/text()" /><xsl:text> ====
 </xsl:text>
       </xsl:when>
     </xsl:choose>
