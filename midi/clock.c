@@ -10,12 +10,13 @@
 #define _MIDI_CLOCK_MACH { &_init_clock_mach, &_timestamp_mach }
 #endif
 
-#if defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0
+/* Temporarily disabled. Add linker flag "-lrt" before enabling this. */
+#if defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0 && 0
 #include <time.h>
-#ifdef _CLOCK_MONOTONIC_FAST
+#ifdef CLOCK_MONOTONIC_FAST
 #define POSIX_CLOCK_TYPE CLOCK_MONOTONIC_FAST
 #else
-#ifdef _CLOCK_MONOTONIC
+#ifdef CLOCK_MONOTONIC
 #define POSIX_CLOCK_TYPE CLOCK_MONOTONIC
 #endif
 #endif
@@ -37,17 +38,39 @@
  * @ingroup MIDI
  * @struct MIDIClock clock.h
  * @brief Provider for accurate timestamps.
- * The MIDIClock provides accurate timestamps at any desired
- * rate with a selectable offset.
+ * The MIDIClock provides accurate timestamps at any desired rate
+ * with a selectable offset. It focuses on stable timestamps and
+ * tries to avoid integer overflows in calculations.
  */
 struct MIDIClock {
+/**
+ * @privatesection
+ * @cond INTERNALS
+ */
   int              refs;
   MIDITimestamp    offset;
   MIDISamplingRate rate;
   unsigned long long numer;
   unsigned long long denom;
+/** @endcond */
 };
 
+#pragma mark INTERNALS
+/**
+ * @name Internals
+ * @cond INTERNALS
+ * Internal functions for handling fractions and calculating time.
+ * @{
+ */
+
+/**
+ * @brief Normalize a fraction.
+ * Try to divide the numerator and denominator by a small list of known primes.
+ * Chances are the fraction is normalized after that.
+ * @private @memberof MIDIClock
+ * @param numer The numerator.
+ * @param denom The denominator.
+ */
 static void _normalize_frac( unsigned long long * numer, unsigned long long * denom ) {
   static int prime[] = { 7, 5, 3, 2, 1 };
   int i;
@@ -61,6 +84,14 @@ static void _normalize_frac( unsigned long long * numer, unsigned long long * de
   MIDILog( DEBUG, "Result: (%llu / %llu)\n", *numer, *denom );
 }
 
+/**
+ * @brief Divide a fraction by a scalar.
+ * Factorize the scalar to integers and apply them to the fraction.
+ * @private @memberof MIDIClock
+ * @param numer The numerator.
+ * @param denom The denominator.
+ * @param fac   The factor to divide by.
+ */
 static void _divide_frac( unsigned long long * numer, unsigned long long * denom, unsigned long long fac ) {
   static int prime[] = { 7, 5, 3, 2, 1 };
   int i;
@@ -79,12 +110,24 @@ static void _divide_frac( unsigned long long * numer, unsigned long long * denom
   MIDILog( DEBUG, "Result: (%llu / %llu) with last factor: %llu\n", *numer, *denom, fac );
 }
 
+/**
+ * @brief Multiply a fraction with a scalar.
+ * @see _divide_frac
+ * @private @memberof MIDIClock
+ * @param numer The numerator.
+ * @param denom The denominator.
+ * @param fac   The factor to multiply with.
+ */
 static void _multiply_frac( unsigned long long * numer, unsigned long long * denom, unsigned long long fac ) {
   _divide_frac( denom, numer, fac );
 }
 
-/* use mach_absolute_time */
 #ifdef _MIDI_CLOCK_MACH
+/**
+ * Initialize a clock to be used with @c mach_absolute_time().
+ * @private @memberof MIDIClock
+ * @param clock The clock.
+ */
 static void _init_clock_mach( struct MIDIClock * clock ) {
   static mach_timebase_info_data_t info = { 0, 0 };
   if( info.denom == 0 ) {
@@ -96,32 +139,55 @@ static void _init_clock_mach( struct MIDIClock * clock ) {
   _divide_frac( &(clock->numer), &(clock->denom), NSEC_PER_SEC );
 }
 
+/**
+ * Get a timestamp by using @c mach_absolute_time().
+ * @private @memberof MIDIClock
+ * @return a timestamp in a CPU-dependent timebase.
+ */
 static unsigned long long _timestamp_mach( void ) {
   return mach_absolute_time();
 }
 #endif
 
-/* use posix clock_gettime */
 #ifdef _MIDI_CLOCK_POSIX
+/**
+ * Initialize a clock to be used with POSIX' @c clock_gettime().
+ * @private @memberof MIDIClock
+ * @param clock The clock.
+ */
 static void _init_clock_posix( struct MIDIClock * clock ) {
   clock->numer = 1;
   clock->denom = NSEC_PER_SEC;
 }
 
+/**
+ * Get a timestamp by using @c clock_gettime().
+ * @private @memberof MIDIClock
+ * @return a timestamp in nanoseconds.
+ */
 static unsigned long long _timestamp_posix( void ) {
   static struct timespec ts;
-  clock_gettime( CLOCK_TYPE, &ts );
+  clock_gettime( POSIX_CLOCK_TYPE, &ts );
   return (ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec);
 }
 #endif
 
-/* use good old gettimeofday */
 #ifdef _MIDI_CLOCK_SYS
+/**
+ * Initialize a clock to be used with good old @c gettimeofday().
+ * @private @memberof MIDIClock
+ * @param clock The clock.
+ */
 static void _init_clock_sys( struct MIDIClock * clock ) {
   clock->numer = 1;
   clock->denom = USEC_PER_SEC;
 }
 
+/**
+ * Get a timestamp by using @c gettimeofday().
+ * @private @memberof MIDIClock
+ * @return a timestamp in microseconds.
+ */
 static unsigned long long _timestamp_sys( void ) {
   static struct timeval tv;
   gettimeofday( &tv, NULL );
@@ -144,12 +210,31 @@ static struct {
 #endif
 };
 
+/**
+ * @brief The global clock.
+ * @private @memberof MIDIClock
+ */
 static struct MIDIClock * _midi_global_clock = NULL;
 
+/**
+ * @brief Get the real time.
+ * Use the clock's timestamp function to get an implementation-specific
+ * timestamp. Then convert it to the desired rate using the internal fraction.
+ * @private @memberof MIDIClock
+ * @param clock The clock.
+ */
 static MIDITimestamp _get_real_time( struct MIDIClock * clock ) {
   return ((*_midi_clock[0].timestamp)() * clock->numer) / clock->denom;
 }
 
+/**
+ * @brief Get the global clock.
+ * Provide a pointer to the global clock.
+ * If there is no global clock yet, create one using the default
+ * sampling rate.
+ * @private @memberof MIDIClock
+ * @return a pointer to the global clock.
+ */
 static struct MIDIClock * _get_global_clock( void ) {
   if( _midi_global_clock == NULL ) {
     _midi_global_clock = MIDIClockCreate( MIDI_SAMPLING_RATE_DEFAULT );
@@ -158,9 +243,20 @@ static struct MIDIClock * _get_global_clock( void ) {
 }
 
 /**
+ * @}
+ * @endcond
+ */
+
+#pragma mark Global clock
+/**
+ * @name Global clock
+ * @{
+ */
+
+/**
  * @brief Set the global clock.
  * Replace the global clock (if set) with another clock.
- * @relates MIDIClock
+ * @public @memberof MIDIClock
  * @param clock The global clock.
  */
 int MIDIClockSetGlobalClock( struct MIDIClock * clock ) {
@@ -173,7 +269,7 @@ int MIDIClockSetGlobalClock( struct MIDIClock * clock ) {
 
 /**
  * @brief Get the global clock.
- * @relates MIDIClock
+ * @public @memberof MIDIClock
  * @param clock The global clock.
  */
 int MIDIClockGetGlobalClock( struct MIDIClock ** clock ) {
@@ -181,12 +277,38 @@ int MIDIClockGetGlobalClock( struct MIDIClock ** clock ) {
   return 0;
 }
 
+/** @} */
+
 #pragma mark Creation and destruction
 /**
  * @name Creation and destruction
  * Creating, destroying and reference counting of MIDIClock objects.
  * @{
  */
+
+/**
+ * @brief Provide clock with a specific timestamp rate.
+ * Check if the global clock has the requested sampling rate. If the
+ * rate matches, retain and return the global clock. Create a new
+ * clock otherwise.
+ * If the global clock still NULL, assign the newly created clock.
+ * @public @memberof MIDIClock
+ * @param rate The number of times the clock should tick per second.
+ * @return a pointer to the created clock structure on success.
+ * @return a @c NULL pointer if the clock could not created.
+ */
+struct MIDIClock * MIDIClockProvide( MIDISamplingRate rate ) {
+  if( _midi_global_clock == NULL ) {
+    _midi_global_clock = MIDIClockCreate( rate );
+    MIDIClockRetain( _midi_global_clock );
+    return _midi_global_clock;
+  } else if( _midi_global_clock->rate == rate ) {
+    MIDIClockRetain( _midi_global_clock );
+    return _midi_global_clock;
+  } else {
+    return MIDIClockCreate( rate );
+  }
+}
 
 /**
  * @brief Create a MIDIClock instance.

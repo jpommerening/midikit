@@ -11,14 +11,16 @@ int MIDIErrorNumber = 0;
 
 #ifdef DEBUG
 
-static int _midi_err_log( const char * fmt, ... ) {
-   int result;
-   va_list ap;
-   va_start( ap, fmt );
-   result = vfprintf( stderr, fmt, ap );
-   va_end( ap );
-   fflush( stderr );
-   return result;
+static int _midi_err_log( int channels, const char * fmt, ... ) {
+   int result = 0;
+   if( channels & MIDI_LOG_CHANNELS ) {
+     va_list ap;
+     va_start( ap, fmt );
+     result = vfprintf( stderr, fmt, ap );
+     va_end( ap );
+     fflush( stderr );
+   }
+   return result; 
 }
 
 MIDILogFunction MIDILogger = &_midi_err_log;

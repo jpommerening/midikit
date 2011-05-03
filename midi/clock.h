@@ -17,6 +17,7 @@ struct MIDIClock;
 int MIDIClockSetGlobalClock( struct MIDIClock * clock );
 int MIDIClockGetGlobalClock( struct MIDIClock ** clock );
 
+struct MIDIClock * MIDIClockProvide( MIDISamplingRate rate );
 struct MIDIClock * MIDIClockCreate( MIDISamplingRate rate );
 void MIDIClockDestroy( struct MIDIClock * clock );
 void MIDIClockRetain( struct MIDIClock * clock );

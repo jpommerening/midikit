@@ -292,7 +292,7 @@
  */
 #define MIDI_BOOL( v ) (((v)>=64) ? MIDI_ON : MIDI_OFF)
 
-typedef int (*MIDILogFunction)( const char *, ... );
+typedef int (*MIDILogFunction)( int, const char *, ... );
 extern MIDILogFunction MIDILogger;
 extern int MIDIErrorNumber;
 
@@ -312,21 +312,19 @@ extern int MIDIErrorNumber;
 #endif
 #endif
 
-#define MIDI_LOG_CH( channels ) ( (MIDI_LOG_ ## channels) & MIDI_LOG_CHANNELS )
-
 #ifndef NO_LOG
-#define MIDILog( channels, ... ) \
-do { if( MIDI_LOG_ ## channels & MIDI_LOG_CHANNELS ) { (*MIDILogger)( __VA_ARGS__ ); } } while( 0 )
+#define MIDILog( channel, ... ) \
+do { if( MIDILogger != NULL ) { (*MIDILogger)( MIDI_LOG_ ## channel, __VA_ARGS__ ); } } while( 0 )
 #ifdef SUBDIR
-#define MIDILogLocation( channels, fmt, ... ) \
-MIDILog( channels, "%s/%s:%i: " fmt, SUBDIR, __FILE__, __LINE__, __VA_ARGS__ );
+#define MIDILogLocation( channel, fmt, ... ) \
+MIDILog( channel, "%s/%s:%i: " fmt, SUBDIR, __FILE__, __LINE__, __VA_ARGS__ );
 #else
-#define MIDILogLocation( channels, fmt, ... ) \
-MIDILog( channels, "%s:%i: " fmt, __FILE__, __LINE__, __VA_ARGS__ );
+#define MIDILogLocation( channel, fmt, ... ) \
+MIDILog( channel, "%s:%i: " fmt, __FILE__, __LINE__, __VA_ARGS__ );
 #endif
 #else
-#define MIDILog( channels, fmt, ... )
-#define MIDILogLocation( channels, fmt, ... )
+#define MIDILog( channel, fmt, ... )
+#define MIDILogLocation( channel, fmt, ... )
 #endif
 
 #ifndef NO_ERROR

@@ -23,58 +23,74 @@
 /**
  * @public @property MIDIDeviceDelegate::recv_nof
  * @brief Note off callback.
+ * @see   MIDI_STATUS_NOTE_OFF
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_non
  * @brief Note on callback.
+ * @see   MIDI_STATUS_NOTE_ON
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_pkp
  * @brief Polyphonic key pressure callback.
+ * @see   MIDI_STATUS_POLYPHONIC_KEY_PRESSURE
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_cc
  * @brief Control change callback.
+ * @see   MIDI_STATUS_CONTROL_CHANGE
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_pc
  * @brief Program change callback.
+ * @see   MIDI_STATUS_PROGRAM_CHANGE
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_cp
  * @brief Channel pressure callback.
+ * @see   MIDI_STATUS_CHANNEL_PRESSURE
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_pwc
  * @brief Pitch wheel change callback.
+ * @see   MIDI_STATUS_PITCH_WHEEL_CHANGE
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_sx
  * @brief System exclusive callback.
+ * @see   MIDI_STATUS_SYSTEM_EXCLUSIVE
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_tcqf
  * @brief Time code quarter frame callback.
+ * @see   MIDI_STATUS_TIME_CODE_QUARTER_FRAME
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_spp
  * @brief Song position pointer callback.
+ * @see   MIDI_STATUS_SONG_POSITION_POINTER
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_ss
  * @brief Song select callback.
+ * @see   MIDI_STATUS_SONG_SELECT
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_tr
  * @brief Tune request callback.
+ * @see   MIDI_STATUS_TUNE_REQUEST
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_eox
  * @brief End of exclusive callback.
+ * @see   MIDI_STATUS_END_OF_EXCLUSIVE
  */
 /**
  * @public @property MIDIDeviceDelegate::recv_rt
  * @brief Real time callback.
+ * @see   MIDI_STATUS_TIMING_CLOCK, MIDI_STATUS_START,
+ *        MIDI_STATUS_CONTINUE, MIDI_STATUS_STOP,
+ *        MIDI_STATUS_ACTIVE_SENSING, MIDI_STATUS_RESET
  */
 
 /**
@@ -88,6 +104,10 @@
  * that forwards every MIDIMessage received on the input.
  */
 struct MIDIDevice {
+/**
+ * @privatesection
+ * @cond INTERNALS
+ */
   int    refs;
   struct MIDIDeviceDelegate * delegate;
   struct MIDIPort * in;
@@ -96,8 +116,9 @@ struct MIDIDevice {
   MIDIBoolean omni_mode;
   MIDIBoolean poly_mode;
   struct MIDITimer      * timer;
-/*struct MIDIInstrument * instrument[N_CHANNEL];  **< @private */
+/*struct MIDIInstrument * instrument[N_CHANNEL]; */
   struct MIDIController * controller[N_CHANNEL];
+/** @endcond */
 };
 
 #pragma mark Creation and destruction
@@ -239,14 +260,27 @@ int MIDIDeviceGetThroughPort( struct MIDIDevice * device, struct MIDIPort ** por
   return 0;
 }
 
+/** @} */
+
 #pragma mark Deprecated connector attachment functions
-/** @deprecated */
+/**
+ * @name Deprecated connector attachment functions
+ * @{
+ */
+
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
 int MIDIDeviceDetachIn( struct MIDIDevice * device ) {
   MIDIPrecond( device != NULL, EFAULT );
   return 0;
 }
 
-/** @deprecated */
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
 int MIDIDeviceAttachIn( struct MIDIDevice * device, struct MIDIPort * port ) {
   MIDIPrecond( device != NULL, EFAULT );
   MIDIPrecond( port != NULL, EINVAL );
@@ -254,13 +288,19 @@ int MIDIDeviceAttachIn( struct MIDIDevice * device, struct MIDIPort * port ) {
   return 0;
 }
 
-/** @deprecated */
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
 int MIDIDeviceDetachOut( struct MIDIDevice * device ) {
   MIDIPrecond( device != NULL, EFAULT );
   return MIDIPortDisconnectAll( device->out );
 }
 
-/** @deprecated */
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
 int MIDIDeviceAttachOut( struct MIDIDevice * device, struct MIDIPort * port ) {
   MIDIPrecond( device != NULL, EFAULT );
   MIDIPrecond( port != NULL, EINVAL );
@@ -268,13 +308,19 @@ int MIDIDeviceAttachOut( struct MIDIDevice * device, struct MIDIPort * port ) {
   return 0;
 }
 
-/** @deprecated */
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
 int MIDIDeviceDetachThru( struct MIDIDevice * device ) {
   MIDIPrecond( device != NULL, EFAULT );
   return MIDIPortDisconnectAll( device->in );
 }
 
-/** @deprecated */
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
 int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIPort * port ) {
   MIDIPrecond( device != NULL, EFAULT );
   MIDIPrecond( port != NULL, EINVAL );
@@ -432,18 +478,22 @@ int MIDIDeviceGetChannelInstrument( struct MIDIDevice * device, MIDIChannel chan
  * @retval >0 if the controller could not be attached to the channel(s).
  */
 int MIDIDeviceSetChannelController( struct MIDIDevice * device, MIDIChannel channel, struct MIDIController * controller ) {
+  int result = 0;
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( controller != NULL, EINVAL );
+  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
   if( channel == MIDI_CHANNEL_ALL ) {
     for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
-      if( MIDIDeviceSetChannelController( device, channel, controller ) ) return 1;
+      result += MIDIDeviceSetChannelController( device, channel, controller );
     }
-    return 0;
+    return result;
   }
-  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
-  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
+
+  MIDIPrecond( channel >= MIDI_CHANNEL_1 && channel <= MIDI_CHANNEL_16, EINVAL );
   if( device->controller[(int)channel] == controller ) return 0;
   if( device->controller[(int)channel] != NULL ) MIDIControllerRelease( device->controller[(int)channel] );
-  MIDIControllerRetain( controller );
   device->controller[(int)channel] = controller;
+  MIDIControllerRetain( controller );
   return 0;
 }
 
@@ -459,22 +509,38 @@ int MIDIDeviceSetChannelController( struct MIDIDevice * device, MIDIChannel chan
  * @retval >0 if the controller was not stored.
  */
 int MIDIDeviceGetChannelController( struct MIDIDevice * device, MIDIChannel channel, struct MIDIController ** controller ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( controller != NULL, EINVAL );
   if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
-  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
-  if( controller == NULL ) return 1;
+
+  MIDIPrecond( channel >= MIDI_CHANNEL_1 && channel <= MIDI_CHANNEL_16, EINVAL );
   *controller = device->controller[(int)channel];
   return 0;
 }
 
 /** @} */
 
-#pragma mark Internal message routing
+#pragma mark Internals
 /**
- * @internal
+ * @name Internals
+ * @cond INTERNALS
  * Internal message routing.
  * @{
  */
  
+/**
+ * @brief Receive a control change in Omni mode.
+ * Receive a control change and pass it to all connected controllers.
+ * We ensure that even if one controller is connected to multiple
+ * channels, it will receive the control change only once, by keeping
+ * a list of controllers that received the given message.
+ * @private @memberof MIDIDevice
+ * @param device  The device.
+ * @param channel The channel.
+ * @param control The control change number.
+ * @param value   The control change value.
+ * @retval 0 on success.
+ */
 static int _recv_cc_omni( struct MIDIDevice * device, MIDIChannel channel,
                           MIDIControl control, MIDIValue value ) {
   int result = 0, i;
@@ -487,10 +553,14 @@ static int _recv_cc_omni( struct MIDIDevice * device, MIDIChannel channel,
     if( device->controller[(int)c] != NULL ) {
       i   = 0;
       ctl = device->controller[(int)c];
+      /* if we have already sent the CC to the controller,
+       * it will be contained in the recv list. */
       while( i<N_CHANNEL
           && recv[i]!=NULL
           && recv[i]!=ctl ) i++;
       if( recv[i] != ctl ) {
+        /* we reached the end of (the filled part of) the list
+         * without finding the controller. */
         recv[i]   = ctl;
         recv[i+1] = NULL;
         result   += MIDIControllerReceiveControlChange( ctl, device, channel,
@@ -501,6 +571,18 @@ static int _recv_cc_omni( struct MIDIDevice * device, MIDIChannel channel,
   return result;
 }
 
+/**
+ * @brief Receive a control change.
+ * Receive a control change and pass it to the controller that
+ * is registered for the message's channel. If the device is in
+ * Omni-mode, pass the control change to all controllers.
+ * @private @memberof MIDIDevice
+ * @param device  The device.
+ * @param channel The channel.
+ * @param control The control change number.
+ * @param value   The control change value.
+ * @retval 0 on success.
+ */
 static int _recv_cc( struct MIDIDevice * device, MIDIChannel channel,
                      MIDIControl control, MIDIValue value ) {
   MIDIPrecond( device != NULL, EFAULT );
@@ -515,6 +597,21 @@ static int _recv_cc( struct MIDIDevice * device, MIDIChannel channel,
     return _recv_cc_omni( device, channel, control, value );
   }
   return 0;
+}
+
+/**
+ * @brief Receive a realtime message.
+ * Receive the message and pass it to the connected timer (if any).
+ * @private @memberof MIDIDevice
+ * @param device    The device.
+ * @param status    The status (must be real-time)
+ * @param timestamp The timestamp of the real-time-message.
+ * @retval 0 on success.
+ */
+static int _recv_rt( struct MIDIDevice * device, MIDIStatus status, MIDITimestamp timestamp ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  if( device->timer == NULL ) return 0;
+  return MIDITimerReceiveRealTime( device->timer, device, status, timestamp );
 }
 
 /**
@@ -614,12 +711,18 @@ static int _recv_msg( struct MIDIDevice * device, struct MIDIMessage * message )
   return 0;
 }
 
-static int _recv_rt( struct MIDIDevice * device, MIDIStatus status, MIDITimestamp timestamp ) {
-  MIDIPrecond( device != NULL, EFAULT );
-  if( device->timer == NULL ) return 0;
-  return MIDITimerReceiveRealTime( device->timer, device, status, timestamp );
-}
-
+/**
+ * @brief Receive anything that can be sent through a port.
+ * This is used as the callback of the device's @c IN port.
+ * Check if the message-type indicates a MIDIMessage and forward
+ * it to the routing function.
+ * @private @memberof MIDIDevice
+ * @param dev    The device.
+ * @param source The source that sent the message.
+ * @param type   The message-type.
+ * @param data   The message object.
+ * @retval 0 on success.
+ */
 static int _recv( void * dev, void * source, struct MIDITypeSpec * type, void * data ) {
   MIDIPrecond( dev != NULL, EFAULT );
   if( type == MIDIMessageType ) {
@@ -630,8 +733,10 @@ static int _recv( void * dev, void * source, struct MIDITypeSpec * type, void * 
   }
 }
 
-
-/** @} */
+/**
+ * @}
+ * @endcond
+ */
 
 #pragma mark Message passing
 /**

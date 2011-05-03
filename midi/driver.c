@@ -109,16 +109,7 @@ void MIDIDriverInit( struct MIDIDriver * driver, char * name, MIDISamplingRate r
   driver->refs  = 1;
   driver->rls   = NULL;
   driver->port  = MIDIPortCreate( name, MIDI_PORT_IN | MIDI_PORT_OUT, driver, &_port_receive );
-  driver->clock = NULL;
-
-  MIDIClockGetGlobalClock( &(driver->clock) );
-  MIDIClockGetSamplingRate( driver->clock, &global_rate );
-
-  if( global_rate == rate ) {
-    MIDIClockRetain( driver->clock );
-  } else {
-    driver->clock = MIDIClockCreate( rate );
-  }
+  driver->clock = MIDIClockProvide( rate );
 
   driver->send    = NULL;
   driver->destroy = NULL;

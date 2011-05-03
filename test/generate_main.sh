@@ -35,7 +35,6 @@ echo "    int (*func)(void);"
 echo "  } tests[] = {"
 sed "s/${TEST_DECL_PATTERN}/    { \"\2\", \&\2 },/p;d" ${FILES}
 echo "  };"
-echo "  MIDILogger = &printf;"
 echo "  for( i=0; i<(sizeof(tests)/sizeof(tests[0])); i++ ) {"
 echo "    printf( \"> Running %s%c\", tests[i].name, NL );"
 echo "    if( (tests[i].func)() ) {"
