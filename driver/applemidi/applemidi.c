@@ -428,7 +428,7 @@ int MIDIDriverAppleMIDISendMessage( struct MIDIDriverAppleMIDI * driver, struct 
   MIDITimestamp timestamp;
   MIDIClockGetNow( driver->base.clock, &timestamp );
   MIDIMessageSetTimestamp( message, timestamp );
-/*MIDIMessageQueuePush( driver->out_queue, message );*/
+  MIDIMessageQueuePush( driver->out_queue, message );
   return MIDIDriverAppleMIDISend( driver );
 }
 

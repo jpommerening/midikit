@@ -104,7 +104,6 @@ struct MIDIDriver * MIDIDriverCreate( char * name, MIDISamplingRate rate ) {
  */
 void MIDIDriverInit( struct MIDIDriver * driver, char * name, MIDISamplingRate rate ) {
   MIDIPrecondReturn( driver != NULL, EFAULT, (void)0 );
-  MIDISamplingRate global_rate;
 
   driver->refs  = 1;
   driver->rls   = NULL;

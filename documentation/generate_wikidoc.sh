@@ -4,11 +4,11 @@ STYLESHEET="doxyxml2wiki.xslt"
 INDEX="wiki/index.wiki"
 CONTENTS="wiki/contents.wiki"
 
-if ! [ -x "$(which xml)" ]; then
+if ! test -x "$(which xml)"; then
   exit
 fi
 
-if ! [ -d "xml" ]; then
+if ! test -d "xml"; then
   exit 1
 fi
 

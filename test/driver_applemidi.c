@@ -91,6 +91,7 @@ static int _n_msg = 0;
 static int _receive( void * target, void * source, struct MIDITypeSpec * type, void * data ) {
   struct MIDIMessage * message;
   char * buffer;
+  int i;
   if( target != &_n_msg ) {
     printf( "Incorrect port target.\n" );
   }
@@ -106,7 +107,7 @@ static int _receive( void * target, void * source, struct MIDITypeSpec * type, v
     buffer = data;
     printf( "Received unknown type '%p':\n", type );
     if( type == NULL ) return 0;
-    for( int i=0; i<type->size; i++ ) {
+    for( i=0; i<type->size; i++ ) {
       if( (i+1)%8 == 0 || (i+1) == type->size ) {
         if( buffer[i-(i%8)] < 128 ) {
           printf( "0x%02x | %s\n", buffer[i], buffer+i-(i%8) );
@@ -269,6 +270,7 @@ int test004_applemidi( void ) {
     0x00, 0xa0, 0x42, 0x78,
     0x00, 0x80, 0x42, 0x68
   };
+  int i;
   unsigned long long ssrc;
   size_t bytes;
   MIDIChannel  channel = MIDI_CHANNEL_1;
@@ -303,7 +305,7 @@ int test004_applemidi( void ) {
   bytes = recv( client_rtp_socket, &(buffer[0]), sizeof(buffer), 0 );
   ASSERT_GREATER_OR_EQUAL( bytes, 23, "Could not received RTP MIDI packet from AppleMIDI driver." );
 
-  for( int i=0; i<bytes; i++ ) {
+  for( i=0; i<bytes; i++ ) {
     if( (i+1)%8 == 0 || (i+1) == bytes ) {
       printf( "0x%02x\n", buffer[i] );
     } else {

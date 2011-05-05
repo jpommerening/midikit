@@ -5,11 +5,11 @@ TEST_DECL_PATTERN="^[ \t]*\(int\)[ \t]*\(test[a-zA-Z0-9_]*\)[ \t]*[(][ \t]*\(voi
 
 MAIN_C="main.c"
 
-while [ -n "$1" ]; do
-  if [ "$1" == "-o" ]; then
+while test -n "$1"; do
+  if test "x$1" = "x-o"; then
     shift 1
     MAIN_C="$1"
-  elif [ -f "$1" ]; then
+  elif test -f "$1"; then
     FILES="${FILES} $1"
   else
     echo "$0: no such file or directory: $1" >&2
@@ -17,7 +17,7 @@ while [ -n "$1" ]; do
   shift 1
 done
 
-if [ -z "${FILES}" ]; then
+if test -z "${FILES}"; then
   FILES="$(find . -name "*.c" -not -name "${MAIN_C}")"
 fi
 

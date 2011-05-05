@@ -894,9 +894,10 @@ int RTPSessionSendPacket( struct RTPSession * session, struct RTPPacketInfo * in
 
 #ifndef NO_LOG
   MIDILogLocation( DEBUG, "Sending RTP message consisting of %i iovecs.\n", (int) iovlen );
-  for( int i=0; i<iovlen; i++ ) {
+  int i, j;
+  for( i=0; i<iovlen; i++ ) {
     MIDILog( DEBUG, "[%i] iov_len: %i, iov_base: %p\n", i, (int) iov[i].iov_len, iov[i].iov_base );
-    for( int j=0; j<iov[i].iov_len; j++ ) {
+    for( j=0; j<iov[i].iov_len; j++ ) {
       unsigned char c = *((unsigned char*)iov[i].iov_base+j);
       if( (j+1) % 8 == 0 || j+1 == iov[i].iov_len ) {
         MIDILog( DEBUG, "0x%02x\n", c );
@@ -982,10 +983,11 @@ int RTPSessionReceivePacket( struct RTPSession * session, struct RTPPacketInfo *
   }
   
 #ifndef NO_LOG
+  int i, j;
   MIDILogLocation( DEBUG, "Received RTP message consisting of %i iovecs.\n", (int) info->iovlen );
-  for( int i=0; i<info->iovlen; i++ ) {
+  for( i=0; i<info->iovlen; i++ ) {
     MIDILog( DEBUG, "[%i] iov_len: %i, iov_base: %p\n", i, (int) info->iov[i].iov_len, info->iov[i].iov_base );
-    for( int j=0; j<info->iov[i].iov_len; j++ ) {
+    for( j=0; j<info->iov[i].iov_len; j++ ) {
       unsigned char c = *((unsigned char*)info->iov[i].iov_base+j);
       if( (j+1) % 8 == 0 || j+1 == info->iov[i].iov_len ) {
         MIDILog( DEBUG, "0x%02x\n", c );
