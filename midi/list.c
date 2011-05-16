@@ -2,7 +2,7 @@
 #include "midi.h"
 #include "list.h"
 
-struct MIDIEnumerator;
+struct MIDIIterator;
 
 /**
  * @ingroup MIDI
@@ -18,9 +18,9 @@ struct MIDIList {
  * @cond INTERNALS
  */
   int    refs;
-  struct MIDITypeSpec   * type;
-  struct MIDIEnumerator * first;
-  struct MIDIEnumerator * last;
+  struct MIDITypeSpec * type;
+  struct MIDIIterator * first;
+  struct MIDIIterator * last;
 /** @endcond */
 };
 
@@ -30,9 +30,9 @@ struct MIDIList {
  * @{
  */
 
-struct MIDIEnumerator {
+struct MIDIIterator {
   void * object;
-  struct MIDIEnumerator * next;
+  struct MIDIIterator * next;
 };
 
 /**
@@ -101,8 +101,8 @@ struct MIDIList * MIDIListCreate( struct MIDITypeSpec * type ) {
  * @param list The list.
  */
 void MIDIListDestroy( struct MIDIList * list ) {
-  struct MIDIEnumerator * entry;
-  struct MIDIEnumerator * next;
+  struct MIDIIterator * entry;
+  struct MIDIIterator * next;
   MIDIPrecondReturn( list != NULL, EFAULT, (void)0 );
   entry = list->first;
   list->first = NULL;
@@ -159,13 +159,13 @@ void MIDIListRelease( struct MIDIList * list ) {
  * @retval >0 otherwise.
  */
 int MIDIListAdd( struct MIDIList * list, void * item ) {
-  struct MIDIEnumerator * entry;
+  struct MIDIIterator * entry;
   MIDIPrecond( list != NULL, EFAULT );
   MIDIPrecond( item != NULL, EINVAL );
 
-  entry = malloc( sizeof( struct MIDIEnumerator ) );
+  entry = malloc( sizeof( struct MIDIIterator ) );
   if( entry == NULL ) {
-    MIDIError( ENOMEM, "Failed to allocate space for enumerator." );
+    MIDIError( ENOMEM, "Failed to allocate space for iterator." );
   }
 
   entry->object = item;
@@ -188,8 +188,8 @@ int MIDIListAdd( struct MIDIList * list, void * item ) {
  * @retval >0 otherwise.
  */
 int MIDIListRemove( struct MIDIList * list, void * item ) {
-  struct MIDIEnumerator * entry;
-  struct MIDIEnumerator ** eptr;
+  struct MIDIIterator * entry;
+  struct MIDIIterator ** eptr;
   MIDIPrecond( list != NULL, EFAULT );
   MIDIPrecond( item != NULL, EINVAL );
 
@@ -223,7 +223,7 @@ int MIDIListRemove( struct MIDIList * list, void * item ) {
  * @retval >0 if an error occurred.
  */
 int MIDIListContains( struct MIDIList * list, void * item ) {
-  struct MIDIEnumerator * entry;
+  struct MIDIIterator * entry;
   MIDIPrecond( list != NULL, EFAULT );
   MIDIPrecond( item != NULL, EINVAL );
   
@@ -249,7 +249,7 @@ int MIDIListContains( struct MIDIList * list, void * item ) {
  * @retval >0 if an error occurred.
  */
 int MIDIListFind( struct MIDIList * list, void ** item, void * info, int (*func)( void *, void *) ) {
-  struct MIDIEnumerator * entry;
+  struct MIDIIterator * entry;
   MIDIPrecond( list != NULL, EFAULT );
   MIDIPrecond( item != NULL, EINVAL );
   
@@ -276,7 +276,7 @@ int MIDIListFind( struct MIDIList * list, void ** item, void * info, int (*func)
  * @retval >0 otherwise.
  */
 int MIDIListApply( struct MIDIList * list, void * info, int (*func)( void *, void * ) ) {
-  struct MIDIEnumerator * entry;
+  struct MIDIIterator * entry;
   void * item;
   int result = 0;
   MIDIPrecond( list != NULL, EFAULT );

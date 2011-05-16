@@ -8,7 +8,8 @@ include config.mk
 
 default: all
 
-all: midi driver test
+all: midikit test
+midikit: midi driver
 clean: midi-clean driver-clean test-clean
 
 documentation: midi driver
