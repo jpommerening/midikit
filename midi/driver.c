@@ -48,6 +48,12 @@
  * a MIDIDriver struct is expected.
  */
 
+/* MARK: Internals *//**
+ * @name Internals
+ * @cond INTERNALS
+ * @{
+ */
+
 /**
  * @brief Port callback.
  * This may be confusing at first but when the driver <b>receives</b>
@@ -73,8 +79,13 @@ static int _port_receive( void * target, void * source, struct MIDITypeSpec * ty
   }
 }
 
-#pragma mark Creation and destruction
-/**
+/** 
+ * @}
+ * @endcond
+ */
+
+/* MARK: -
+ * MARK: Creation and destruction *//**
  * @name Creation and destruction
  * Creating, destroying and reference counting of MIDIDriver objects.
  * @{
@@ -164,8 +175,7 @@ void MIDIDriverRelease( struct MIDIDriver * driver ) {
 
 /** @} */
 
-#pragma mark Port access
-/**
+/* MARK: Port access *//**
  * @name Port access
  * @{
  */
@@ -191,8 +201,7 @@ int MIDIDriverGetPort( struct MIDIDriver * driver, struct MIDIPort ** port ) {
 
 /** @} */
 
-#pragma mark Message passing
-/**
+/* MARK: Message passing *//**
  * @name Message passing
  * Receiving and sending MIDIMessage objects.
  * @{

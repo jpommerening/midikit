@@ -37,45 +37,35 @@ int MIDIDriverAppleMIDIRemovePeerWithCFNetService( struct MIDIDriverAppleMIDI * 
   return MIDIDriverAppleMIDIRemovePeerWithSockaddr( driver, size, addr );
 }
 
-#pragma mark -
+/* MARK: -
+ * MARK: CFMIDIRunloop */
 
-#pragma mark CFMIDIRunloop
-
-struct CFMIDIRunloopDelegate {
+struct CFMIDIRunloop {
   int refs;
+  CFRunLoopRef          runloop;
   CFRunLoopTimerContext timer_context;
   CFSocketContext       socket_context;
   size_t nsrc;
   CFRunLoopTimerRef  cfrlt;
   CFRunLoopSourceRef cfrls[1];
+  struct MIDIRunloopDelegate delegate;
 };
 
-#pragma mark Creation and destruction
-/**
- * @name Creation and destruction
- * Creating, destroying and reference counting of MIDIClock objects.
- * @{
- */
-
-/**
- * @brief Create a MIDIClock instance.
- * Allocate space and initialize a MIDIClock instance.
- * @public @memberof MIDIClock
- * @param rate The number of times the clock should tick per second.
- * @return a pointer to the created clock structure on success.
- * @return a @c NULL pointer if the clock could not created.
- */
-struct MIDIRunloop * MIDIRunloopCreateWithCFRunloop( CFRunLoopRef runloop ) {
-  struct MIDIRunloop * midi_runloop = MIDIRunloopCreate( &_runloop_cf_delegate );
-  return midi_runloop;
-}
-
-
-#pragma mark Core Foundation callbacks
-/**
+/* MARK: Core Foundation callbacks *//**
  * @name Core Foundation callbacks
  * @{
  */
+ 
+static const void * _cf_retain_callback( const void * runloop ) {
+  struct CFMIDIRunloop * cf_runloop = runloop;
+  /* CFMIDIRunloopRetain( cf_runloop ); */
+  return cf_runloop;
+}
+
+static void _cf_release_callback( const void * runloop ) {
+  struct CFMIDIRunloop * cf_runloop = runloop;
+  /* CFMIDIRunloopRelease( cf_runloop ); */
+}
 
 static void _cf_socket_callback( CFSocketRef s, CFSocketCallBackType callbackType, CFDataRef address, const void *data, void *info ) {
   struct MIDIRunloopSource * source = info;
@@ -109,11 +99,14 @@ static void _cf_timer_callback( CFRunLoopTimerRef timer, void *info ) {
   }
 }
 
-/** @} */
-
-#pragma mark Runloop callbacks
 /**
+ * @}
+ * @endcond
+ */
+
+/* MARK: Runloop callbacks *//**
  * @name Runloop callbacks
+ * @cond INTERNAL
  * Methods that are part of the runloop delegate to schedule and unschedule (clear)
  * actions.
  * @{
@@ -170,13 +163,104 @@ static int _cf_runloop_schedule_timeout( void * info, struct timespec * timeout 
   return 0;
 }
 
-static struct MIDIRunloopDelegate _cf_runloop_delegate = {
+static int _cf_runloop_clear_timeout( void * info ) {
+  struct CFMIDIRunloop * runloop = info;
+  MIDIAssert( runloop != NULL );
+
+  return 0;
+}
+
+/**
+ * @}
+ * @endcond
+ */
+
+/* MARK: -
+ * MARK: Creation and destruction *//**
+ * @name Creation and destruction
+ * Creating, destroying and reference counting of MIDIClock objects.
+ * @{
+ */
+
+struct CFMIDIRunloop * CFMIDIRunloopCreate( CFRunLoopRef runloop ) {
+  struct CFMIDIRunloop * cf_runloop = malloc( sizeof( struct CFMIDIRunloop ) );
+  MIDIPrecondReturn( cf_runloop != NULL, ENOMEM, NULL );
   
-};
+  cf_runloop->refs    = 1;
+  cf_runloop->runloop = runloop;
+  
+  cf_runloop->timer_context.version = 0;
+  cf_runloop->timer_context.info = cf_runloop;
+  cf_runloop->timer_context.release = &_cf_release_callback;
+  cf_runloop->timer_context.retain  = &_cf_retain_callback;
+  cf_runloop->timer_context.copyDescription = NULL;
+
+  cf_runloop->socket_context.version = 0;
+  cf_runloop->socket_context.info = cf_runloop;
+  cf_runloop->socket_context.release = &_cf_release_callback;
+  cf_runloop->socket_context.retain  = &_cf_retain_callback;
+  cf_runloop->socket_context.copyDescription = NULL;
+
+  cf_runloop->delegate.info = cf_runloop;
+  cf_runloop->delegate.schedule_read    = &_cf_runloop_schedule_read;
+  cf_runloop->delegate.schedule_write   = &_cf_runloop_schedule_write;
+  cf_runloop->delegate.schedule_timeout = &_cf_runloop_schedule_timeout;
+  cf_runloop->delegate.clear_read    = &_cf_runloop_clear_read;
+  cf_runloop->delegate.clear_write   = &_cf_runloop_clear_write;
+  cf_runloop->delegate.clear_timeout = &_cf_runloop_clear_timeout;
+  return cf_runloop;
+}
+
+/**
+ * @brief Create a MIDIRunloop instance that uses a CFRunLoop as implementation.
+ * Create a new CFMIDIRunloop instance and create a MIDIRunloop with the newly created
+ * delegate.
+ * @public @memberof CFMIDIRunloop
+ * @param runloop The core foundation runloop to use as implementation.
+ * @return a pointer to the created runloop structure on success.
+ * @return a @c NULL pointer if the runloop could not created.
+ */
+struct MIDIRunloop * MIDIRunloopCreateWithCFRunloop( CFRunLoopRef runloop ) {
+  struct MIDIRunloopDelegate * delegate;
+  struct CFMIDIRunloop       * cf_runloop;
+  cf_runloop = CFMIDIRunloopCreate( runloop );
+  if( cf_runloop == NULL ) return NULL;
+  return MIDIRunloopCreate( &(cf_runloop->delegate) );
+}
+
+void CFMIDIRunloopDestroy( struct CFMIDIRunloop * cf_runloop ) {
+  MIDIPrecondReturn( cf_runloop, EFAULT, (void)0 );
+  free( cf_runloop );
+}
+
+/**
+ * @brief Retain a CFMIDIRunloop instance.
+ * Increment the reference counter of a runloop so that it won't be destroyed.
+ * @public @memberof CFMIDIRunloop
+ * @param cf_runloop The core foundation runloop.
+ */
+void CFMIDIRunloopRetain( struct CFMIDIRunloop * cf_runloop ) {
+  MIDIPrecondReturn( cf_runloop != NULL, EFAULT, (void)0 );
+  cf_runloop->refs++;
+}
+
+/**
+ * @brief Release a CFMIDIRunloop instance.
+ * Decrement the reference counter of a runloop. If the reference count
+ * reached zero, destroy the runloop.
+ * @public @memberof CFMIDIRunloop
+ * @param cf_runloop The core foundation runloop.
+ */
+void CFMIDIRunloopRelease( struct CFMIDIRunloop * cf_runloop ) {
+  MIDIPrecondReturn( cf_runloop != NULL, EFAULT, (void)0 );
+  if( ! --cf_runloop->refs ) {
+    CFMIDIRunloopDestroy( cf_runloop );
+  }
+}
 
 /** @} */
 
-#pragma mark end
+/* MARK: end */
 
 static int _cf_source_schedule( struct MIDIRunloopSource * source, int event ) {
   int i, created;

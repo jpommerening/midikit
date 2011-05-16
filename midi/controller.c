@@ -65,8 +65,9 @@ struct MIDIController {
   struct MIDINRPList * list;
 };
 
-/**
- * @internal
+/* MARK: Internals *//**
+ * @name Internals
+ * @cond INTERNALS
  * Methods for accessing parameters, resetting controllers, etc.
  * @{
  */
@@ -232,10 +233,13 @@ static int _poly_mode( struct MIDIController * controller, MIDIBoolean value ) {
   return 0;
 }
 
-/** @} */
-
-#pragma mark Creation and destruction
 /**
+ * @}
+ * @endcond
+ */
+
+/* MARK: -
+ * MARK: Creation and destruction *//**
  * @name Creation and destruction
  * Creating, destroying and reference counting of MIDIController objects.
  * @{
@@ -296,8 +300,7 @@ void MIDIControllerRelease( struct MIDIController * controller ) {
 
 /** @} */
 
-#pragma mark Controller interface
-/**
+/* MARK: Controller interface *//**
  * @name Controller interface
  * Atomically read, edit, load and save controller values.
  * @{
@@ -488,8 +491,7 @@ int MIDIControllerRecall( struct MIDIController * controller, size_t size, void 
 
 /** @} */
 
-#pragma mark Message passing
-/**
+/* MARK: Message passing *//**
  * @name Message passing
  * Receiving and sending MIDIMessage objects.
  * @{

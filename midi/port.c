@@ -62,8 +62,7 @@ MIDI_TYPE_SPEC_OBJECT( MIDIPort, 0x3000 );
  * @relates MIDIPort
  */
 
-#pragma mark Internals
-/**
+/* MARK: Internals *//**
  * @name Internals
  * @cond INTERNALS
  * @{
@@ -187,8 +186,8 @@ static int _port_passthrough( struct MIDIPort * port, struct MIDIPort * source, 
  * @endcond
  */
 
-#pragma mark Creation and destruction
-/**
+/* MARK: -
+ * MARK: Creation and destruction *//**
  * @name Creation and destruction
  * Creating, destroying and reference counting of MIDIDriver objects.
  * @{
@@ -295,8 +294,7 @@ void MIDIPortRelease( struct MIDIPort * port ) {
 
 /** @} */
 
-#pragma mark Connection management and message passing
-/**
+/* MARK: Connection management and message passing *//**
  * @name Connection management and message passing
  * Methods to connect ports and pass messages between them.
  * @{

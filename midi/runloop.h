@@ -24,7 +24,7 @@ struct MIDIRunloopDelegate {
   int (*schedule_timeout)( void * info, struct timespec * );
   int (*clear_read)( void * info, int fd );
   int (*clear_write)( void * info, int fd );
-  int (*clear_timeout)( void * info, struct timespec * );
+  int (*clear_timeout)( void * info );
 };
 
 struct MIDIRunloopSource * MIDIRunloopSourceCreate( struct MIDIRunloopSourceDelegate * delegate );

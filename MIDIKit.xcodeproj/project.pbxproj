@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5909F89B138054D800F4D64E /* cfintegration.c in Sources */ = {isa = PBXBuildFile; fileRef = 59DE6B3812ABCBD100DCFEAF /* cfintegration.c */; };
 		590BBB6A136581A10030E70A /* event.c in Sources */ = {isa = PBXBuildFile; fileRef = 590BBB66136581A10030E70A /* event.c */; };
 		590BBB6B136581A10030E70A /* event.h in Headers */ = {isa = PBXBuildFile; fileRef = 590BBB67136581A10030E70A /* event.h */; };
 		590BBB6C136581A10030E70A /* list.c in Sources */ = {isa = PBXBuildFile; fileRef = 590BBB68136581A10030E70A /* list.c */; };
@@ -564,6 +565,7 @@
 				590BBB70136581AC0030E70A /* port.c in Sources */,
 				590BBB7A136582500030E70A /* applemidi.c in Sources */,
 				590BBB7B136582560030E70A /* coremidi.c in Sources */,
+				5909F89B138054D800F4D64E /* cfintegration.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

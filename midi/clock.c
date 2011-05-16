@@ -55,8 +55,7 @@ struct MIDIClock {
 /** @endcond */
 };
 
-#pragma mark INTERNALS
-/**
+/* MARK: Internals *//**
  * @name Internals
  * @cond INTERNALS
  * Internal functions for handling fractions and calculating time.
@@ -247,8 +246,8 @@ static struct MIDIClock * _get_global_clock( void ) {
  * @endcond
  */
 
-#pragma mark Global clock
-/**
+/* MARK: -
+ * MARK: Global clock *//**
  * @name Global clock
  * @{
  */
@@ -279,8 +278,8 @@ int MIDIClockGetGlobalClock( struct MIDIClock ** clock ) {
 
 /** @} */
 
-#pragma mark Creation and destruction
-/**
+/* MARK: -
+ * MARK: Creation and destruction *//**
  * @name Creation and destruction
  * Creating, destroying and reference counting of MIDIClock objects.
  * @{
@@ -372,8 +371,7 @@ void MIDIClockRelease( struct MIDIClock * clock ) {
 
 /** @} */
 
-#pragma mark Timing functions
-/**
+/* MARK: Timing functions *//**
  * @name Timing functions
  * Read and modify clocks and timestamps.
  * @{

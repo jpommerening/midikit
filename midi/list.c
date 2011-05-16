@@ -10,6 +10,7 @@ struct MIDIEnumerator;
  * I realize that this a general purpose linked list and should not be
  * restricted to MIDIKit use as the MIDI-prefix might indicate.
  * I will evaluate and extract general purpose code at a later point.
+ * @todo allow iteration, assure ordering (insert before, insert after, etc.)
  */
 struct MIDIList {
 /**
@@ -23,8 +24,7 @@ struct MIDIList {
 /** @endcond */
 };
 
-#pragma mark Internals
-/**
+/* MARK: Internals *//**
  * @name Internals
  * @cond INTERNALS
  * @{
@@ -66,8 +66,8 @@ static void _list_item_release( struct MIDIList * list, void * item ) {
  * @endcond
  */
 
-#pragma mark Creation and destruction
-/**
+/* MARK: -
+ * MARK: Creation and destruction *//**
  * @name Creation and destruction
  * Creating, destroying and reference counting of MIDIConnector objects.
  * @{
@@ -143,8 +143,7 @@ void MIDIListRelease( struct MIDIList * list ) {
 
 /** @} */
 
-#pragma mark List management
-/**
+/* MARK: List management *//**
  * @name List management
  * Functions for working with lists.
  * @{

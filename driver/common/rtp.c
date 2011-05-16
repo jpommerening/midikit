@@ -386,8 +386,7 @@ int RTPPeerGetInfo( struct RTPPeer * peer, void ** info ) {
   return 0;
 }
 
-#pragma mark Creation and destruction
-/**
+/* MARK: Creation and destruction *//**
  * @name Creation and destruction
  * Creating, destroying and reference counting of RTPSession objects.
  * @{

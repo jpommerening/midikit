@@ -320,7 +320,7 @@ int test004_applemidi( void ) {
 
   ASSERT_EQUAL( 24, sendto( client_rtp_socket, &(expect[0]), 24, 0,
                 (struct sockaddr *) &server_addr, sizeof(server_addr) ), "Could not send RTP-MIDI." );
-
+  usleep( 1000 );
   ASSERT_NO_ERROR( MIDIDriverAppleMIDIReceive( driver ), "Could not receive sent messages." );
   ASSERT_EQUAL( _n_msg, 3, "Received wrong number of messages." );
   return 0;

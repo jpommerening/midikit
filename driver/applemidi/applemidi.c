@@ -251,8 +251,8 @@ static void _driver_destroy( void * driverp ) {
   MIDIDriverAppleMIDIDestroy( driverp );
 }
 
-#pragma mark Creation and destruction
-/**
+/* MARK: -
+ * MARK: Creation and destruction *//**
  * @name Creation and destruction
  * Creating, destroying and reference counting of MIDIClock objects.
  * @{
@@ -319,6 +319,11 @@ void MIDIDriverAppleMIDIDestroy( struct MIDIDriverAppleMIDI * driver ) {
 }
 
 /** @} */
+
+/* MARK: Implementation *//**
+ * @name Implementation
+ * @{
+ */
 
 /**
  * @brief Set the base port to be used for session management.
@@ -1134,3 +1139,5 @@ int MIDIDriverAppleMIDIGetRunloopSource( struct MIDIDriverAppleMIDI * driver, st
   *source = driver->base.rls;
   return 0;
 }
+
+/** @} */

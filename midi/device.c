@@ -121,407 +121,7 @@ struct MIDIDevice {
 /** @endcond */
 };
 
-#pragma mark Creation and destruction
-/**
- * @name Creation and destruction
- * Creating, destroying and reference counting of MIDIDevice objects.
- * @{
- */
-
-static int _recv( void * dev, void * source, struct MIDITypeSpec * type, void * data );
-
-/**
- * @brief Create a MIDIDevice instance.
- * Allocate space and initialize a MIDIDevice instance.
- * @public @memberof MIDIDevice
- * @param delegate The delegate to use for the device. May be @c NULL.
- * @return a pointer to the created device structure on success.
- * @return a @c NULL pointer if the device could not created.
- */
-struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate ) {
-  struct MIDIDevice * device = malloc( sizeof( struct MIDIDevice ) );
-  MIDIChannel channel;
-
-  device->refs = 1;
-  device->in   = MIDIPortCreate( "Device IN",  MIDI_PORT_IN | MIDI_PORT_THRU, device, &_recv );
-  device->out  = MIDIPortCreate( "Device OUT", MIDI_PORT_OUT, device, NULL );
-/*device->in   = NULL;
-  device->out  = NULL;
-  device->thru = NULL;*/
-  device->delegate     = delegate;
-  device->base_channel = MIDI_CHANNEL_1;
-  device->omni_mode    = MIDI_OFF;
-  device->poly_mode    = MIDI_ON;
-  device->timer        = NULL;
-  for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
-  /*device->instrument[(int)channel] = NULL;*/
-    device->controller[(int)channel] = NULL;
-  }
-  return device;
-}
-
-/**
- * @brief Destroy a MIDIDevice instance.
- * Free all resources occupied by the device and release all referenced objects.
- * @public @memberof MIDIDevice
- * @param device The device.
- */
-void MIDIDeviceDestroy( struct MIDIDevice * device ) {
-  MIDIChannel channel;
-
-/*MIDIDeviceDetachIn( device );
-  MIDIDeviceDetachOut( device );
-  MIDIDeviceDetachThru( device );*/
-
-  MIDIPortInvalidate( device->in );
-  MIDIPortInvalidate( device->out );
-  MIDIPortRelease( device->in );
-  MIDIPortRelease( device->out );
-
-  if( device->timer != NULL ) MIDITimerRelease( device->timer );
-  for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
-  /*if( device->instrument[(int)channel] != NULL ) MIDIInstrumentRelease( device->instrument[(int)channel] );;*/
-    if( device->controller[(int)channel] != NULL ) MIDIControllerRelease( device->controller[(int)channel] );;
-  }
-  free( device );
-}
-
-/**
- * @brief Retain a MIDIDevice instance.
- * Increment the reference counter of a device so that it won't be destroyed.
- * @public @memberof MIDIDevice
- * @param device The device.
- */
-void MIDIDeviceRetain( struct MIDIDevice * device ) {
-  device->refs++;
-}
-
-/**
- * @brief Release a MIDIDevice instance.
- * Decrement the reference counter of a device. If the reference count
- * reached zero, destroy the device.
- * @public @memberof MIDIDevice
- * @param device The device.
- */
-void MIDIDeviceRelease( struct MIDIDevice * device ) {
-  if( ! --device->refs ) {
-    MIDIDeviceDestroy( device );
-  }
-}
-
-/** @} */
-
-#pragma mark Port access
-/**
- * @name Port access
- * Methods to access the devices @c IN, @c OUT and @c THRU ports.
- * @{
- */
-
-/**
- * @brief Get the device's @c IN port.
- * @public @memberof MIDIDevice
- * @param device The device.
- * @param port   The @c IN port.
- * @retval 0 on success.
- */
-int MIDIDeviceGetInputPort( struct MIDIDevice * device, struct MIDIPort ** port ) {
-  MIDIPrecond( device != NULL, EFAULT );
-  MIDIPrecond( port != NULL, EINVAL );
-  *port = device->in;
-  return 0;
-}
-
-/**
- * @brief Get the device's @c OUT port.
- * @public @memberof MIDIDevice
- * @param device The device.
- * @param port   The @c OUT port.
- * @retval 0 on success.
- */
-int MIDIDeviceGetOutputPort( struct MIDIDevice * device, struct MIDIPort ** port ) {
-  MIDIPrecond( device != NULL, EFAULT );
-  MIDIPrecond( port != NULL, EINVAL );
-  *port = device->out;
-  return 0;
-}
-
-/**
- * @brief Get the device's @c THRU port.
- * @public @memberof MIDIDevice
- * @param device The device.
- * @param port   The @c THRU port.
- * @retval 0 on success.
- */
-int MIDIDeviceGetThroughPort( struct MIDIDevice * device, struct MIDIPort ** port ) {
-  MIDIPrecond( device != NULL, EFAULT );
-  MIDIPrecond( port != NULL, EINVAL );
-  *port = device->in;
-  return 0;
-}
-
-/** @} */
-
-#pragma mark Deprecated connector attachment functions
-/**
- * @name Deprecated connector attachment functions
- * @{
- */
-
-/**
- * @deprecated Use ports instead.
- * @memberof MIDIDevice
- */
-int MIDIDeviceDetachIn( struct MIDIDevice * device ) {
-  MIDIPrecond( device != NULL, EFAULT );
-  return 0;
-}
-
-/**
- * @deprecated Use ports instead.
- * @memberof MIDIDevice
- */
-int MIDIDeviceAttachIn( struct MIDIDevice * device, struct MIDIPort * port ) {
-  MIDIPrecond( device != NULL, EFAULT );
-  MIDIPrecond( port != NULL, EINVAL );
-  MIDIPortConnect( port, device->in );
-  return 0;
-}
-
-/**
- * @deprecated Use ports instead.
- * @memberof MIDIDevice
- */
-int MIDIDeviceDetachOut( struct MIDIDevice * device ) {
-  MIDIPrecond( device != NULL, EFAULT );
-  return MIDIPortDisconnectAll( device->out );
-}
-
-/**
- * @deprecated Use ports instead.
- * @memberof MIDIDevice
- */
-int MIDIDeviceAttachOut( struct MIDIDevice * device, struct MIDIPort * port ) {
-  MIDIPrecond( device != NULL, EFAULT );
-  MIDIPrecond( port != NULL, EINVAL );
-  MIDIPortConnect( device->out, port );
-  return 0;
-}
-
-/**
- * @deprecated Use ports instead.
- * @memberof MIDIDevice
- */
-int MIDIDeviceDetachThru( struct MIDIDevice * device ) {
-  MIDIPrecond( device != NULL, EFAULT );
-  return MIDIPortDisconnectAll( device->in );
-}
-
-/**
- * @deprecated Use ports instead.
- * @memberof MIDIDevice
- */
-int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIPort * port ) {
-  MIDIPrecond( device != NULL, EFAULT );
-  MIDIPrecond( port != NULL, EINVAL );
-  MIDIPortConnect( device->in, port );
-  return 0;
-}
-
-/** @} */
-
-#pragma mark Property access
-/**
- * @name Property access
- * Get and set device properties.
- * @{
- */
-
-/**
- * @brief Set the device's base channel.
- * Every MIDI device has a base channel. The base channel is used to reply to
- * certain messages like the "Control Change" message for MIDI-Modes "Omni" and
- * "Polyphonic". Even in Omni-Mode the device expects to receive those messages
- * only on the base channel.
- * @public @memberof MIDIDevice
- * @param device  The device.
- * @param channel The base channel.
- * @retval 0  on success.
- * @retval >0 if the base channel coult not be set.
- */
-int MIDIDeviceSetBaseChannel( struct MIDIDevice * device, MIDIChannel channel ) {
-  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
-  device->base_channel = channel;
-  return 0;
-}
-
-/**
- * @brief Get the device's base channel.
- * @see MIDIDeviceSetBaseChannel
- * @public @memberof MIDIDevice
- * @param device  The device.
- * @param channel The base channel.
- * @retval 0  on success.
- * @retval >0 if the base channel coult not be stored.
- */
-int MIDIDeviceGetBaseChannel( struct MIDIDevice * device, MIDIChannel * channel ) {
-  if( channel == NULL ) return 1;
-  *channel = device->base_channel;
-  return 0;
-}
-
-/**
- * @brief Set the device's timer.
- * The device's timer is responsible for following real time messages to
- * approximate the message sender's midi time and clock rate.
- * It is used to obtain timestamps for outgoing messages.
- * @see MIDIDeviceSetTimer
- * @public @memberof MIDIDevice
- * @param device The device.
- * @param timer  The timer.
- * @retval 0  on success.
- * @retval >0 if the timer could not be set.
- */
-int MIDIDeviceSetTimer( struct MIDIDevice * device, struct MIDITimer * timer ) {
-  if( device->timer != NULL ) MIDITimerRelease( device->timer );
-  MIDITimerRetain( timer );
-  device->timer = timer;
-  return 0;
-}
-
-/**
- * @brief Get the device's timer.
- * @see MIDIDeviceSetTimer
- * @public @memberof MIDIDevice
- * @param device The device.
- * @param timer  The timer.
- * @retval 0  on success.
- * @retval >0 if the timer could not be stored.
- */
-int MIDIDeviceGetTimer( struct MIDIDevice * device, struct MIDITimer ** timer ) {
-  if( timer == NULL ) return 1;
-  *timer = device->timer;
-  return 0;
-}
-
-/*
- **
- * @brief Set the instrument for a specific channel.
- * Each channel can have it's own instrument. An instrument may be attached
- * to multiple channels, even multiple devices.
- *
- * The instrument is retained by the device, once for each channel it is
- * connected to. Thus if the instrument is attached to 5 channels it is
- * retained five times.
- * @public @memberof MIDIDevice
- * @param device     The midi device.
- * @param channel    The channel to attach the instrument to.
- *                   To attach the instrument to the device's base channel
- *                   use special MIDI_CHANNEL_BASE; to attach it to all
- *                   channels at once, use MIDI_CHANNEL_ALL.
- * @param instrument The instrument to attach.
- * @retval 0  on success.
- * @retval >0 if the instrument could not be attached to the channel(s).
- *
-int MIDIDeviceSetChannelInstrument( struct MIDIDevice * device, MIDIChannel channel, struct MIDIInstrument * instrument ) {
-  if( channel == MIDI_CHANNEL_ALL ) {
-    for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
-      if( MIDIDeviceSetChannelInstrument( device, channel, instrument ) ) return 1;
-    }
-    return 0;
-  }
-  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
-  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
-  if( device->instrument[(int)channel] == instrument ) return 0;
-  if( device->instrument[(int)channel] != NULL ) MIDIControllerRelease( device->instrument[(int)channel] );
-  MIDIInstrumentRetain( controller );
-  device->instrument[(int)channel] = instrument;
-  return 0;
-}
-
- **
- * @brief Get the instrument for a specific channel.
- * @see MIDIDeviceSetChannelInstrument
- * @public @memberof MIDIDevice
- * @param device     The midi device.
- * @param channel    The channel for which to get the instrument.
- * @param instrument The a pointer to the location to store the instrument
- *                   reference in.
- * @retval 0  on success.
- * @retval >0 if the instrument was not stored.
- *
-int MIDIDeviceGetChannelInstrument( struct MIDIDevice * device, MIDIChannel channel, struct MIDIInstrument ** instrument ) {
-  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
-  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
-  if( instrument == NULL ) return 1;
-  *instrument = device->instrument[(int)channel];
-  return 0;
-}
-*/
-
-/**
- * @brief Set the controller for a specific channel.
- * Each channel can have it's own controller. A controller may be attached
- * to multiple channels, even multiple devices.
- *
- * The controller is retained by the device, once for each channel it is
- * connected to. Thus if the controller is attached to 5 channels it is
- * retained five times.
- * @public @memberof MIDIDevice
- * @param device     The midi device.
- * @param channel    The channel to attach the controller to.
- *                   To attach the controller to the device's base channel
- *                   use special MIDI_CHANNEL_BASE; to attach it to all
- *                   channels at once, use MIDI_CHANNEL_ALL.
- * @param controller The controller to attach.
- * @retval 0  on success.
- * @retval >0 if the controller could not be attached to the channel(s).
- */
-int MIDIDeviceSetChannelController( struct MIDIDevice * device, MIDIChannel channel, struct MIDIController * controller ) {
-  int result = 0;
-  MIDIPrecond( device != NULL, EFAULT );
-  MIDIPrecond( controller != NULL, EINVAL );
-  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
-  if( channel == MIDI_CHANNEL_ALL ) {
-    for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
-      result += MIDIDeviceSetChannelController( device, channel, controller );
-    }
-    return result;
-  }
-
-  MIDIPrecond( channel >= MIDI_CHANNEL_1 && channel <= MIDI_CHANNEL_16, EINVAL );
-  if( device->controller[(int)channel] == controller ) return 0;
-  if( device->controller[(int)channel] != NULL ) MIDIControllerRelease( device->controller[(int)channel] );
-  device->controller[(int)channel] = controller;
-  MIDIControllerRetain( controller );
-  return 0;
-}
-
-/**
- * @brief Get the controller for a specific channel.
- * @see MIDIDeviceSetChannelController
- * @public @memberof MIDIDevice
- * @param device     The midi device.
- * @param channel    The channel for which to get the controller.
- * @param controller The a pointer to the location to store the controller
- *                   reference in.
- * @retval 0  on success.
- * @retval >0 if the controller was not stored.
- */
-int MIDIDeviceGetChannelController( struct MIDIDevice * device, MIDIChannel channel, struct MIDIController ** controller ) {
-  MIDIPrecond( device != NULL, EFAULT );
-  MIDIPrecond( controller != NULL, EINVAL );
-  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
-
-  MIDIPrecond( channel >= MIDI_CHANNEL_1 && channel <= MIDI_CHANNEL_16, EINVAL );
-  *controller = device->controller[(int)channel];
-  return 0;
-}
-
-/** @} */
-
-#pragma mark Internals
-/**
+/* MARK: Internals *//**
  * @name Internals
  * @cond INTERNALS
  * Internal message routing.
@@ -738,8 +338,401 @@ static int _recv( void * dev, void * source, struct MIDITypeSpec * type, void * 
  * @endcond
  */
 
-#pragma mark Message passing
+/* MARK: -
+ * MARK: Creation and destruction *//**
+ * @name Creation and destruction
+ * Creating, destroying and reference counting of MIDIDevice objects.
+ * @{
+ */
+
 /**
+ * @brief Create a MIDIDevice instance.
+ * Allocate space and initialize a MIDIDevice instance.
+ * @public @memberof MIDIDevice
+ * @param delegate The delegate to use for the device. May be @c NULL.
+ * @return a pointer to the created device structure on success.
+ * @return a @c NULL pointer if the device could not created.
+ */
+struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate ) {
+  struct MIDIDevice * device = malloc( sizeof( struct MIDIDevice ) );
+  MIDIChannel channel;
+
+  device->refs = 1;
+  device->in   = MIDIPortCreate( "Device IN",  MIDI_PORT_IN | MIDI_PORT_THRU, device, &_recv );
+  device->out  = MIDIPortCreate( "Device OUT", MIDI_PORT_OUT, device, NULL );
+/*device->in   = NULL;
+  device->out  = NULL;
+  device->thru = NULL;*/
+  device->delegate     = delegate;
+  device->base_channel = MIDI_CHANNEL_1;
+  device->omni_mode    = MIDI_OFF;
+  device->poly_mode    = MIDI_ON;
+  device->timer        = NULL;
+  for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
+  /*device->instrument[(int)channel] = NULL;*/
+    device->controller[(int)channel] = NULL;
+  }
+  return device;
+}
+
+/**
+ * @brief Destroy a MIDIDevice instance.
+ * Free all resources occupied by the device and release all referenced objects.
+ * @public @memberof MIDIDevice
+ * @param device The device.
+ */
+void MIDIDeviceDestroy( struct MIDIDevice * device ) {
+  MIDIChannel channel;
+
+/*MIDIDeviceDetachIn( device );
+  MIDIDeviceDetachOut( device );
+  MIDIDeviceDetachThru( device );*/
+
+  MIDIPortInvalidate( device->in );
+  MIDIPortInvalidate( device->out );
+  MIDIPortRelease( device->in );
+  MIDIPortRelease( device->out );
+
+  if( device->timer != NULL ) MIDITimerRelease( device->timer );
+  for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
+  /*if( device->instrument[(int)channel] != NULL ) MIDIInstrumentRelease( device->instrument[(int)channel] );;*/
+    if( device->controller[(int)channel] != NULL ) MIDIControllerRelease( device->controller[(int)channel] );;
+  }
+  free( device );
+}
+
+/**
+ * @brief Retain a MIDIDevice instance.
+ * Increment the reference counter of a device so that it won't be destroyed.
+ * @public @memberof MIDIDevice
+ * @param device The device.
+ */
+void MIDIDeviceRetain( struct MIDIDevice * device ) {
+  device->refs++;
+}
+
+/**
+ * @brief Release a MIDIDevice instance.
+ * Decrement the reference counter of a device. If the reference count
+ * reached zero, destroy the device.
+ * @public @memberof MIDIDevice
+ * @param device The device.
+ */
+void MIDIDeviceRelease( struct MIDIDevice * device ) {
+  if( ! --device->refs ) {
+    MIDIDeviceDestroy( device );
+  }
+}
+
+/** @} */
+
+/* MARK: Port access *//**
+ * @name Port access
+ * Methods to access the devices @c IN, @c OUT and @c THRU ports.
+ * @{
+ */
+
+/**
+ * @brief Get the device's @c IN port.
+ * @public @memberof MIDIDevice
+ * @param device The device.
+ * @param port   The @c IN port.
+ * @retval 0 on success.
+ */
+int MIDIDeviceGetInputPort( struct MIDIDevice * device, struct MIDIPort ** port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  *port = device->in;
+  return 0;
+}
+
+/**
+ * @brief Get the device's @c OUT port.
+ * @public @memberof MIDIDevice
+ * @param device The device.
+ * @param port   The @c OUT port.
+ * @retval 0 on success.
+ */
+int MIDIDeviceGetOutputPort( struct MIDIDevice * device, struct MIDIPort ** port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  *port = device->out;
+  return 0;
+}
+
+/**
+ * @brief Get the device's @c THRU port.
+ * @public @memberof MIDIDevice
+ * @param device The device.
+ * @param port   The @c THRU port.
+ * @retval 0 on success.
+ */
+int MIDIDeviceGetThroughPort( struct MIDIDevice * device, struct MIDIPort ** port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  *port = device->in;
+  return 0;
+}
+
+/** @} */
+
+/* MARK: Deprecated connector attachment functions *//**
+ * @name Deprecated connector attachment functions
+ * @{
+ */
+
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
+int MIDIDeviceDetachIn( struct MIDIDevice * device ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  return 0;
+}
+
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
+int MIDIDeviceAttachIn( struct MIDIDevice * device, struct MIDIPort * port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  MIDIPortConnect( port, device->in );
+  return 0;
+}
+
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
+int MIDIDeviceDetachOut( struct MIDIDevice * device ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  return MIDIPortDisconnectAll( device->out );
+}
+
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
+int MIDIDeviceAttachOut( struct MIDIDevice * device, struct MIDIPort * port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  MIDIPortConnect( device->out, port );
+  return 0;
+}
+
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
+int MIDIDeviceDetachThru( struct MIDIDevice * device ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  return MIDIPortDisconnectAll( device->in );
+}
+
+/**
+ * @deprecated Use ports instead.
+ * @memberof MIDIDevice
+ */
+int MIDIDeviceAttachThru( struct MIDIDevice * device, struct MIDIPort * port ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( port != NULL, EINVAL );
+  MIDIPortConnect( device->in, port );
+  return 0;
+}
+
+/** @} */
+
+/* MARK: Property access *//**
+ * @name Property access
+ * Get and set device properties.
+ * @{
+ */
+
+/**
+ * @brief Set the device's base channel.
+ * Every MIDI device has a base channel. The base channel is used to reply to
+ * certain messages like the "Control Change" message for MIDI-Modes "Omni" and
+ * "Polyphonic". Even in Omni-Mode the device expects to receive those messages
+ * only on the base channel.
+ * @public @memberof MIDIDevice
+ * @param device  The device.
+ * @param channel The base channel.
+ * @retval 0  on success.
+ * @retval >0 if the base channel coult not be set.
+ */
+int MIDIDeviceSetBaseChannel( struct MIDIDevice * device, MIDIChannel channel ) {
+  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
+  device->base_channel = channel;
+  return 0;
+}
+
+/**
+ * @brief Get the device's base channel.
+ * @see MIDIDeviceSetBaseChannel
+ * @public @memberof MIDIDevice
+ * @param device  The device.
+ * @param channel The base channel.
+ * @retval 0  on success.
+ * @retval >0 if the base channel coult not be stored.
+ */
+int MIDIDeviceGetBaseChannel( struct MIDIDevice * device, MIDIChannel * channel ) {
+  if( channel == NULL ) return 1;
+  *channel = device->base_channel;
+  return 0;
+}
+
+/**
+ * @brief Set the device's timer.
+ * The device's timer is responsible for following real time messages to
+ * approximate the message sender's midi time and clock rate.
+ * It is used to obtain timestamps for outgoing messages.
+ * @see MIDIDeviceSetTimer
+ * @public @memberof MIDIDevice
+ * @param device The device.
+ * @param timer  The timer.
+ * @retval 0  on success.
+ * @retval >0 if the timer could not be set.
+ */
+int MIDIDeviceSetTimer( struct MIDIDevice * device, struct MIDITimer * timer ) {
+  if( device->timer != NULL ) MIDITimerRelease( device->timer );
+  MIDITimerRetain( timer );
+  device->timer = timer;
+  return 0;
+}
+
+/**
+ * @brief Get the device's timer.
+ * @see MIDIDeviceSetTimer
+ * @public @memberof MIDIDevice
+ * @param device The device.
+ * @param timer  The timer.
+ * @retval 0  on success.
+ * @retval >0 if the timer could not be stored.
+ */
+int MIDIDeviceGetTimer( struct MIDIDevice * device, struct MIDITimer ** timer ) {
+  if( timer == NULL ) return 1;
+  *timer = device->timer;
+  return 0;
+}
+
+/*
+ **
+ * @brief Set the instrument for a specific channel.
+ * Each channel can have it's own instrument. An instrument may be attached
+ * to multiple channels, even multiple devices.
+ *
+ * The instrument is retained by the device, once for each channel it is
+ * connected to. Thus if the instrument is attached to 5 channels it is
+ * retained five times.
+ * @public @memberof MIDIDevice
+ * @param device     The midi device.
+ * @param channel    The channel to attach the instrument to.
+ *                   To attach the instrument to the device's base channel
+ *                   use special MIDI_CHANNEL_BASE; to attach it to all
+ *                   channels at once, use MIDI_CHANNEL_ALL.
+ * @param instrument The instrument to attach.
+ * @retval 0  on success.
+ * @retval >0 if the instrument could not be attached to the channel(s).
+ *
+int MIDIDeviceSetChannelInstrument( struct MIDIDevice * device, MIDIChannel channel, struct MIDIInstrument * instrument ) {
+  if( channel == MIDI_CHANNEL_ALL ) {
+    for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
+      if( MIDIDeviceSetChannelInstrument( device, channel, instrument ) ) return 1;
+    }
+    return 0;
+  }
+  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
+  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
+  if( device->instrument[(int)channel] == instrument ) return 0;
+  if( device->instrument[(int)channel] != NULL ) MIDIControllerRelease( device->instrument[(int)channel] );
+  MIDIInstrumentRetain( controller );
+  device->instrument[(int)channel] = instrument;
+  return 0;
+}
+
+ **
+ * @brief Get the instrument for a specific channel.
+ * @see MIDIDeviceSetChannelInstrument
+ * @public @memberof MIDIDevice
+ * @param device     The midi device.
+ * @param channel    The channel for which to get the instrument.
+ * @param instrument The a pointer to the location to store the instrument
+ *                   reference in.
+ * @retval 0  on success.
+ * @retval >0 if the instrument was not stored.
+ *
+int MIDIDeviceGetChannelInstrument( struct MIDIDevice * device, MIDIChannel channel, struct MIDIInstrument ** instrument ) {
+  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
+  if( channel < MIDI_CHANNEL_1 || channel > MIDI_CHANNEL_16 ) return 1;
+  if( instrument == NULL ) return 1;
+  *instrument = device->instrument[(int)channel];
+  return 0;
+}
+*/
+
+/**
+ * @brief Set the controller for a specific channel.
+ * Each channel can have it's own controller. A controller may be attached
+ * to multiple channels, even multiple devices.
+ *
+ * The controller is retained by the device, once for each channel it is
+ * connected to. Thus if the controller is attached to 5 channels it is
+ * retained five times.
+ * @public @memberof MIDIDevice
+ * @param device     The midi device.
+ * @param channel    The channel to attach the controller to.
+ *                   To attach the controller to the device's base channel
+ *                   use special MIDI_CHANNEL_BASE; to attach it to all
+ *                   channels at once, use MIDI_CHANNEL_ALL.
+ * @param controller The controller to attach.
+ * @retval 0  on success.
+ * @retval >0 if the controller could not be attached to the channel(s).
+ */
+int MIDIDeviceSetChannelController( struct MIDIDevice * device, MIDIChannel channel, struct MIDIController * controller ) {
+  int result = 0;
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( controller != NULL, EINVAL );
+  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
+  if( channel == MIDI_CHANNEL_ALL ) {
+    for( channel=MIDI_CHANNEL_1; channel<=MIDI_CHANNEL_16; channel++ ) {
+      result += MIDIDeviceSetChannelController( device, channel, controller );
+    }
+    return result;
+  }
+
+  MIDIPrecond( channel >= MIDI_CHANNEL_1 && channel <= MIDI_CHANNEL_16, EINVAL );
+  if( device->controller[(int)channel] == controller ) return 0;
+  if( device->controller[(int)channel] != NULL ) MIDIControllerRelease( device->controller[(int)channel] );
+  device->controller[(int)channel] = controller;
+  MIDIControllerRetain( controller );
+  return 0;
+}
+
+/**
+ * @brief Get the controller for a specific channel.
+ * @see MIDIDeviceSetChannelController
+ * @public @memberof MIDIDevice
+ * @param device     The midi device.
+ * @param channel    The channel for which to get the controller.
+ * @param controller The a pointer to the location to store the controller
+ *                   reference in.
+ * @retval 0  on success.
+ * @retval >0 if the controller was not stored.
+ */
+int MIDIDeviceGetChannelController( struct MIDIDevice * device, MIDIChannel channel, struct MIDIController ** controller ) {
+  MIDIPrecond( device != NULL, EFAULT );
+  MIDIPrecond( controller != NULL, EINVAL );
+  if( channel == MIDI_CHANNEL_BASE ) channel = device->base_channel;
+
+  MIDIPrecond( channel >= MIDI_CHANNEL_1 && channel <= MIDI_CHANNEL_16, EINVAL );
+  *controller = device->controller[(int)channel];
+  return 0;
+}
+
+/** @} */
+
+/* MARK: Message passing *//**
  * @name Message passing
  * Receiving and and sending MIDIMessage objects.
  * @{

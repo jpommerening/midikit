@@ -4,16 +4,21 @@
 /**
  * @ingroup MIDI
  * @brief Queue for MIDI message objects.
+ * @todo  Implement this using a MIDIList
  */
 struct MIDIMessageQueue {
-  size_t refs;
+/**
+ * @privatesection
+ * @cond INTERNALS
+ */
+  int    refs;
   size_t length;
   struct MIDIMessageList * first;
   struct MIDIMessageList * last;
+/** @endcond */
 };
 
-#pragma mark Creation and destruction
-/**
+/* MARK: Creation and destruction *//**
  * @name Creation and destruction
  * Creating, destroying and reference counting of MIDIMessageQueue objects.
  * @{
@@ -87,8 +92,7 @@ void MIDIMessageQueueRelease( struct MIDIMessageQueue * queue ) {
 
 /** @} */
 
-#pragma mark Queueing operations
-/**
+/* MARK: Queueing operations *//**
  * @name Queueing operations
  * Basic queue operations to store and retrieve messages.
  * @{

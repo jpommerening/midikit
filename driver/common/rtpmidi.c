@@ -84,6 +84,10 @@ struct RTPMIDIPeerInfo {
  * For implementation details refer to RFC 4695 & 4696.
  */
 struct RTPMIDISession {
+/**
+ * @privatesection
+ * @cond INTERNALS
+ */
   size_t refs;
   struct RTPMIDIInfo   midi_info;
   struct RTPPacketInfo rtp_info;
@@ -91,12 +95,12 @@ struct RTPMIDISession {
 
   size_t size;
   void * buffer;
+/** @endcond */
 };
 
 /** @} */
 
-#pragma mark Creation and destruction
-/**
+/* MARK: Creation and destruction *//**
  * @name Creation and destruction
  * Creating, destroying and reference counting of RTPMIDISession objects.
  * @{
@@ -171,8 +175,7 @@ void RTPMIDISessionRelease( struct RTPMIDISession * session ) {
 
 /** @} */
 
-#pragma mark RTP-MIDI journal coding
-/**
+/* MARK: RTP-MIDI journal coding *//**
  * @name RTP-MIDI journal coding
  * Functions for encoding the various journals and their chapters to a
  * continuous stream of bytes.
@@ -237,8 +240,7 @@ static int _rtpmidi_journal_decode_messages( struct RTPMIDIJournal * journal, un
 
 /** @} */
 
-#pragma mark RTP transmission extension
-/**
+/* MARK: RTP transmission extension *//**
  * @name RTP transmission extension
  * Sending and receiving MIDIMessage objects using the RTP-protocol.
  * @{

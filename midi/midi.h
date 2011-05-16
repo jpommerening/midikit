@@ -306,7 +306,7 @@ extern int MIDIErrorNumber;
 
 #ifndef MIDI_LOG_CHANNELS
 #ifdef DEBUG
-#define MIDI_LOG_CHANNELS 0xff
+#define MIDI_LOG_CHANNELS 0xfc
 #else
 #define MIDI_LOG_CHANNELS MIDI_LOG_ERROR
 #endif

@@ -28,8 +28,8 @@ struct MIDIEvent {
  */
 MIDI_TYPE_SPEC_CODING( MIDIEvent, 0x3010 );
 
-#pragma mark Creation and destruction
-/**
+/* MARK: -
+ * MARK: Creation and destruction *//**
  * @name Creation and destruction
  * Creating, destroying and reference counting of MIDIEvent objects.
  * @{
@@ -127,8 +127,7 @@ void MIDIEventRelease( struct MIDIEvent * event ) {
 
 /** @} */
 
-#pragma mark Property access
-/**
+/* MARK: Property access *//**
  * @name Property access
  * Acces properties of MIDIEvents
  * @{
@@ -164,8 +163,7 @@ int MIDIEventGetInfo( struct MIDIEvent * event, void ** info ) {
 
 /** @} */
 
-#pragma mark Coding
-/**
+/* MARK: Coding *//**
  * @name Coding
  * Encoding and decoding of MIDIEvent objects.
  * @{

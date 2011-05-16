@@ -25,20 +25,24 @@
  * @see MIDIMessageData
  */
 struct MIDIMessageFormat {
+/**
+ * @privatesection
+ * @cond INTERNALS
+ */
   int (*test)( void * buffer );
   int (*size)( struct MIDIMessageData * data, size_t * size );
   int (*set)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
   int (*get)( struct MIDIMessageData * data, MIDIProperty property, size_t size, void * value );
   int (*encode)( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * written );
   int (*decode)( struct MIDIMessageData * data, MIDIRunningStatus * status, size_t size, void * buffer, size_t * read );
+/** @endcond */
 };
 
 #define VOID_BYTE( buffer, n ) ((unsigned char*)buffer)[n]
 
-#pragma mark Encoding & decoding
-/**
- * @internal
- * Encoding & decoding functions.
+/* MARK: Encoding & decoding *//**
+ * @name Encoding & decoding
+ * @cond INTERNALS
  * These functions encode a MIDI message to or from a stream.
  * @{
  */
@@ -217,12 +221,12 @@ static int _decode_system_exclusive( struct MIDIMessageData * data, MIDIRunningS
 
 /**
  * @}
+ * @endcond
  */
 
-#pragma mark Message size determination
-/**
- * @internal
- * Message size determination
+/* MARK: Message size determination *//**
+ * @name Message size determination
+ * @cond INTERNALS
  * Determine the size of a message.
  * @{
  */
@@ -261,12 +265,12 @@ static int _size_system_exclusive( struct MIDIMessageData * data, size_t * size 
 
 /**
  * @}
+ * @endcond
  */
 
-#pragma mark Message format detectors
-/**
- * @internal
- * Message format detectors.
+/* MARK: Message format detectors *//**
+ * @name Message format detectors
+ * @cond INTERNALS
  * Detect the message format using the first byte.
  * @{
  */
@@ -328,12 +332,12 @@ static int _test_real_time( void * buffer ) {
 
 /**
  * @}
+ * @endcond
  */
 
-#pragma mark Getters and setters
-/**
- * @internal
- * Getters and setters.
+/* MARK: Getters and setters *//**
+ * @name Getters and setters
+ * @cond INTERNALS
  * Functions to get ans set properties of the different messages.
  * @{
  */
@@ -928,12 +932,12 @@ static int _get_tune_request_real_time( struct MIDIMessageData * data, MIDIPrope
 
 /**
  * @}
+ * @endcond
  */
 
-#pragma mark Message format definitions
-/**
- * @internal
- * Message format definitions.
+/* MARK: Message format definitions *//**
+ * @name Message format definitions
+ * @cond INTERNALS
  * These definitions hold some message formats.
  * @{
  */
@@ -1048,9 +1052,11 @@ static struct MIDIMessageFormat _real_time = {
 
 /**
  * @}
+ * @endcond
  */
 
-#pragma mark Public functions
+/* MARK: -
+ * MARK: Public functions */
 
 #define N_ELEM(a) (sizeof(a) / sizeof(a[0]))
 

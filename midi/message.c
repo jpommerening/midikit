@@ -24,8 +24,7 @@ struct MIDIMessage {
  */
 MIDI_TYPE_SPEC_CODING( MIDIMessage, 0x4010 );
 
-#pragma mark Internals
-/**
+/* MARK: Internals *//**
  * @name Internals
  * @cond INTERNALS
  * @{
@@ -50,8 +49,8 @@ static void _check_release_data( struct MIDIMessage * message ) {
  * @endcond
  */
 
-#pragma mark Creation and destruction
-/**
+/* MARK: -
+ * MARK: Creation and destruction *//**
  * @name Creation and destruction
  * Creating, destroying and reference counting of MIDIMessage objects.
  * @{
@@ -133,8 +132,7 @@ void MIDIMessageRelease( struct MIDIMessage * message ) {
 
 /** @} */
 
-#pragma mark Property access
-/**
+/* MARK: Property access *//**
  * @name Property access
  * Get and set message properties.
  * @{
@@ -234,8 +232,7 @@ int MIDIMessageGet( struct MIDIMessage * message, MIDIProperty property, size_t 
 
 /** @} */
 
-#pragma mark Message coding
-/**
+/* MARK: Message coding *//**
  * @name Message coding
  * Methods for encoding and decoding midi message objects.
  * @{
