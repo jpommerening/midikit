@@ -242,13 +242,13 @@ static int _applemidi_disconnect( struct MIDIDriverAppleMIDI * driver, int fd ) 
 }
 
 int MIDIDriverAppleMIDISendMessage( struct MIDIDriverAppleMIDI * driver, struct MIDIMessage * message );
-static int _driver_send( void * driverp, struct MIDIMessage * message ) {
-  return MIDIDriverAppleMIDISendMessage( driverp, message );
+static int _driver_send( struct MIDIDriver * driverp, struct MIDIMessage * message ) {
+  return MIDIDriverAppleMIDISendMessage( (struct MIDIDriverAppleMIDI *) driverp, message );
 }
 
 void MIDIDriverAppleMIDIDestroy( struct MIDIDriverAppleMIDI * driver );
-static void _driver_destroy( void * driverp ) {
-  MIDIDriverAppleMIDIDestroy( driverp );
+static void _driver_destroy( struct MIDIDriver * driverp ) {
+  MIDIDriverAppleMIDIDestroy( (struct MIDIDriverAppleMIDI *) driverp );
 }
 
 /* MARK: -

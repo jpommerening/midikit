@@ -21,8 +21,8 @@ struct MIDIDriver {
   struct MIDIRunloopSource * rls;
   struct MIDIPort * port;
   struct MIDIClock * clock;
-  int (*send)( void * driver, struct MIDIMessage * message );
-  void (*destroy)( void * driver );
+  int (*send)( struct MIDIDriver * driver, struct MIDIMessage * message );
+  void (*destroy)( struct MIDIDriver * driver );
 };
 #endif
 

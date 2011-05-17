@@ -103,25 +103,44 @@ int test005_clock( void ) {
  * Test that timestamp conversion works.
  */
 int test006_clock( void ) {
-  struct MIDIClock * clock = MIDIClockCreate( MIDI_SAMPLING_RATE_192KHZ );
+  struct MIDIClock * clock;
+  /* trigger creation of global clock */
+  MIDIClockGetGlobalClock( &clock );
+  usleep( 400 );
+  clock = MIDIClockCreate( MIDI_SAMPLING_RATE_192KHZ );
   MIDITimestamp a, b, c;
+  MIDISamplingRate rate;
+  int epsilon;
+
+  /* let some time pass so we have meaningful timestamps */
+  usleep( 600 );
 
   ASSERT_NOT_EQUAL( clock, NULL, "Could not create MIDI clock." );
 
   /* create 2 timestamps using different clocks. */
   ASSERT_NO_ERROR( MIDIClockGetNow( NULL,  &a ), "Could not get current global clock time." );
   ASSERT_NO_ERROR( MIDIClockGetNow( clock, &b ), "Could not get current local clock time." );
+  /* printf( "%u, %u\n", a, b); */
   c = a; /* backup global timestamp, convert global timestamp to local */
   ASSERT_NO_ERROR( MIDIClockConvertTimestamp( clock, NULL, &a ), "Could not convert from global clock timestamp." );
 
   /* check that global and local timestamp are about equal */
+  ASSERT_LESS(    a, b+5, "Single conversion did break timestamp." );
   ASSERT_GREATER( a, b-5, "Single conversion did break timestamp." );
-  ASSERT_GREATER( b, a-5, "Single conversion did break timestamp." );
 
   ASSERT_NO_ERROR( MIDIClockConvertTimestamp( NULL, clock, &a ), "Could not convert to global clock timestamp." );
+  ASSERT_NO_ERROR( MIDIClockGetSamplingRate( NULL, &rate ), "Could not get sampling rate." );
 
-  /* be a little more tolerant. at 192KHZ 10 ticks are little more than 0.05ms */
-  ASSERT_GREATER( a, b-10, "Roundtrip conversion did break timestamp." );
-  ASSERT_GREATER( b, a-10, "Roundtrip conversion did break timestamp." );
+  /* compute an allowed error: should be about 10 ticks */
+  /* at 192KHZ 10 ticks are little more than 0.1ms      */
+  if( rate > MIDI_SAMPLING_RATE_192KHZ ) {
+    epsilon = (2*rate)/MIDI_SAMPLING_RATE_192KHZ;
+  } else {
+    epsilon = (2*MIDI_SAMPLING_RATE_192KHZ)/rate;
+  }
+  /* printf( "Allowing error epsilon: %i, a: %u, c: %u\n", epsilon, a, c ); */
+
+  ASSERT_LESS(    a, c+epsilon, "Roundtrip conversion did break timestamp." );
+  ASSERT_GREATER( a, c-epsilon, "Roundtrip conversion did break timestamp." );
   return 0;
 }
