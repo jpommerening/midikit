@@ -170,13 +170,15 @@ static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
   struct sockaddr_in addr;
   int result = 0;
   
+  memset(&addr, 0, sizeof(addr));
   if( driver->control_socket <= 0 ) {
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons( driver->port );
 
     driver->control_socket = socket( PF_INET, SOCK_DGRAM, 0 );
-    result = bind( driver->control_socket, (struct sockaddr *) &addr, sizeof(addr) );
+    if (driver->control_socket != -1)
+      result = bind( driver->control_socket, (struct sockaddr *) &addr, sizeof(addr) );
   }
 
   if( driver->rtp_socket <= 0 ) {
@@ -185,7 +187,8 @@ static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
     addr.sin_port = htons( driver->port + 1 );
 
     driver->rtp_socket = socket( PF_INET, SOCK_DGRAM, 0 );
-    result = bind( driver->rtp_socket, (struct sockaddr *) &addr, sizeof(addr) );
+    if (driver->control_socket != -1)
+      result = bind( driver->rtp_socket, (struct sockaddr *) &addr, sizeof(addr) );
   }
 
   return result;
