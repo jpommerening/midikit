@@ -190,7 +190,7 @@ static void _init_clock_sys( struct MIDIClock * clock ) {
 static unsigned long long _timestamp_sys( void ) {
   static struct timeval tv;
   gettimeofday( &tv, NULL );
-  return (tv.tv_sec * USEC_PER_SEC + tv.tv_usec);
+  return ((unsigned long long)tv.tv_sec * USEC_PER_SEC + tv.tv_usec);
 }
 #endif
 
