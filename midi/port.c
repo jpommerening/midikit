@@ -231,6 +231,7 @@ struct MIDIPort * MIDIPortCreate( char * name, int mode, void * target,
   }
   if( port->ports == NULL ) {
     /* probably ENOMEM, in that case, error code is already set by MIDIList */
+    free (port->name);
     free( port );
     return NULL;
   }
