@@ -66,6 +66,7 @@ struct MIDIEvent * MIDIEventCreate( size_t id, void * info, char * message, ... 
     do {
       if( buffer == NULL ) {
         MIDIError( ENOMEM, "Could not allocate space for static buffer." );
+        free (event);
         return NULL;
       }
       required = vsnprintf( buffer, length-1, message, vargs );

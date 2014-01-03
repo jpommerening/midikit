@@ -25,9 +25,16 @@ struct MIDIDriverOSC {
 struct MIDIDriverOSC * MIDIDriverOSCCreate( ) {
   struct MIDIDriverOSC * driver = malloc( sizeof( struct MIDIDriverOSC ) );
   struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
   
   driver->refs   = 1;
   driver->socket = socket( PF_INET, SOCK_DGRAM, 0 );
+  
+  if (driver->socket != -1)
+  {
+      free (driver);
+      return NULL;
+  }
   
   addr.sin_family = AF_INET;
   addr.sin_port = 5006;

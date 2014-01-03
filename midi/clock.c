@@ -167,7 +167,7 @@ static void _init_clock_posix( struct MIDIClock * clock ) {
 static unsigned long long _timestamp_posix( void ) {
   static struct timespec ts;
   clock_gettime( POSIX_CLOCK_TYPE, &ts );
-  return (ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec);
+  return ((unsigned long long)tv.tv_sec * USEC_PER_SEC + tv.tv_usec);
 }
 #endif
 
@@ -190,7 +190,7 @@ static void _init_clock_sys( struct MIDIClock * clock ) {
 static unsigned long long _timestamp_sys( void ) {
   static struct timeval tv;
   gettimeofday( &tv, NULL );
-  return (tv.tv_sec * USEC_PER_SEC + tv.tv_usec);
+  return ((unsigned long long)tv.tv_sec * USEC_PER_SEC + tv.tv_usec);
 }
 #endif
 

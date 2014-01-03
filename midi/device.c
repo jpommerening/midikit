@@ -145,7 +145,7 @@ static int _recv_cc_omni( struct MIDIDevice * device, MIDIChannel channel,
                           MIDIControl control, MIDIValue value ) {
   int result = 0, i;
   struct MIDIController * ctl;
-  struct MIDIController * recv[N_CHANNEL] = { NULL };
+  struct MIDIController * recv[N_CHANNEL+1] = { NULL };
   MIDIChannel c;
   MIDIPrecond( device != NULL, EFAULT );
   
