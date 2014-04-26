@@ -482,6 +482,7 @@ void RTPSessionDestroy( struct RTPSession * session ) {
     }
   }
   free( session->buffer );
+  close( session->socket );
   free( session );
 }
 
