@@ -569,7 +569,6 @@ static int _applemidi_send_command( struct MIDIDriverAppleMIDI * driver, int fd,
     struct sockaddr_in6 * a = (struct sockaddr_in6 *) &(command->addr);
     MIDILog( DEBUG, "send %i bytes to %s:%i on s(%i)\n", len,
         inet_ntop(AF_INET6, &a->sin6_addr, straddr, sizeof(straddr)), ntohs( a->sin6_port ), fd );
-  }
 #endif
   } else {
     MIDILog( DEBUG, "send %i bytes to <unknown addr family> on s(%i)\n", len, fd );
@@ -609,7 +608,6 @@ static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd,
     struct sockaddr_in6 * a = (struct sockaddr_in6 *) &(command->addr);
     MIDILog( DEBUG, "recv %i bytes from %s:%i on s(%i)\n", len,
         inet_ntop(AF_INET6, &a->sin6_addr, straddr, sizeof(straddr)), ntohs( a->sin6_port ), fd );
-  }
 #endif
   } else {
     MIDILog( DEBUG, "recv %i bytes from <unknown addr family> on s(%i)\n", len, fd );
@@ -790,7 +788,6 @@ static int _applemidi_rtp_addr( socklen_t size, struct sockaddr * control_addr, 
     in_addr = (struct sockaddr_in6 *) rtp_addr;
     in_addr->sin6_port = htons( ntohs( in_addr->sin6_port ) + 1 );
     return 0;
-  }
 #endif
   } else {
     return 1;
@@ -820,7 +817,6 @@ static int _applemidi_control_addr( socklen_t size, struct sockaddr * rtp_addr, 
     in_addr = (struct sockaddr_in6 *) control_addr;
     in_addr->sin6_port = htons( ntohs( in_addr->sin6_port ) - 1 );
     return 0;
-  }
 #endif
   } else {
     return 1;
