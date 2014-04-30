@@ -30,7 +30,7 @@ struct MIDIDriverOSC * MIDIDriverOSCCreate( ) {
   driver->refs   = 1;
   driver->socket = socket( PF_INET, SOCK_DGRAM, 0 );
   
-  if (driver->socket != -1)
+  if (driver->socket == -1)
   {
       free (driver);
       return NULL;
