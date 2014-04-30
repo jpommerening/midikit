@@ -223,12 +223,13 @@ struct MIDIPort * MIDIPortCreate( char * name, int mode, void * target,
   port->name    = malloc( namelen );
   port->target  = target;
   port->receive = receive;
-  port->ports   = MIDIListCreate( MIDIPortType );
 
   if( port->name == NULL ) {
     free( port );
     return NULL;
   }
+  
+  port->ports   = MIDIListCreate( MIDIPortType );
   if( port->ports == NULL ) {
     /* probably ENOMEM, in that case, error code is already set by MIDIList */
     free (port->name);
