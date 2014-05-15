@@ -27,7 +27,7 @@ test: test/.make
 test-clean: test/.make-clean
 
 driver/.make: midi
-test/.make: midi
+test/.make: midi driver
 
 %/.make:
 	cd $$(dirname $@) && $(MAKE)
