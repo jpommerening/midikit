@@ -22,26 +22,45 @@ struct MIDIDriverOSC {
   struct MIDIMessageQueue * out_queue;
 };
 
-struct MIDIDriverOSC * MIDIDriverOSCCreate( ) {
-  struct MIDIDriverOSC * driver = malloc( sizeof( struct MIDIDriverOSC ) );
+static int _osc_bind( int fd, int port ) {
+#if (defined(AF_INET6) && defined(ENABLE_IPV6))
+  struct sockaddr_in6 addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin6_family = AF_INET6;
+  addr.sin6_addr =  in6addr_any;
+  addr.sin6_port = htons( port );
+#else
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
-  
-  driver->refs   = 1;
-  driver->socket = socket( PF_INET, SOCK_DGRAM, 0 );
-  
-  if (driver->socket == -1)
-  {
-      free (driver);
-      return NULL;
-  }
-  
   addr.sin_family = AF_INET;
-  addr.sin_port = 5006;
   addr.sin_addr.s_addr = INADDR_ANY;
-  
-  bind( driver->socket, (struct sockaddr *) &addr, sizeof(addr) );
-  
+  addr.sin_port = htons( port );
+#endif
+  return bind( fd, (struct sockaddr *) &addr, sizeof(addr) );
+}
+
+
+struct MIDIDriverOSC * MIDIDriverOSCCreate( ) {
+  struct MIDIDriverOSC * driver = malloc( sizeof( struct MIDIDriverOSC ) );
+
+  driver->refs = 1;
+#if (defined(AF_INET6) && defined(ENABLE_IPV6))
+  driver->socket = socket( PF_INET6, SOCK_DGRAM, 0 );
+#else
+  driver->socket = socket( PF_INET, SOCK_DGRAM, 0 );
+#endif
+
+  if( driver->socket == -1 ) {
+    free( driver );
+    return NULL;
+  }
+
+  if( _osc_bind( driver->socket, 5006 ) ) {
+    close( driver->socket );
+    free( driver );
+    return NULL;
+  }
+
   driver->in_queue  = MIDIMessageQueueCreate();
   driver->out_queue = MIDIMessageQueueCreate();
   return driver;

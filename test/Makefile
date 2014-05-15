@@ -1,4 +1,3 @@
-
 PROJECTDIR=..
 SUBDIR=test
 
@@ -14,6 +13,12 @@ OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/list.o $(OBJDIR)/port.o \
      $(OBJDIR)/device.o $(OBJDIR)/driver.o $(OBJDIR)/message_queue.o \
      $(OBJDIR)/integration.o $(OBJDIR)/runloop.o \
      $(OBJDIR)/driver_rtp.o $(OBJDIR)/driver_applemidi.o
+SRCS=midi.c util.c list.c port.c clock.c message_format.c message.c device.c \
+     driver.c integration.c runloop.c driver_rtp.c driver_applemidi.c
+ifeq ($(USE_IPV6),1)
+OBJS += $(OBJDIR)/driver_rtpv6.o $(OBJDIR)/driver_applemidiv6.o
+SRCS += driver_applemidiv6.c driver_rtpv6.c
+endif
 BIN=test_main
 
 MAIN_C=main.c
@@ -52,9 +57,11 @@ $(OBJDIR)/integration.o: integration.c test.h
 $(OBJDIR)/runloop.o: runloop.c test.h
 $(OBJDIR)/driver_rtp.o: driver_rtp.c test.h
 $(OBJDIR)/driver_applemidi.o: driver_applemidi.c test.h
+$(OBJDIR)/driver_rtpv6.o: driver_rtpv6.c test.h
+$(OBJDIR)/driver_applemidiv6.o: driver_applemidiv6.c test.h
 
 tests.passed: $(BINDIR)/$(BIN) $(LIBDIR)/libmidikit$(LIB_SUFFIX) $(LIBDIR)/libmidikit-driver$(LIB_SUFFIX)
 	LD_LIBRARY_PATH=$(LIBDIR) $(BINDIR)/$(BIN) && touch $@
 
-$(MAIN_C): midi.c util.c list.c port.c clock.c message_format.c message.c device.c driver.c integration.c runloop.c driver_rtp.c driver_applemidi.c
+$(MAIN_C): $(SRCS)
 	./generate_main.sh -o $(MAIN_C) $^

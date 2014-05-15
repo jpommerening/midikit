@@ -166,29 +166,42 @@ static int _applemidi_update_runloop_source( struct MIDIDriverAppleMIDI * driver
 }
 
 
-static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
-  struct sockaddr_in addr;
-  int result = 0;
-  
+static int _applemidi_bind( int fd, int port ) {
+#if (defined(AF_INET6) && defined(ENABLE_IPV6))
+  struct sockaddr_in6 addr;
   memset(&addr, 0, sizeof(addr));
-  if( driver->control_socket <= 0 ) {
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons( driver->port );
+  addr.sin6_family = AF_INET6;
+  addr.sin6_addr =  in6addr_any;
+  addr.sin6_port = htons( port );
+#else
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = INADDR_ANY;
+  addr.sin_port = htons( port );
+#endif
+  return bind( fd, (struct sockaddr *) &addr, sizeof(addr) );
+}
 
-    driver->control_socket = socket( PF_INET, SOCK_DGRAM, 0 );
-    if (driver->control_socket != -1)
-      result = bind( driver->control_socket, (struct sockaddr *) &addr, sizeof(addr) );
+
+static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
+  int result = 0;
+#if (defined(AF_INET6) && defined(ENABLE_IPV6))
+  int pf = PF_INET6;
+#else
+  int pf = PF_INET;
+#endif
+
+  if( driver->control_socket <= 0 ) {
+    driver->control_socket = socket( pf, SOCK_DGRAM, 0 );
+    if( driver->control_socket != -1 )
+      result = _applemidi_bind( driver->control_socket, driver->port );
   }
 
-  if( driver->rtp_socket <= 0 ) {
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons( driver->port + 1 );
-
-    driver->rtp_socket = socket( PF_INET, SOCK_DGRAM, 0 );
-    if (driver->control_socket != -1)
-      result = bind( driver->rtp_socket, (struct sockaddr *) &addr, sizeof(addr) );
+  if( result == 0 && driver->rtp_socket <= 0 ) {
+    driver->rtp_socket = socket( pf, SOCK_DGRAM, 0 );
+    if( driver->rtp_socket != -1 )
+      result = _applemidi_bind( driver->rtp_socket, driver->port + 1 );
   }
 
   return result;
@@ -271,6 +284,7 @@ static void _driver_destroy( struct MIDIDriver * driverp ) {
 struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned short port ) {
   struct MIDIDriverAppleMIDI * driver;
   MIDITimestamp timestamp;
+  int ret = 0;
 
   driver = malloc( sizeof( struct MIDIDriverAppleMIDI ) );
   MIDIPrecondReturn( driver != NULL, ENOMEM, NULL );
@@ -289,7 +303,9 @@ struct MIDIDriverAppleMIDI * MIDIDriverAppleMIDICreate( char * name, unsigned sh
   driver->base.send    = &_driver_send;
   driver->base.destroy = &_driver_destroy;
   
-  _applemidi_connect( driver );
+  ret = _applemidi_connect( driver );
+  if (ret==-1)
+    MIDILog( ERROR, "Bind failed for port: %hu\n", port);
 
   driver->peer = NULL;
   driver->rtp_session     = RTPSessionCreate( driver->rtp_socket );  
@@ -537,6 +553,13 @@ static int _applemidi_send_command( struct MIDIDriverAppleMIDI * driver, int fd,
   if( command->addr.ss_family == AF_INET ) {
     struct sockaddr_in * a = (struct sockaddr_in *) &(command->addr);
     MIDILog( DEBUG, "send %i bytes to %s:%i on s(%i)\n", len, inet_ntoa( a->sin_addr ), ntohs( a->sin_port ), fd );
+#if (defined(AF_INET6))
+  } else if (command->addr.ss_family == AF_INET6 ) {
+    char straddr[INET6_ADDRSTRLEN];
+    struct sockaddr_in6 * a = (struct sockaddr_in6 *) &(command->addr);
+    MIDILog( DEBUG, "send %i bytes to %s:%i on s(%i)\n", len,
+        inet_ntop(AF_INET6, &a->sin6_addr, straddr, sizeof(straddr)), ntohs( a->sin6_port ), fd );
+#endif
   } else {
     MIDILog( DEBUG, "send %i bytes to <unknown addr family> on s(%i)\n", len, fd );
   }
@@ -569,6 +592,13 @@ static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd,
   if( command->addr.ss_family == AF_INET ) {
     struct sockaddr_in * a = (struct sockaddr_in *) &(command->addr);
     MIDILog( DEBUG, "recv %i bytes from %s:%i on s(%i)\n", len, inet_ntoa( a->sin_addr ), ntohs( a->sin_port ), fd );
+#if (defined(AF_INET6))
+  } else if (command->addr.ss_family == AF_INET6 ) {
+    char straddr[INET6_ADDRSTRLEN];
+    struct sockaddr_in6 * a = (struct sockaddr_in6 *) &(command->addr);
+    MIDILog( DEBUG, "recv %i bytes from %s:%i on s(%i)\n", len,
+        inet_ntop(AF_INET6, &a->sin6_addr, straddr, sizeof(straddr)), ntohs( a->sin6_port ), fd );
+#endif
   } else {
     MIDILog( DEBUG, "recv %i bytes from <unknown addr family> on s(%i)\n", len, fd );
   }
@@ -734,14 +764,21 @@ static int _applemidi_endsession( struct MIDIDriverAppleMIDI * driver, int fd, s
  * @return >0 on error.
  */
 static int _applemidi_rtp_addr( socklen_t size, struct sockaddr * control_addr, struct sockaddr * rtp_addr ) {
-  struct sockaddr_in * in_addr;
   if( control_addr != rtp_addr ) {
     memcpy( rtp_addr, control_addr, size );
   }
   if( rtp_addr->sa_family == AF_INET ) {
+    struct sockaddr_in * in_addr;
     in_addr = (struct sockaddr_in *) rtp_addr;
     in_addr->sin_port = htons( ntohs( in_addr->sin_port ) + 1 );
     return 0;
+#if (defined(AF_INET6))
+  } else if ( rtp_addr->sa_family == AF_INET6 ) {
+    struct sockaddr_in6 * in_addr;
+    in_addr = (struct sockaddr_in6 *) rtp_addr;
+    in_addr->sin6_port = htons( ntohs( in_addr->sin6_port ) + 1 );
+    return 0;
+#endif
   } else {
     return 1;
   }
@@ -756,14 +793,21 @@ static int _applemidi_rtp_addr( socklen_t size, struct sockaddr * control_addr, 
  * @return >0 on error.
  */
 static int _applemidi_control_addr( socklen_t size, struct sockaddr * rtp_addr, struct sockaddr * control_addr ) {
-  struct sockaddr_in * in_addr;
   if( rtp_addr != control_addr ) {
     memcpy( control_addr, rtp_addr, size );
   }
   if( control_addr->sa_family == AF_INET ) {
+    struct sockaddr_in * in_addr;
     in_addr = (struct sockaddr_in *) control_addr;
     in_addr->sin_port = htons( ntohs( in_addr->sin_port ) - 1 );
     return 0;
+#if (defined(AF_INET6))
+  } else if ( control_addr->sa_family == AF_INET6 ) {
+    struct sockaddr_in6 * in_addr;
+    in_addr = (struct sockaddr_in6 *) control_addr;
+    in_addr->sin6_port = htons( ntohs( in_addr->sin6_port ) - 1 );
+    return 0;
+#endif
   } else {
     return 1;
   }
