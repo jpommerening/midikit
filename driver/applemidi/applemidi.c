@@ -166,54 +166,44 @@ static int _applemidi_update_runloop_source( struct MIDIDriverAppleMIDI * driver
 }
 
 
-static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
-  int result = 0;
+static int _applemidi_bind( int fd, int port ) {
 #if (defined(AF_INET6) && defined(ENABLE_IPV6))
   struct sockaddr_in6 addr;
   memset(&addr, 0, sizeof(addr));
-
-  if( driver->control_socket <= 0 ) {
-    addr.sin6_family = AF_INET6;
-    addr.sin6_addr =  in6addr_any;
-    addr.sin6_port = htons( driver->port );
-
-    driver->control_socket = socket( PF_INET6, SOCK_DGRAM, 0 );
-    if (driver->control_socket != -1)
-      result = bind( driver->control_socket, (struct sockaddr *) &addr, sizeof(addr) );
-  }
-
-  if( driver->rtp_socket <= 0 ) {
-    addr.sin6_family = AF_INET6;
-    addr.sin6_addr = in6addr_any;
-    addr.sin6_port = htons( driver->port + 1 );
-
-    driver->rtp_socket = socket( PF_INET6, SOCK_DGRAM, 0 );
-    if (driver->rtp_socket != -1)
-      result = bind( driver->rtp_socket, (struct sockaddr *) &addr, sizeof(addr) );
-  }
+  addr.sin6_family = AF_INET6;
+  addr.sin6_addr =  in6addr_any;
+  addr.sin6_port = htons( port );
 #else
-  struct sockaddr_in addr;  
+  struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
-  if( driver->control_socket <= 0 ) {
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons( driver->port );
-
-    driver->control_socket = socket( PF_INET, SOCK_DGRAM, 0 );
-    if (driver->control_socket != -1)
-      result = bind( driver->control_socket, (struct sockaddr *) &addr, sizeof(addr) );
-  }
-
-  if( driver->rtp_socket <= 0 ) {
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons( driver->port + 1 );
-
-    driver->rtp_socket = socket( PF_INET, SOCK_DGRAM, 0 );
-    if (driver->control_socket != -1)
-      result = bind( driver->rtp_socket, (struct sockaddr *) &addr, sizeof(addr) );
-  }
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = INADDR_ANY;
+  addr.sin_port = htons( port );
 #endif
+  return bind( fd, (struct sockaddr *) &addr, sizeof(addr) );
+}
+
+
+static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
+  int result = 0;
+#if (defined(AF_INET6) && defined(ENABLE_IPV6))
+  int pf = PF_INET6;
+#else
+  int pf = PF_INET;
+#endif
+
+  if( driver->control_socket <= 0 ) {
+    driver->control_socket = socket( pf, SOCK_DGRAM, 0 );
+    if( driver->control_socket != -1 )
+      result = _applemidi_bind( driver->control_socket, driver->port );
+  }
+
+  if( result == 0 && driver->rtp_socket <= 0 ) {
+    driver->rtp_socket = socket( pf, SOCK_DGRAM, 0 );
+    if( driver->rtp_socket != -1 )
+      result = _applemidi_bind( driver->rtp_socket, driver->port + 1 );
+  }
+
   return result;
 }
 
