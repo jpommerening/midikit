@@ -8,19 +8,16 @@ LDFLAGS_SHARED := $(LDFLAGS) -lmidikit -lmidikit-driver
 LDFLAGS_STATIC := $(LDFLAGS) $(LIBDIR)/libmidikit$(LIB_SUFFIX_STATIC) $(LIBDIR)/libmidikit-driver$(LIB_SUFFIX_STATIC)
 LDFLAGS := $(LDFLAGS_$(COMPILE_MODE))
 
-ifeq ($(USE_IPV6),1)
-OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/list.o $(OBJDIR)/port.o \
-     $(OBJDIR)/clock.o $(OBJDIR)/message_format.o $(OBJDIR)/message.o \
-     $(OBJDIR)/device.o $(OBJDIR)/driver.o $(OBJDIR)/message_queue.o \
-     $(OBJDIR)/integration.o $(OBJDIR)/runloop.o \
-     $(OBJDIR)/driver_rtp.o $(OBJDIR)/driver_applemidi.o \
-     $(OBJDIR)/driver_rtpv6.o $(OBJDIR)/driver_applemidiv6.o
-else
 OBJS=$(OBJDIR)/midi.o $(OBJDIR)/util.o $(OBJDIR)/list.o $(OBJDIR)/port.o \
      $(OBJDIR)/clock.o $(OBJDIR)/message_format.o $(OBJDIR)/message.o \
      $(OBJDIR)/device.o $(OBJDIR)/driver.o $(OBJDIR)/message_queue.o \
      $(OBJDIR)/integration.o $(OBJDIR)/runloop.o \
      $(OBJDIR)/driver_rtp.o $(OBJDIR)/driver_applemidi.o
+SRCS=midi.c util.c list.c port.c clock.c message_format.c message.c device.c \
+     driver.c integration.c runloop.c driver_rtp.c driver_applemidi.c
+ifeq ($(USE_IPV6),1)
+OBJS += $(OBJDIR)/driver_rtpv6.o $(OBJDIR)/driver_applemidiv6.o
+SRCS += driver_applemidiv6.c driver_rtpv6.c
 endif
 BIN=test_main
 
@@ -66,10 +63,5 @@ $(OBJDIR)/driver_applemidiv6.o: driver_applemidiv6.c test.h
 tests.passed: $(BINDIR)/$(BIN) $(LIBDIR)/libmidikit$(LIB_SUFFIX) $(LIBDIR)/libmidikit-driver$(LIB_SUFFIX)
 	LD_LIBRARY_PATH=$(LIBDIR) $(BINDIR)/$(BIN) && touch $@
 
-ifeq ($(USE_IPV6),1)
-$(MAIN_C): midi.c util.c list.c port.c clock.c message_format.c message.c device.c driver.c integration.c runloop.c driver_rtp.c driver_applemidi.c driver_rtpv6.c driver_applemidiv6.c
+$(MAIN_C): $(SRCS)
 	./generate_main.sh -o $(MAIN_C) $^
-else
-$(MAIN_C): midi.c util.c list.c port.c clock.c message_format.c message.c device.c driver.c integration.c runloop.c driver_rtp.c driver_applemidi.c
-	./generate_main.sh -o $(MAIN_C) $^
-endif
