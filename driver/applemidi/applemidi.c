@@ -619,7 +619,7 @@ static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd,
           if( len > sizeof( command->data.session.name ) - 1 ) {
             len = sizeof( command->data.session.name ) - 1;
           }
-          memcpy( &(command->data.session.name[0]), &msg[4], len ); 
+          memcpy( &(command->data.session.name[0]), &msg[4], len - (4 * sizeof(msg[0])) );
           command->data.session.name[len] = '\0';
         }
         ssrc = command->data.session.ssrc;
