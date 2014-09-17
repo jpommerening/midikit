@@ -614,12 +614,12 @@ static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd,
         command->data.session.version = ntohl( msg[1] );
         command->data.session.token   = ntohl( msg[2] );
         command->data.session.ssrc    = ntohl( msg[3] );
-        len -= 16;
         if( len > 0 ) {
           if( len > sizeof( command->data.session.name ) - 1 ) {
             len = sizeof( command->data.session.name ) - 1;
           }
-          memcpy( &(command->data.session.name[0]), &msg[4], len - (4 * sizeof(msg[0])) );
+          len -= 16; /* already read msg[0]..msg[3] */
+          memcpy( &(command->data.session.name[0]), &msg[4], len) );
           command->data.session.name[len] = '\0';
         }
         ssrc = command->data.session.ssrc;
