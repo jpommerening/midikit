@@ -589,6 +589,11 @@ static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd,
   command->size = sizeof(command->addr);
   len = recvfrom( fd, &msg[0], sizeof(msg), 0,
                   (struct sockaddr *) &(command->addr), &(command->size) );
+  if( len > sizeof(msg) ) {
+    /* received more bytes than we can store in msg[].
+     * ignore the remaining bytes, truncate the name */
+    len = sizeof(msg);
+  }
   if( command->addr.ss_family == AF_INET ) {
     struct sockaddr_in * a = (struct sockaddr_in *) &(command->addr);
     MIDILog( DEBUG, "recv %i bytes from %s:%i on s(%i)\n", len, inet_ntoa( a->sin_addr ), ntohs( a->sin_port ), fd );
@@ -614,11 +619,12 @@ static int _applemidi_recv_command( struct MIDIDriverAppleMIDI * driver, int fd,
         command->data.session.version = ntohl( msg[1] );
         command->data.session.token   = ntohl( msg[2] );
         command->data.session.ssrc    = ntohl( msg[3] );
+        len -= 16; /* already read msg[0]..msg[3] */
         if( len > 0 ) {
           if( len > sizeof( command->data.session.name ) - 1 ) {
+            /* don't exceed the size of the name field */
             len = sizeof( command->data.session.name ) - 1;
           }
-          len -= 16; /* already read msg[0]..msg[3] */
           memcpy( &(command->data.session.name[0]), &msg[4], len);
           command->data.session.name[len] = '\0';
         }
