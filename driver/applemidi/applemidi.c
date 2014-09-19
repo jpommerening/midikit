@@ -196,12 +196,16 @@ static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
     driver->control_socket = socket( pf, SOCK_DGRAM, 0 );
     if( driver->control_socket != -1 )
       result = _applemidi_bind( driver->control_socket, driver->port );
+    else
+      result = -1;
   }
 
   if( result == 0 && driver->rtp_socket <= 0 ) {
     driver->rtp_socket = socket( pf, SOCK_DGRAM, 0 );
     if( driver->rtp_socket != -1 )
       result = _applemidi_bind( driver->rtp_socket, driver->port + 1 );
+    else
+      result = -1;
   }
 
   return result;
