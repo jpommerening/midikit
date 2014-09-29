@@ -185,7 +185,7 @@ static int _applemidi_bind( int fd, int port ) {
 
 
 static int _applemidi_connect( struct MIDIDriverAppleMIDI * driver ) {
-  int result = 0;
+  int result = -1;
 #if (defined(AF_INET6) && defined(ENABLE_IPV6))
   int pf = PF_INET6;
 #else
