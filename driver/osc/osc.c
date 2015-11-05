@@ -42,6 +42,7 @@ static int _osc_bind( int fd, int port ) {
 
 struct MIDIDriverOSC * MIDIDriverOSCCreate( ) {
   struct MIDIDriverOSC * driver = malloc( sizeof( struct MIDIDriverOSC ) );
+  if( driver == NULL ) return NULL;
 
   driver->refs = 1;
 #if (defined(AF_INET6) && defined(ENABLE_IPV6))
