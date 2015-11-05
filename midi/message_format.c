@@ -396,7 +396,6 @@ static int _set_note_off_on( struct MIDIMessageData * data, MIDIProperty propert
     PROPERTY_CASE_SET(MIDI_VELOCITY,MIDIVelocity,m[2]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -419,7 +418,6 @@ static int _get_note_off_on( struct MIDIMessageData * data, MIDIProperty propert
     PROPERTY_CASE_GET(MIDI_VELOCITY,MIDIVelocity,m[2]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -442,7 +440,6 @@ static int _set_polyphonic_key_pressure( struct MIDIMessageData * data, MIDIProp
     PROPERTY_CASE_SET(MIDI_PRESSURE,MIDIPressure,m[2]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -465,7 +462,6 @@ static int _get_polyphonic_key_pressure( struct MIDIMessageData * data, MIDIProp
     PROPERTY_CASE_GET(MIDI_PRESSURE,MIDIPressure,m[2]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -488,7 +484,6 @@ static int _set_control_change( struct MIDIMessageData * data, MIDIProperty prop
     PROPERTY_CASE_SET(MIDI_VALUE,MIDIValue,m[2]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -511,7 +506,6 @@ static int _get_control_change( struct MIDIMessageData * data, MIDIProperty prop
     PROPERTY_CASE_GET(MIDI_VALUE,MIDIValue,m[2]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -533,7 +527,6 @@ static int _set_program_change( struct MIDIMessageData * data, MIDIProperty prop
     PROPERTY_CASE_SET(MIDI_PROGRAM,MIDIProgram,m[1]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -555,7 +548,6 @@ static int _get_program_change( struct MIDIMessageData * data, MIDIProperty prop
     PROPERTY_CASE_GET(MIDI_PROGRAM,MIDIProgram,m[1]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -577,7 +569,6 @@ static int _set_channel_pressure( struct MIDIMessageData * data, MIDIProperty pr
     PROPERTY_CASE_SET(MIDI_PRESSURE,MIDIPressure,m[1]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -599,7 +590,6 @@ static int _get_channel_pressure( struct MIDIMessageData * data, MIDIProperty pr
     PROPERTY_CASE_GET(MIDI_PRESSURE,MIDIPressure,m[1]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -626,7 +616,6 @@ static int _set_pitch_wheel_change( struct MIDIMessageData * data, MIDIProperty 
       return 0;
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -652,7 +641,6 @@ static int _get_pitch_wheel_change( struct MIDIMessageData * data, MIDIProperty 
       return 0;
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -692,7 +680,6 @@ static int _set_system_exclusive( struct MIDIMessageData * data, MIDIProperty pr
       return 0;*/
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -748,7 +735,6 @@ static int _set_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProp
     PROPERTY_CASE_SET_L(MIDI_VALUE,MIDIValue,m[1]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -770,7 +756,6 @@ static int _get_time_code_quarter_frame( struct MIDIMessageData * data, MIDIProp
     PROPERTY_CASE_GET_L(MIDI_VALUE,MIDIChannel,m[1]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -796,7 +781,6 @@ static int _set_song_position_pointer( struct MIDIMessageData * data, MIDIProper
       return 0;
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -821,7 +805,6 @@ static int _get_song_position_pointer( struct MIDIMessageData * data, MIDIProper
       return 0;
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -842,7 +825,6 @@ static int _set_song_select( struct MIDIMessageData * data, MIDIProperty propert
     PROPERTY_CASE_SET(MIDI_VALUE,MIDIValue,m[1]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -863,7 +845,6 @@ static int _get_song_select( struct MIDIMessageData * data, MIDIProperty propert
     PROPERTY_CASE_GET(MIDI_VALUE,MIDIChannel,m[1]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 
@@ -898,7 +879,6 @@ static int _set_real_time( struct MIDIMessageData * data, MIDIProperty property,
     PROPERTY_CASE_SET(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 /**
@@ -918,7 +898,6 @@ static int _get_tune_request_real_time( struct MIDIMessageData * data, MIDIPrope
     PROPERTY_CASE_GET(MIDI_STATUS,MIDIStatus,m[0]);
     PROPERTY_DEFAULT;
   }
-  return 1;
 }
 
 #undef PROPERTY_CASE_BASE
