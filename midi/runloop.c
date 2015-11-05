@@ -155,6 +155,7 @@ static void _timeval_from_timespec( struct timeval * tv, struct timespec * ts ) 
 
 struct MIDIRunloopSource * MIDIRunloopSourceCreate( struct MIDIRunloopSourceDelegate * delegate ) {
   struct MIDIRunloopSource * source = malloc( sizeof( struct MIDIRunloopSource ) );
+  if( source == NULL ) return NULL;
 
   source->refs = 1;
   source->nfds = 0;
