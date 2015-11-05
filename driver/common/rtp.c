@@ -284,6 +284,7 @@ struct RTPSession {
  */
 struct RTPPeer * RTPPeerCreate( unsigned long ssrc, socklen_t size, struct sockaddr * addr ) {
   struct RTPPeer * peer = malloc( sizeof( struct RTPPeer ) );
+  if( peer == NULL ) return NULL;
   peer->refs = 1;
   peer->address.ssrc = ssrc;
   peer->address.size = size;
@@ -430,8 +431,10 @@ static void _session_randomize_ssrc( struct RTPSession * session ) {
  * @return a @c NULL pointer if the controller could not created.
  */
 struct RTPSession * RTPSessionCreate( int socket ) {
-  struct RTPSession * session = malloc( sizeof( struct RTPSession ) );
   int i;
+  struct RTPSession * session = malloc( sizeof( struct RTPSession ) );
+  if( session == NULL ) return NULL;
+
   session->refs   = 1;
   session->socket = socket;
 
