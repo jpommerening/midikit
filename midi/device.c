@@ -354,8 +354,9 @@ static int _recv( void * dev, void * source, struct MIDITypeSpec * type, void * 
  * @return a @c NULL pointer if the device could not created.
  */
 struct MIDIDevice * MIDIDeviceCreate( struct MIDIDeviceDelegate * delegate ) {
-  struct MIDIDevice * device = malloc( sizeof( struct MIDIDevice ) );
   MIDIChannel channel;
+  struct MIDIDevice * device = malloc( sizeof( struct MIDIDevice ) );
+  if( device == NULL ) return NULL;
 
   device->refs = 1;
   device->in   = MIDIPortCreate( "Device IN",  MIDI_PORT_IN | MIDI_PORT_THRU, device, &_recv );

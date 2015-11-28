@@ -15,6 +15,7 @@ struct MIDITimer {
 
 struct MIDITimer * MIDITimerCreate( struct MIDITimerDelegate * delegate ) {
   struct MIDITimer * timer = malloc( sizeof( struct MIDITimer ) );
+  if( timer == NULL ) return NULL;
   timer->refs = 1;
   timer->delegate         = delegate;
   timer->song_position    = 0;
