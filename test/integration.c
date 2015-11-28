@@ -136,7 +136,7 @@ static int _send( void * implementation, struct MIDIMessage * message ) {
  * The messages that are received by the driver are given to the first device:
  *
  * [device 1] -(out)-----(in)-> [device 2] -(out)-------> [driver] (loopback)
- *        ^-(in)--------------------------------------------´
+ *        ^-(in)--------------------------------------------Â´
  *
  * device 1 receives from driver
  * device 2 receives from device 1 out
@@ -154,11 +154,11 @@ int test001_integration( void ) {
   device_1 = MIDIDeviceCreate( &_test_device );
   device_2 = MIDIDeviceCreate( &_test_device );
   driver = MIDIDriverCreate( "test driver", MIDI_SAMPLING_RATE_DEFAULT );
+  ASSERT_NOT_EQUAL( driver,  NULL, "Could not create driver." );
   driver->send = &_send;
   
   ASSERT_NOT_EQUAL( device_1,  NULL, "Could not create device 1." );
   ASSERT_NOT_EQUAL( device_2,  NULL, "Could not create device 2." );
-  ASSERT_NOT_EQUAL( driver,  NULL, "Could not create driver." );
 
   ASSERT_NO_ERROR( MIDIDeviceGetOutputPort( device_1, &port ), "Could not get out port." );
   ASSERT_NO_ERROR( MIDIDeviceAttachIn( device_2, port ), "Could not attach port to device 2 in port." );
