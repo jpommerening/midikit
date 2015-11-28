@@ -4,4 +4,6 @@ compiler:
   - clang
 os: linux
 
-script: make midikit
+script:
+- make midikit
+- make test
